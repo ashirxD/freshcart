@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   FreshCarts design tokens
+
+   This block is the ONLY place design values are declared. Every token below
+   becomes a Tailwind utility (`bg-primary`, `p-page`, `rounded-lg`, `shadow-card`),
+   so components describe intent instead of repeating hex codes and pixel values.
+
+   Brand values come from the Stitch design system and must not be altered.
+   Values marked "derived" are neutral steps computed from the given palette so
+   that borders, dividers and skeletons stay within the same visual language.
+   ========================================================================== */
+@theme {
+  /* --- Brand palette (source of truth) --- */
+  --color-primary: #00450d;
+  --color-primary-container: #1b5e20;
+  --color-secondary: #835400;
+  --color-secondary-container: #fcab28;
+  --color-background: #fcf9f8;
+  --color-surface: #fcf9f8;
+  --color-text: #1b1c1c;
+  --color-outline: #717a6d;
+
+  /* --- Foreground pairings (contrast-checked against the pairs above) --- */
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #1b1c1c;
+  --color-on-surface: #1b1c1c;
+
+  /* --- Derived neutrals --- */
+  --color-surface-muted: #f2efed; /* cards/skeletons on background */
+  --color-surface-sunken: #ebe7e4; /* inset areas, search fields */
+  --color-outline-variant: #dcdfd8; /* hairline borders — outline at low emphasis */
+  --color-text-muted: #5c6159; /* secondary copy, still AA on background */
+
+  /* --- Status colours (functional, not brand) --- */
+  --color-success: #1b5e20;
+  --color-danger: #b3261e;
+  --color-on-danger: #ffffff;
+
+  /* --- Typography --- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-urdu: var(--font-noto-nastaliq), serif;
+
+  /* --- Spacing (design system scale) --- */
+  --spacing-page: 20px; /* mobile horizontal margin */
+  --spacing-gutter: 16px; /* standard gutter / medium vertical rhythm */
+  --spacing-xs: 8px; /* small vertical spacing */
+  --spacing-lg: 24px; /* large vertical spacing */
+  --spacing-touch: 48px; /* minimum interactive target */
+
+  /* --- Radius --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* --- Elevation: subtle, never heavy --- */
+  --shadow-card: 0 1px 2px rgb(27 28 28 / 0.04), 0 1px 3px rgb(27 28 28 / 0.06);
+  --shadow-raised: 0 2px 6px rgb(27 28 28 / 0.08);
+  --shadow-overlay: 0 8px 24px rgb(27 28 28 / 0.12);
+}
+
+@layer base {
+  html {
+    /* Never hide content behind the fixed bottom navigation. */
+    scroll-padding-bottom: 5rem;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Urdu content gets its display face and the extra line height the script needs. */
+  :lang(ur) {
+    font-family: var(--font-urdu);
+    line-height: 2.2;
+  }
+
+  /* A single, consistent, highly visible focus treatment across the app. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Respect users who ask for reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility page-x {
+  /* Mobile page margin that relaxes into a centred column on desktop. */
+  padding-inline: var(--spacing-page);
+}
