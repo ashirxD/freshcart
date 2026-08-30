@@ -35,7 +35,11 @@ async function bootstrap(): Promise<void> {
   });
 
   app.enableCors({
-    origin: corsOrigins,
+    // Production is a strict allowlist. Development additionally accepts any
+    // localhost origin, because dev servers get whatever port is free and
+    // chasing that in configuration is friction with no security value —
+    // an attacker cannot serve a page from the developer's own machine.
+    origin: isProduction ? corsOrigins : buildDevOriginCheck(corsOrigins),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   });
@@ -58,6 +62,22 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   logger.log('FreshCarts API listening on http://localhost:' + port + '/' + apiPrefix);
   logger.log('Health check: http://localhost:' + port + '/health');
+}
+
+/**
+ * Development origin check: the configured allowlist, plus any port on
+ * localhost. Returns a callback rather than a wildcard so `credentials: true`
+ * still works — `Access-Control-Allow-Origin: *` is rejected with credentials.
+ */
+function buildDevOriginCheck(allowed: string[]) {
+  const LOCALHOST = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+  return (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+    // Same-origin and non-browser callers (curl, tests) send no Origin header.
+    if (!origin) return callback(null, true);
+    if (allowed.includes(origin) || LOCALHOST.test(origin)) return callback(null, true);
+    return callback(null, false);
+  };
 }
 
 void bootstrap();

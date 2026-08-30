@@ -58,14 +58,26 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 The API boots on `http://localhost:4000`, with routes under `/api/v1` and health probes
 at the unprefixed `/health` and `/health/ready`.
 
-Seed development accounts:
+Seed the development catalogue — one store, 31 categories/subcategories, 53 grocery
+products with stock, and the demo accounts:
 
 ```bash
 npm run seed
 ```
 
-`npm run seed:fresh` wipes seeded collections first. Seeding refuses to run when
-`NODE_ENV=production`.
+`npm run seed:fresh` wipes the seeded collections first. Seeding is idempotent, writes
+through the real services (so it passes the same validation as an admin would), and
+refuses to run when `NODE_ENV=production`.
+
+Demo accounts (from `.env`):
+
+| Role     | Phone           | Password        |
+| -------- | --------------- | --------------- |
+| ADMIN    | `+923001234567` | `Admin@12345`   |
+| CUSTOMER | `+923001234569` | `Customer@12345`|
+
+The seed deliberately includes an out-of-stock product, a low-stock product and a
+deactivated product, so every state the UI must handle is reachable immediately.
 
 Other scripts: `npm run build`, `npm test`, `npm run lint`.
 
@@ -80,6 +92,10 @@ npm run dev
 
 Runs on `http://localhost:3000`. Other scripts: `npm run build`, `npm run typecheck`,
 `npm run lint`.
+
+Customer routes: `/`, `/categories`, `/categories/[slug]`, `/products/[slug]`, `/search`,
+`/cart`, `/favorites`. The back office lives under `/admin` (products, categories,
+inventory) and requires an ADMIN account.
 
 ## Verifying it works
 
@@ -109,3 +125,10 @@ curl -i http://localhost:4000/api/v1/users -H "Authorization: Bearer <access-tok
 - Design values are declared once in `frontend/src/app/globals.css` and consumed as
   Tailwind utilities. Do not hardcode hex codes or pixel values in components.
 - Categories and products are always rendered from API data — never hardcoded in React.
+- Money is whole Pakistani rupees stored as integers. Grocery pricing here has no paisa,
+  so rupees *are* the smallest unit — which keeps every subtotal an exact integer sum.
+- Availability (`IN_STOCK` / `LOW_STOCK` / `OUT_OF_STOCK`) is derived from the inventory
+  row on read, never persisted, so it cannot go stale behind a quantity write.
+- Everything in the catalogue is scoped by `storeId`, and the active store is resolved
+  from `DEFAULT_STORE_SLUG` or the oldest active store — never a hardcoded id.
+- Collection endpoints return `{ items, pagination: { page, limit, total, totalPages } }`.

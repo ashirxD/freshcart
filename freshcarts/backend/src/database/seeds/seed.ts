@@ -5,8 +5,8 @@ import { SeedService } from './seed.service';
 
 /**
  * CLI entry point.
- *   npm run seed          -> add missing development accounts
- *   npm run seed:fresh    -> wipe seeded collections first
+ *   npm run seed          -> add anything missing, leave existing data alone
+ *   npm run seed:fresh    -> wipe the seeded collections first
  */
 async function main(): Promise<void> {
   const logger = new Logger('Seed');
@@ -18,7 +18,10 @@ async function main(): Promise<void> {
 
   try {
     const summary = await context.get(SeedService).run({ fresh });
-    logger.log('Seed complete: ' + summary.created + ' created, ' + summary.skipped + ' skipped');
+
+    for (const [name, result] of Object.entries(summary)) {
+      logger.log(name + ': ' + result.created + ' created, ' + result.skipped + ' skipped');
+    }
   } catch (error) {
     logger.error('Seed failed', error instanceof Error ? error.stack : String(error));
     process.exitCode = 1;

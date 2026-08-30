@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useCartCount } from '@/features/cart/cart.hooks';
 import { cn } from '@/lib/cn';
+import { formatBadgeCount } from '@/lib/format';
 import { PRIMARY_NAV, isActiveRoute } from './navigation.config';
 
 /**
@@ -12,14 +14,17 @@ import { PRIMARY_NAV, isActiveRoute } from './navigation.config';
  * Every tab is a full 48px target with a persistent text label: icon-only tabs
  * are a real barrier for shoppers who are not fluent with app conventions.
  */
-export function BottomNavigation({ cartCount = 0 }: { cartCount?: number }) {
+export function BottomNavigation() {
   const pathname = usePathname();
+  // Read straight from the cart cache: the badge then updates the moment a
+  // mutation writes the new cart, with no prop threading through the layout.
+  const cartCount = useCartCount();
 
   return (
     <nav
       aria-label="Primary"
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface md:hidden',
+        'border-outline-variant bg-surface fixed inset-x-0 bottom-0 z-40 border-t md:hidden',
         // Keeps the bar clear of the iOS home indicator.
         'pb-[env(safe-area-inset-bottom)]',
       )}
@@ -35,26 +40,23 @@ export function BottomNavigation({ cartCount = 0 }: { cartCount?: number }) {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-touch flex-col items-center justify-center gap-0.5 px-1 py-2',
+                  'min-h-touch flex flex-col items-center justify-center gap-0.5 px-1 py-2',
                   'text-xs font-medium transition-colors',
                   active ? 'text-primary' : 'text-text-muted',
                 )}
               >
                 <span className="relative">
-                  <Icon
-                    className={cn('size-6', active && 'stroke-[2.25]')}
-                    aria-hidden="true"
-                  />
+                  <Icon className={cn('size-6', active && 'stroke-[2.25]')} aria-hidden="true" />
 
                   {item.showsCartCount && cartCount > 0 ? (
                     <span
                       className={cn(
                         'absolute -top-1.5 -right-2 flex min-w-4 items-center justify-center',
-                        'rounded-full bg-secondary-container px-1 text-[10px] font-bold',
+                        'bg-secondary-container rounded-full px-1 text-[10px] font-bold',
                         'text-on-secondary-container',
                       )}
                     >
-                      {cartCount > 99 ? '99+' : cartCount}
+                      {formatBadgeCount(cartCount)}
                     </span>
                   ) : null}
                 </span>

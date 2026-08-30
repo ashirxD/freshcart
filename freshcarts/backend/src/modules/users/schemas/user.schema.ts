@@ -103,10 +103,10 @@ UserSchema.index({ storeId: 1 }, { partialFilterExpression: { storeId: { $type: 
  */
 UserSchema.pre('validate', function (next) {
   if (this.role === Role.STORE_MANAGER && !this.storeId) {
-    return next(new Error('A STORE_MANAGER account must be linked to a store'));
+    this.invalidate('storeId', 'A STORE_MANAGER account must be linked to a store');
   }
   if (this.role !== Role.STORE_MANAGER && this.storeId) {
-    return next(new Error('Only STORE_MANAGER accounts may be linked to a store'));
+    this.invalidate('storeId', 'Only STORE_MANAGER accounts may be linked to a store');
   }
   return next();
 });

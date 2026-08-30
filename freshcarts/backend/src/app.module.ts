@@ -8,7 +8,13 @@ import { AllExceptionsFilter } from 'src/common/filters';
 import { JwtAuthGuard, RolesGuard } from 'src/common/guards';
 import { DatabaseModule } from 'src/database/database.module';
 import { AuthModule } from 'src/modules/auth/auth.module';
+import { CartModule } from 'src/modules/cart/cart.module';
+import { CategoriesModule } from 'src/modules/categories';
+import { FavoritesModule } from 'src/modules/favorites/favorites.module';
 import { HealthModule } from 'src/modules/health/health.module';
+import { InventoryModule } from 'src/modules/inventory';
+import { ProductsModule } from 'src/modules/products';
+import { StoresModule } from 'src/modules/stores';
 import { UsersModule } from 'src/modules/users/users.module';
 
 @Module({
@@ -31,6 +37,14 @@ import { UsersModule } from 'src/modules/users/users.module';
     AuthModule,
     UsersModule,
     HealthModule,
+    // Catalogue, in dependency order: stores scope categories and products,
+    // inventory backs availability, and cart/favourites build on products.
+    StoresModule,
+    CategoriesModule,
+    InventoryModule,
+    ProductsModule,
+    CartModule,
+    FavoritesModule,
   ],
   providers: [
     // Order matters: rate limit first, then authenticate, then authorise.

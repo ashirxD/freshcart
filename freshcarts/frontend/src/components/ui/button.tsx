@@ -28,6 +28,27 @@ const SIZES: Record<ButtonSize, string> = {
   lg: 'min-h-touch h-14 px-lg text-lg gap-2.5',
 };
 
+/**
+ * The shared appearance, so a link that should look like a button does not have
+ * to re-declare it — and cannot drift from the real thing.
+ */
+export function buttonClasses(options: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  className?: string;
+}): string {
+  return cn(
+    'inline-flex items-center justify-center rounded-full font-medium',
+    'transition-colors duration-150 select-none',
+    'disabled:cursor-not-allowed disabled:opacity-50',
+    VARIANTS[options.variant ?? 'primary'],
+    SIZES[options.size ?? 'md'],
+    options.fullWidth && 'w-full',
+    options.className,
+  );
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -60,22 +81,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled ?? isLoading}
       // Communicates the pending state to assistive technology, not just visually.
       aria-busy={isLoading || undefined}
-      className={cn(
-        'inline-flex items-center justify-center rounded-full font-medium',
-        'transition-colors duration-150 select-none',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        VARIANTS[variant],
-        SIZES[size],
-        fullWidth && 'w-full',
-        className,
-      )}
+      className={buttonClasses({ variant, size, fullWidth, className })}
       {...props}
     >
-      {isLoading ? (
-        <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-      ) : (
-        leadingIcon
-      )}
+      {isLoading ? <Loader2 className="size-5 animate-spin" aria-hidden="true" /> : leadingIcon}
       {children}
       {!isLoading && trailingIcon}
     </button>

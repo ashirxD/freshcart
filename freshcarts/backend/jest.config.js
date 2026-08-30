@@ -9,6 +9,7 @@ module.exports = {
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  setupFilesAfterEnv: ['<rootDir>/../jest.setup.js'],
   // Mirrors the `src/*` path alias from tsconfig.json.
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/$1',

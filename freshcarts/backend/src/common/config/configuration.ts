@@ -24,6 +24,8 @@ export interface AppConfig {
     refreshExpiresIn: JwtDuration;
   };
   security: { bcryptSaltRounds: number };
+  /** Which store the customer catalogue is scoped to. Unset -> oldest active store. */
+  store: { defaultSlug?: string };
   cookie: { secure: boolean; domain?: string; sameSite: 'lax' | 'strict' | 'none' };
   throttle: { ttl: number; limit: number };
 }
@@ -62,6 +64,9 @@ export default (): AppConfig => {
     },
     security: {
       bcryptSaltRounds: toInt(process.env.BCRYPT_SALT_ROUNDS, 12),
+    },
+    store: {
+      defaultSlug: process.env.DEFAULT_STORE_SLUG || undefined,
     },
     cookie: {
       secure: toBool(process.env.COOKIE_SECURE, nodeEnv === 'production'),
