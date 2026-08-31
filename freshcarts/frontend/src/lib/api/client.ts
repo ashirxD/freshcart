@@ -1,7 +1,7 @@
 import { env } from '@/lib/env';
 import { useAuthStore } from '@/store/auth.store';
 import type { SessionResponse } from '@/types/auth';
-import { toApiError } from './errors';
+import { toApiError, toNetworkError } from './errors';
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
@@ -39,17 +39,29 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   const { body, skipAuthRefresh: _skipAuthRefresh, headers, ...rest } = options;
   const accessToken = useAuthStore.getState().accessToken;
 
+  // A photo is not JSON. FormData is passed through untouched and, crucially,
+  // WITHOUT a Content-Type header: the browser sets it including the multipart
+  // boundary, and setting it by hand produces a body no server can parse.
+  const isMultipart = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const requestHeaders = new Headers(headers);
-  if (body !== undefined) requestHeaders.set('Content-Type', 'application/json');
+  if (body !== undefined && !isMultipart) requestHeaders.set('Content-Type', 'application/json');
   if (accessToken) requestHeaders.set('Authorization', 'Bearer ' + accessToken);
 
-  return fetch(env.apiUrl + path, {
-    ...rest,
-    headers: requestHeaders,
-    // Required for the refresh cookie to travel with the request.
-    credentials: 'include',
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  try {
+    return await fetch(env.apiUrl + path, {
+      ...rest,
+      headers: requestHeaders,
+      // Required for the refresh cookie to travel with the request.
+      credentials: 'include',
+      body: body === undefined ? undefined : isMultipart ? (body as FormData) : JSON.stringify(body),
+    });
+  } catch {
+    // A dropped connection rejects rather than returning a status. Normalising
+    // it here means every caller handles one error type, and a shopper on a
+    // patchy mobile connection sees a sentence instead of "Failed to fetch".
+    throw toNetworkError();
+  }
 }
 
 async function parse<T>(response: Response): Promise<T> {

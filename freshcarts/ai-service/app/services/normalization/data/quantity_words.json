@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "description": "Quantities written as words rather than numerals. Small numbers only, on purpose: a grocery list says 'two milk', never 'one hundred and seventeen milk', and a general-purpose number parser would be a lot of machinery for a case that does not occur.",
+  "entries": [
+    { "value": 0.5, "words": ["half", "aadha", "adha", "آدھا", "آدھ"] },
+    { "value": 1, "words": ["one", "a", "an", "ek", "aik", "ایک"] },
+    { "value": 1.5, "words": ["derh", "dedh", "ڈیڑھ"] },
+    { "value": 2, "words": ["two", "do", "دو"] },
+    { "value": 2.5, "words": ["dhai", "ڈھائی"] },
+    { "value": 3, "words": ["three", "teen", "تین"] },
+    { "value": 4, "words": ["four", "char", "chaar", "چار"] },
+    { "value": 5, "words": ["five", "panch", "paanch", "پانچ"] },
+    { "value": 6, "words": ["six", "chey", "che", "چھ"] },
+    { "value": 7, "words": ["seven", "saat", "سات"] },
+    { "value": 8, "words": ["eight", "aath", "آٹھ"] },
+    { "value": 9, "words": ["nine", "nau", "نو"] },
+    { "value": 10, "words": ["ten", "das", "dus", "دس"] },
+    { "value": 12, "words": ["twelve", "barah", "بارہ"] }
+  ]
+}

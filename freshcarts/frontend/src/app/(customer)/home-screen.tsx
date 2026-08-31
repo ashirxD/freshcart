@@ -9,6 +9,7 @@ import { SearchBar } from '@/components/common/search-bar';
 import { SectionHeader } from '@/components/common/section-header';
 import { Container } from '@/components/layout/container';
 import { ProductRail } from '@/components/product/product-grid';
+import { ScanCta } from '@/components/scan/scan-cta';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCategories, useCurrentStore, useProducts } from '@/features/catalog/catalog.hooks';
 import { useAuthStore } from '@/store/auth.store';
@@ -55,6 +56,13 @@ export function HomeScreen() {
         </header>
 
         <SearchBar onSubmit={(term) => router.push('/search?q=' + encodeURIComponent(term))} />
+
+        {/*
+          The flagship feature, given the most prominent position on the
+          storefront. It removes itself when the AI service is unavailable, so
+          nobody is invited to photograph a list we cannot read.
+        */}
+        <ScanCta />
       </Container>
 
       <Container className="gap-gutter flex flex-col">

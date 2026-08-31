@@ -3,7 +3,7 @@ import { Model, Types } from 'mongoose';
 import { StockStatus } from 'src/common/enums';
 import { StoresService } from 'src/modules/stores';
 import { InventoryService } from './inventory.service';
-import { InventoryDocument } from './schemas';
+import { InventoryAdjustmentDocument, InventoryDocument } from './schemas';
 
 const STORE_ID = new Types.ObjectId('64b000000000000000000001');
 const PRODUCT_ID = '64b000000000000000000101';
@@ -12,14 +12,26 @@ describe('InventoryService', () => {
   type MockModel = Record<string, jest.Mock>;
 
   let inventoryModel: MockModel;
+  let adjustmentModel: MockModel;
   let service: InventoryService;
 
   beforeEach(() => {
     inventoryModel = {
-      findOne: jest.fn(),
+      // `update` reads the prior quantity for the audit row before writing.
+      findOne: jest.fn().mockReturnValue({
+        select: () => ({ lean: () => ({ exec: () => Promise.resolve({ quantity: 0 }) }) }),
+      }),
       findOneAndUpdate: jest.fn(),
       exists: jest.fn().mockResolvedValue(null),
       deleteOne: jest.fn().mockReturnValue({ exec: () => Promise.resolve(undefined) }),
+      aggregate: jest.fn().mockReturnValue({ exec: () => Promise.resolve([]) }),
+    };
+
+    adjustmentModel = {
+      create: jest.fn().mockResolvedValue({}),
+      find: jest.fn().mockReturnValue({
+        sort: () => ({ limit: () => ({ select: () => ({ lean: () => ({ exec: () => Promise.resolve([]) }) }) }) }),
+      }),
     };
 
     const storesService = {
@@ -28,6 +40,7 @@ describe('InventoryService', () => {
 
     service = new InventoryService(
       inventoryModel as unknown as Model<InventoryDocument>,
+      adjustmentModel as unknown as Model<InventoryAdjustmentDocument>,
       storesService,
     );
   });

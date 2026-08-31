@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "description": "Unit vocabulary. `canonical` is the value that crosses the wire to NestJS, which maps it onto the catalogue's UnitType. Anything not listed here is left in the raw text and the matcher decides - section 14 is explicit that an unclear unit must not be guessed at.",
+  "kinds": {
+    "measure": "A size, not a count. '500 g namak' is one bag weighing 500 g, never five hundred bags - see section 22.",
+    "count": "A number of things. '2 dozen anday' is two boxes of twelve."
+  },
+  "entries": [
+    {
+      "canonical": "kg",
+      "kind": "measure",
+      "aliases": ["kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "kilogramme", "کلو", "کلوگرام"]
+    },
+    {
+      "canonical": "g",
+      "kind": "measure",
+      "aliases": ["g", "gm", "gms", "gram", "grams", "gramme", "grm", "گرام"]
+    },
+    {
+      "canonical": "liter",
+      "kind": "measure",
+      "aliases": ["l", "ltr", "ltrs", "lt", "liter", "liters", "litre", "litres", "لیٹر"]
+    },
+    {
+      "canonical": "ml",
+      "kind": "measure",
+      "aliases": ["ml", "mls", "millilitre", "milliliter", "ایم ایل"]
+    },
+    {
+      "canonical": "dozen",
+      "kind": "count",
+      "aliases": ["dozen", "doz", "dzn", "dozens", "درجن"]
+    },
+    {
+      "canonical": "piece",
+      "kind": "count",
+      "aliases": ["pc", "pcs", "piece", "pieces", "adad", "عدد"]
+    },
+    {
+      "canonical": "pack",
+      "kind": "count",
+      "aliases": ["pack", "packs", "packet", "packets", "pkt", "pkts", "پیکٹ"]
+    },
+    {
+      "canonical": "bottle",
+      "kind": "count",
+      "aliases": ["bottle", "bottles", "btl", "botal", "بوتل"]
+    },
+    {
+      "canonical": "box",
+      "kind": "count",
+      "aliases": ["box", "boxes", "dabba", "dibba", "ڈبہ", "ڈبا"]
+    }
+  ]
+}

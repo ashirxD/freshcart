@@ -1,0 +1,16 @@
+# Virtual environment
+.venv/
+venv/
+
+# Local configuration — never committed
+.env
+.env.local
+
+# Python artefacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Tesseract language packs. Large binary model files, fetched by
+# `scripts/fetch-tessdata.py` rather than committed.
+tessdata/

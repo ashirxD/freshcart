@@ -1,4 +1,13 @@
-import { Grid3x3, Heart, Home, Receipt, Search, ShoppingCart } from 'lucide-react';
+import {
+  Grid3x3,
+  Heart,
+  Home,
+  MapPin,
+  Receipt,
+  ScanLine,
+  Search,
+  ShoppingCart,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavItem {
@@ -25,8 +34,18 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: '/orders', label: 'Orders', icon: Receipt },
 ];
 
-/** Shown on desktop, where there is room beyond the five primary tabs. */
-export const SECONDARY_NAV: NavItem[] = [{ href: '/favorites', label: 'Saved', icon: Heart }];
+/**
+ * Shown on desktop, where there is room beyond the five primary tabs.
+ *
+ * Addresses live here rather than in the tab bar: a shopper manages them
+ * occasionally, and checkout already offers "add a new address" at the moment
+ * they actually need one.
+ */
+export const SECONDARY_NAV: NavItem[] = [
+  { href: '/scan', label: 'Scan list', icon: ScanLine },
+  { href: '/favorites', label: 'Saved', icon: Heart },
+  { href: '/addresses', label: 'Addresses', icon: MapPin },
+];
 
 /** Treats nested routes as "inside" their section without matching everything on "/". */
 export function isActiveRoute(pathname: string, href: string): boolean {

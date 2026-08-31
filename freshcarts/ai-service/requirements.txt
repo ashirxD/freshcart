@@ -1,0 +1,23 @@
+# FreshCarts AI service — runtime dependencies.
+#
+# Every entry below is here because the standard library cannot do the job, and
+# each one earns its place (see the milestone report, "Dependencies added"):
+#
+#   fastapi          the service framework itself
+#   uvicorn          the ASGI server that runs it
+#   pydantic-settings  typed environment configuration (split out of Pydantic v2)
+#   python-multipart   FastAPI cannot parse a multipart upload without it
+#   pillow             decode, verify and pre-process the uploaded image
+#   pytesseract        thin binding to the Tesseract OCR engine
+#
+# Deliberately NOT here: numpy/opencv (Pillow covers the preprocessing this
+# needs), any ML framework, any HTTP client for the catalogue — the AI service
+# never reads the FreshCarts database.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.5
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+pillow==11.1.0
+pytesseract==0.3.13

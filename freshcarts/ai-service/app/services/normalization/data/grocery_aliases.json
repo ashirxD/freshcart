@@ -1,0 +1,383 @@
+{
+  "version": 1,
+  "description": "Grocery item vocabulary. `canonical` is the English term the NestJS catalogue is searched by; `aliases` are the Roman-Urdu, Urdu-script and colloquial spellings that mean the same thing. Adding a word is a data change, never a code change - see AliasRegistry.",
+  "entries": [
+    {
+      "canonical": "milk",
+      "aliases": [
+        "doodh",
+        "dodh",
+        "dudh",
+        "dood",
+        "doudh",
+        "duth",
+        "دودھ"
+      ]
+    },
+    {
+      "canonical": "yogurt",
+      "aliases": [
+        "dahi",
+        "dahee",
+        "dhai",
+        "yoghurt",
+        "curd",
+        "دہی"
+      ]
+    },
+    {
+      "canonical": "butter",
+      "aliases": [
+        "makhan",
+        "makkhan",
+        "مکھن"
+      ]
+    },
+    {
+      "canonical": "cheese",
+      "aliases": [
+        "چیز"
+      ]
+    },
+    {
+      "canonical": "eggs",
+      "aliases": [
+        "anda",
+        "anday",
+        "ande",
+        "andey",
+        "aanday",
+        "egg",
+        "انڈے",
+        "انڈا"
+      ]
+    },
+    {
+      "canonical": "bread",
+      "aliases": [
+        "double roti",
+        "dabal roti",
+        "dubble roti",
+        "doubleroti",
+        "بریڈ",
+        "ڈبل روٹی"
+      ]
+    },
+    {
+      "canonical": "rusk",
+      "aliases": [
+        "toast",
+        "papay",
+        "رسک"
+      ]
+    },
+    {
+      "canonical": "biscuits",
+      "aliases": [
+        "biscuit",
+        "bisckut",
+        "biskut",
+        "بسکٹ"
+      ]
+    },
+    {
+      "canonical": "flour",
+      "aliases": [
+        "atta",
+        "aata",
+        "ata",
+        "gandum",
+        "آٹا"
+      ]
+    },
+    {
+      "canonical": "rice",
+      "aliases": [
+        "chawal",
+        "chaawal",
+        "chaval",
+        "چاول"
+      ]
+    },
+    {
+      "canonical": "lentils",
+      "aliases": [
+        "daal",
+        "dal",
+        "dhal",
+        "دال"
+      ]
+    },
+    {
+      "canonical": "sugar",
+      "aliases": [
+        "cheeni",
+        "chini",
+        "chene",
+        "cheene",
+        "shakar",
+        "چینی"
+      ]
+    },
+    {
+      "canonical": "salt",
+      "aliases": [
+        "namak",
+        "namk",
+        "نمک"
+      ]
+    },
+    {
+      "canonical": "oil",
+      "aliases": [
+        "tel",
+        "teel",
+        "cooking oil",
+        "canola",
+        "sunflower oil",
+        "تیل"
+      ]
+    },
+    {
+      "canonical": "ghee",
+      "aliases": [
+        "banaspati",
+        "vanaspati",
+        "گھی"
+      ]
+    },
+    {
+      "canonical": "tea",
+      "aliases": [
+        "chai",
+        "chae",
+        "chai patti",
+        "chaye",
+        "patti",
+        "چائے",
+        "چاۓ"
+      ]
+    },
+    {
+      "canonical": "coffee",
+      "aliases": [
+        "kaffee",
+        "kofi",
+        "کافی"
+      ]
+    },
+    {
+      "canonical": "water",
+      "aliases": [
+        "pani",
+        "paani",
+        "mineral water",
+        "پانی"
+      ]
+    },
+    {
+      "canonical": "juice",
+      "aliases": [
+        "ras",
+        "jus",
+        "جوس"
+      ]
+    },
+    {
+      "canonical": "soft drink",
+      "aliases": [
+        "cold drink",
+        "colddrink",
+        "bottle drink",
+        "soda",
+        "کولڈ ڈرنک"
+      ]
+    },
+    {
+      "canonical": "potato",
+      "aliases": [
+        "aloo",
+        "alu",
+        "aalu",
+        "aaloo",
+        "آلو"
+      ]
+    },
+    {
+      "canonical": "onion",
+      "aliases": [
+        "pyaz",
+        "piyaz",
+        "payaz",
+        "پیاز"
+      ]
+    },
+    {
+      "canonical": "tomato",
+      "aliases": [
+        "tamatar",
+        "timatar",
+        "tamater",
+        "ٹماٹر"
+      ]
+    },
+    {
+      "canonical": "chilli",
+      "aliases": [
+        "mirch",
+        "hari mirch",
+        "mirchi",
+        "مرچ",
+        "ہری مرچ"
+      ]
+    },
+    {
+      "canonical": "spinach",
+      "aliases": [
+        "palak",
+        "saag",
+        "sag",
+        "پالک",
+        "ساگ"
+      ]
+    },
+    {
+      "canonical": "garlic",
+      "aliases": [
+        "lehsan",
+        "lahsan",
+        "لہسن"
+      ]
+    },
+    {
+      "canonical": "ginger",
+      "aliases": [
+        "adrak",
+        "ادرک"
+      ]
+    },
+    {
+      "canonical": "banana",
+      "aliases": [
+        "kela",
+        "kaila",
+        "kele",
+        "کیلا"
+      ]
+    },
+    {
+      "canonical": "apple",
+      "aliases": [
+        "saib",
+        "seb",
+        "sayb",
+        "سیب"
+      ]
+    },
+    {
+      "canonical": "orange",
+      "aliases": [
+        "kinnow",
+        "kino",
+        "malta",
+        "santra",
+        "sangtra",
+        "مالٹا",
+        "کینو"
+      ]
+    },
+    {
+      "canonical": "chips",
+      "aliases": [
+        "crisps",
+        "chipss",
+        "چپس"
+      ]
+    },
+    {
+      "canonical": "namkeen",
+      "aliases": [
+        "nimko",
+        "nimco",
+        "mixture",
+        "نمکین"
+      ]
+    },
+    {
+      "canonical": "chocolate",
+      "aliases": [
+        "chocklet",
+        "choclate",
+        "چاکلیٹ"
+      ]
+    },
+    {
+      "canonical": "detergent",
+      "aliases": [
+        "washing powder",
+        "sarf",
+        "surf",
+        "kapray dhone ka powder",
+        "ڈٹرجنٹ",
+        "سرف"
+      ]
+    },
+    {
+      "canonical": "soap",
+      "aliases": [
+        "sabun",
+        "saboon",
+        "sabon",
+        "صابن"
+      ]
+    },
+    {
+      "canonical": "shampoo",
+      "aliases": [
+        "shampo",
+        "shampu",
+        "شیمپو"
+      ]
+    },
+    {
+      "canonical": "toothpaste",
+      "aliases": [
+        "tooth paste",
+        "manjan",
+        "ٹوتھ پیسٹ"
+      ]
+    },
+    {
+      "canonical": "tissue",
+      "aliases": [
+        "tissues",
+        "napkin",
+        "tissue box",
+        "ٹشو"
+      ]
+    },
+    {
+      "canonical": "toilet cleaner",
+      "aliases": [
+        "harpic",
+        "bathroom cleaner",
+        "ہارپک"
+      ]
+    },
+    {
+      "canonical": "honey",
+      "aliases": [
+        "shehad",
+        "shahad",
+        "شہد"
+      ]
+    },
+    {
+      "canonical": "jam",
+      "aliases": [
+        "murabba",
+        "جیم"
+      ]
+    }
+  ]
+}

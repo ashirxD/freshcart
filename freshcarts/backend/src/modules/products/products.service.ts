@@ -52,13 +52,25 @@ export class ProductsService {
     private readonly storesService: StoresService,
   ) {}
 
+  /**
+   * Which store a read or write applies to.
+   *
+   * An explicit scope always wins, and store-operations callers resolve theirs
+   * from the authenticated principal (see `store-scope.ts`) — never from a
+   * request. Omitting it falls back to the configured active store, which is
+   * what the customer catalogue and the admin surfaces use.
+   */
+  private async resolveStoreId(storeId?: Types.ObjectId): Promise<Types.ObjectId> {
+    return storeId ?? (await this.storesService.getActiveStoreObjectId());
+  }
+
   // --- Reads -------------------------------------------------------------
 
   async list(
     query: QueryProductsDto,
-    options: { includeInactive?: boolean } = {},
+    options: { includeInactive?: boolean; storeId?: Types.ObjectId } = {},
   ): Promise<PaginatedResult<ProductView>> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
+    const storeId = await this.resolveStoreId(options.storeId);
     const includeInactive = options.includeInactive === true;
 
     const match = await this.buildMatch(query, storeId, includeInactive);
@@ -80,9 +92,9 @@ export class ProductsService {
 
   async findOneOrFail(
     idOrSlug: string,
-    options: { includeInactive?: boolean } = {},
+    options: { includeInactive?: boolean; storeId?: Types.ObjectId } = {},
   ): Promise<ProductDetailView> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
+    const storeId = await this.resolveStoreId(options.storeId);
     const product = await this.resolve(idOrSlug, storeId);
 
     if (!product) throw new NotFoundException('Product not found');
@@ -314,8 +326,12 @@ export class ProductsService {
     return this.findOneOrFail(product._id.toString(), { includeInactive: true });
   }
 
-  async setActive(id: string, isActive: boolean): Promise<ProductDetailView> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
+  async setActive(
+    id: string,
+    isActive: boolean,
+    scopedStoreId?: Types.ObjectId,
+  ): Promise<ProductDetailView> {
+    const storeId = await this.resolveStoreId(scopedStoreId);
 
     const product = await this.productModel
       .findOneAndUpdate({ _id: id, storeId }, { $set: { isActive } }, { new: true })

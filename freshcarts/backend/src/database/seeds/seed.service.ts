@@ -3,10 +3,18 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AppConfig } from 'src/common/config/configuration';
+import { Address, AddressDocument } from 'src/modules/addresses/schemas';
 import { Cart, CartDocument } from 'src/modules/cart/schemas';
 import { CategoriesService } from 'src/modules/categories';
 import { Category, CategoryDocument } from 'src/modules/categories/schemas';
+import {
+  DeliveryPricingRule,
+  DeliveryPricingRuleDocument,
+  DeliveryPricingService,
+} from 'src/modules/delivery';
 import { Favorite, FavoriteDocument } from 'src/modules/favorites/schemas';
+import { Order, OrderDocument } from 'src/modules/orders/schemas';
+import { Payment, PaymentDocument } from 'src/modules/payments/schemas';
 import { Inventory, InventoryDocument } from 'src/modules/inventory/schemas';
 import { ProductsService } from 'src/modules/products';
 import { Product, ProductDocument } from 'src/modules/products/schemas';
@@ -19,6 +27,7 @@ import {
   buildSeedProducts,
   buildSeedStore,
 } from './data/catalog.seed';
+import { buildSeedDeliveryPricingRules } from './data/delivery.seed';
 import { buildSeedUsers } from './data/users.seed';
 
 export interface SeedSummary {
@@ -26,6 +35,7 @@ export interface SeedSummary {
   stores: { created: number; skipped: number };
   categories: { created: number; skipped: number };
   products: { created: number; skipped: number };
+  deliveryPricing: { created: number; skipped: number };
 }
 
 @Injectable()
@@ -45,6 +55,12 @@ export class SeedService {
     @InjectModel(Inventory.name) private readonly inventoryModel: Model<InventoryDocument>,
     @InjectModel(Cart.name) private readonly cartModel: Model<CartDocument>,
     @InjectModel(Favorite.name) private readonly favoriteModel: Model<FavoriteDocument>,
+    @InjectModel(Address.name) private readonly addressModel: Model<AddressDocument>,
+    @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
+    @InjectModel(Payment.name) private readonly paymentModel: Model<PaymentDocument>,
+    @InjectModel(DeliveryPricingRule.name)
+    private readonly pricingRuleModel: Model<DeliveryPricingRuleDocument>,
+    private readonly deliveryPricingService: DeliveryPricingService,
   ) {}
 
   /**
@@ -62,12 +78,18 @@ export class SeedService {
     const stores = await this.seedStore();
     const categories = await this.seedCategories();
     const products = await this.seedProducts();
+    const deliveryPricing = await this.seedDeliveryPricing();
 
-    return { users, stores, categories, products };
+    return { users, stores, categories, products, deliveryPricing };
   }
 
   private async wipe(): Promise<void> {
     const results = await Promise.all([
+      // Orders and payments first: they are the leaves of the graph.
+      this.paymentModel.deleteMany({}),
+      this.orderModel.deleteMany({}),
+      this.addressModel.deleteMany({}),
+      this.pricingRuleModel.deleteMany({}),
       this.favoriteModel.deleteMany({}),
       this.cartModel.deleteMany({}),
       this.inventoryModel.deleteMany({}),
@@ -239,6 +261,43 @@ export class SeedService {
       // remote URL is worse than the generated placeholder the UI renders.
       images: [],
     };
+  }
+
+  /**
+   * Delivery pricing bands for the active store.
+   *
+   * Written only when the store has none, so a developer's own tuning survives
+   * a re-run. The resulting set is checked for gaps and overlaps and any
+   * problem is logged loudly — a misconfigured band does not throw here, but it
+   * will make the pricing engine refuse to price a delivery at runtime, and
+   * discovering that during checkout is much worse than reading it now.
+   */
+  private async seedDeliveryPricing(): Promise<{ created: number; skipped: number }> {
+    const storeId = await this.storesService.getActiveStoreObjectId();
+    const existing = await this.pricingRuleModel.countDocuments({ storeId }).exec();
+
+    if (existing > 0) {
+      await this.reportPricingProblems(storeId);
+      return { created: 0, skipped: existing };
+    }
+
+    const rules = buildSeedDeliveryPricingRules();
+
+    await this.pricingRuleModel.create(rules.map((rule) => ({ ...rule, storeId, isActive: true })));
+
+    await this.reportPricingProblems(storeId);
+    this.logger.log('Delivery pricing: ' + rules.length + ' band(s) created');
+
+    return { created: rules.length, skipped: 0 };
+  }
+
+  private async reportPricingProblems(storeId: Types.ObjectId): Promise<void> {
+    const bands = await this.deliveryPricingService.activeBands(storeId);
+    const maxDistance = this.configService.get('delivery', { infer: true }).maxDistanceMeters;
+
+    for (const problem of DeliveryPricingService.validateRuleSet(bands, maxDistance)) {
+      this.logger.warn('Delivery pricing ' + problem.kind + ': ' + problem.message);
+    }
   }
 
   /** Seeding writes known credentials — it must never touch a production database. */

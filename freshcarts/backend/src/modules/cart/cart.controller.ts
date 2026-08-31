@@ -44,6 +44,19 @@ export class CartController {
     return this.cartService.removeItem(userId, productId);
   }
 
+  /**
+   * "I have seen the new prices, continue."
+   *
+   * Checkout blocks while a line's price differs from the one the shopper
+   * agreed to; this is how they acknowledge the change. It copies live
+   * catalogue prices onto the cart's agreed-price field and can do nothing
+   * else — there is no body, so there is no price a client could supply.
+   */
+  @Post('accept-prices')
+  acceptPrices(@CurrentUser('userId') userId: string) {
+    return this.cartService.acceptCurrentPrices(userId);
+  }
+
   @Delete()
   clear(@CurrentUser('userId') userId: string) {
     return this.cartService.clear(userId);

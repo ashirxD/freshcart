@@ -4,6 +4,7 @@ import { ShoppingCart, UserRound } from 'lucide-react';
 import { CartItemRow } from '@/components/cart/cart-item-row';
 import { CartSummary } from '@/components/cart/cart-summary';
 import { EmptyState } from '@/components/common/empty-state';
+import { ScanCta } from '@/components/scan/scan-cta';
 import { ErrorState } from '@/components/common/error-state';
 import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/ui/button-link';
@@ -83,9 +84,14 @@ export function CartScreen() {
           title="Your cart is empty"
           description="Add a few essentials and they will show up here."
           action={
-            <ButtonLink href="/categories" variant="primary">
-              Start shopping
-            </ButtonLink>
+            <div className="gap-xs flex flex-col items-center">
+              <ButtonLink href="/categories" variant="primary">
+                Start shopping
+              </ButtonLink>
+
+              {/* An empty cart is exactly when a written list is in a pocket. */}
+              <ScanCta variant="inline" />
+            </div>
           }
           className="bg-surface-muted rounded-lg"
         />

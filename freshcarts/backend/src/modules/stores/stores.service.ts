@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { AppConfig } from 'src/common/config/configuration';
+import { BusinessException } from 'src/common/errors';
 import { slugify, uniqueSlug } from 'src/common/utils';
 import { CreateStoreDto, UpdateStoreDto } from './dto';
 import { OpeningHours, Store, StoreDocument } from './schemas';
@@ -72,6 +73,66 @@ export class StoresService {
     }
 
     return store;
+  }
+
+  /**
+   * Whether the store can take an order right now.
+   *
+   * Two conditions, both real: the store must be active, and — when it has
+   * published opening hours — the current store-local time must fall inside
+   * today's window. A store with no hours configured is treated as always open,
+   * because "no data" must not silently close a shop.
+   *
+   * The comparison is on the "HH:mm" strings directly. They are zero-padded
+   * 24-hour times, so lexicographic order is chronological order, and there is
+   * no parsing to get wrong.
+   */
+  isAcceptingOrders(store: StoreDocument, now: Date = new Date()): boolean {
+    if (!store.isActive) return false;
+
+    const hours = store.openingHours ?? [];
+    if (hours.length === 0) return true;
+
+    const local = this.toStoreLocalTime(now);
+    const today = hours.find((window) => window.day === local.day);
+
+    // No entry for today means the store did not publish hours for it, which is
+    // not the same as being closed.
+    if (!today) return true;
+    if (today.isClosed) return false;
+
+    return local.time >= today.opensAt && local.time < today.closesAt;
+  }
+
+  /**
+   * Refuses the order with wording a shopper can act on.
+   *
+   * Called from checkout, so an out-of-hours basket fails at validation rather
+   * than becoming an order nobody will pick.
+   */
+  async assertAcceptingOrders(): Promise<StoreDocument> {
+    const store = await this.findActiveStore();
+
+    if (!this.isAcceptingOrders(store)) {
+      throw BusinessException.storeUnavailable(
+        store.isActive
+          ? store.name + ' is closed right now. Please try again during opening hours.'
+          : store.name + ' is not taking orders at the moment.',
+      );
+    }
+
+    return store;
+  }
+
+  /** Store-local weekday and "HH:mm", derived from the configured UTC offset. */
+  private toStoreLocalTime(now: Date): { day: number; time: string } {
+    const offsetMinutes = this.configService.get('store', { infer: true }).timezoneOffsetMinutes;
+    const shifted = new Date(now.getTime() + offsetMinutes * 60_000);
+
+    const hours = String(shifted.getUTCHours()).padStart(2, '0');
+    const minutes = String(shifted.getUTCMinutes()).padStart(2, '0');
+
+    return { day: shifted.getUTCDay(), time: hours + ':' + minutes };
   }
 
   list(includeInactive = false): Promise<StoreDocument[]> {

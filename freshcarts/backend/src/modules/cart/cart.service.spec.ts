@@ -41,12 +41,22 @@ function productView(overrides: Partial<ProductView> & { id: string }): ProductV
 }
 
 /** A cart document stand-in: a plain object plus a recording `save`. */
-function cartDocument(items: Array<{ productId: Types.ObjectId; quantity: number }> = []) {
+function cartDocument(
+  items: Array<{
+    productId: Types.ObjectId;
+    quantity: number;
+    unitPriceSnapshot?: number | null;
+  }> = [],
+) {
   const document = {
     _id: new Types.ObjectId('64b0000000000000000000aa'),
     userId: new Types.ObjectId(USER_ID),
     storeId: STORE_ID,
-    items: items.map((item) => ({ ...item, addedAt: new Date('2026-01-01') })),
+    items: items.map((item) => ({
+      unitPriceSnapshot: null as number | null,
+      ...item,
+      addedAt: new Date('2026-01-01'),
+    })),
     updatedAt: new Date('2026-01-02'),
     save: jest.fn(),
   };
@@ -157,6 +167,240 @@ describe('CartService', () => {
       await expect(
         service.addItem(USER_ID, { productId: MILK.toHexString(), quantity: 1 }),
       ).rejects.toThrow(/no longer available/);
+    });
+  });
+
+  describe('addItems (bulk, for the grocery-list scanner)', () => {
+    const EGGS = new Types.ObjectId('64b000000000000000000103');
+
+    function stubCatalogue(views: ProductView[]) {
+      productsService.findViewsByIds.mockResolvedValue(
+        new Map(views.map((view) => [view.id, view])),
+      );
+    }
+
+    function stubCart(cart: ReturnType<typeof cartDocument>) {
+      cartModel.findOneAndUpdate.mockReturnValue({ exec: () => Promise.resolve(cart) });
+    }
+
+    it('adds every product that can be bought', async () => {
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([
+        productView({ id: MILK.toHexString(), name: 'Milk', sellingPrice: 240 }),
+        productView({ id: BREAD.toHexString(), name: 'Bread', sellingPrice: 180 }),
+      ]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 2 },
+        { productId: BREAD.toHexString(), quantity: 1 },
+      ]);
+
+      expect(result.added).toHaveLength(2);
+      expect(result.failed).toHaveLength(0);
+      expect(cart.items).toHaveLength(2);
+    });
+
+    it('accumulates onto a line the cart already has', async () => {
+      // §32: Milk x1 in the cart plus Milk x2 from a scan is Milk x3, not a
+      // second Milk line.
+      const cart = cartDocument([{ productId: MILK, quantity: 1 }]);
+      stubCart(cart);
+      stubCatalogue([productView({ id: MILK.toHexString(), name: 'Milk' })]);
+
+      await service.addItems(USER_ID, [{ productId: MILK.toHexString(), quantity: 2 }]);
+
+      expect(cart.items).toHaveLength(1);
+      expect(cart.items[0].quantity).toBe(3);
+    });
+
+    it('merges the same product listed twice in one request', async () => {
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([productView({ id: MILK.toHexString(), name: 'Milk' })]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 1 },
+        { productId: MILK.toHexString(), quantity: 2 },
+      ]);
+
+      expect(result.added).toHaveLength(1);
+      expect(cart.items[0].quantity).toBe(3);
+    });
+
+    it('prices from the catalogue, never from what was asked for', async () => {
+      // §34: a price change between the scan and the confirmation is resolved
+      // in favour of the current truth, silently and correctly.
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([productView({ id: MILK.toHexString(), name: 'Milk', sellingPrice: 355 })]);
+
+      await service.addItems(USER_ID, [{ productId: MILK.toHexString(), quantity: 1 }]);
+
+      expect(cart.items[0].unitPriceSnapshot).toBe(355);
+    });
+
+    it('adds what it can and reports what it cannot', async () => {
+      // §31: one sold-out item must not cost the shopper the other two.
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([
+        productView({ id: MILK.toHexString(), name: 'Milk' }),
+        productView({
+          id: EGGS.toHexString(),
+          name: 'Desi Anday',
+          stock: {
+            quantity: 4,
+            lowStockThreshold: 5,
+            status: StockStatus.LOW_STOCK,
+            isAvailable: true,
+          },
+        }),
+      ]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 2 },
+        { productId: EGGS.toHexString(), quantity: 10 },
+      ]);
+
+      expect(result.added).toHaveLength(1);
+      expect(result.failed).toEqual([
+        {
+          productId: EGGS.toHexString(),
+          productName: 'Desi Anday',
+          requestedQuantity: 10,
+          reason: 'INSUFFICIENT_STOCK',
+          availableQuantity: 4,
+        },
+      ]);
+      expect(cart.items).toHaveLength(1);
+    });
+
+    it('refuses an out-of-stock product', async () => {
+      // §33: OCR must not bypass inventory. It never reaches the cart at all.
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([
+        productView({
+          id: MILK.toHexString(),
+          name: 'Milk',
+          stock: {
+            quantity: 0,
+            lowStockThreshold: 5,
+            status: StockStatus.OUT_OF_STOCK,
+            isAvailable: false,
+          },
+        }),
+      ]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 1 },
+      ]);
+
+      expect(result.failed[0].reason).toBe('OUT_OF_STOCK');
+      expect(cart.items).toHaveLength(0);
+    });
+
+    it('refuses a deactivated product', async () => {
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([productView({ id: MILK.toHexString(), name: 'Milk', isActive: false })]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 1 },
+      ]);
+
+      expect(result.failed[0].reason).toBe('UNAVAILABLE');
+    });
+
+    it('refuses a product that is not in this store', async () => {
+      // §55: the catalogue read is scoped by store, so a product from another
+      // store is indistinguishable from one that does not exist. The client
+      // learns nothing either way.
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 1 },
+      ]);
+
+      expect(result.failed[0]).toMatchObject({ reason: 'PRODUCT_NOT_FOUND', productName: null });
+    });
+
+    it('counts an existing cart line towards the stock ceiling', async () => {
+      // The same rule addItem applies: availability is checked against the
+      // RESULTING quantity, so a scan cannot walk past the stock level.
+      const cart = cartDocument([{ productId: MILK, quantity: 3 }]);
+      stubCart(cart);
+      stubCatalogue([
+        productView({
+          id: MILK.toHexString(),
+          name: 'Milk',
+          stock: {
+            quantity: 4,
+            lowStockThreshold: 5,
+            status: StockStatus.LOW_STOCK,
+            isAvailable: true,
+          },
+        }),
+      ]);
+
+      const result = await service.addItems(USER_ID, [
+        { productId: MILK.toHexString(), quantity: 2 },
+      ]);
+
+      expect(result.failed[0].reason).toBe('INSUFFICIENT_STOCK');
+      expect(cart.items[0].quantity).toBe(3);
+    });
+
+    it('does not write when nothing could be added', async () => {
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([]);
+
+      await service.addItems(USER_ID, [{ productId: MILK.toHexString(), quantity: 1 }]);
+
+      expect(cart.save).not.toHaveBeenCalled();
+    });
+
+    it('costs the same whether one product is added or ten', async () => {
+      // §68: no N+1. The catalogue is read in batches — once to validate, once
+      // to build the returned cart — so the query count is a constant, not a
+      // function of how long the shopping list was.
+      async function queriesFor(count: number): Promise<number> {
+        const cart = cartDocument();
+        stubCart(cart);
+
+        const ids = Array.from({ length: count }, (_, index) =>
+          new Types.ObjectId(64_000 + index).toHexString(),
+        );
+
+        stubCatalogue(ids.map((id) => productView({ id, name: 'Product ' + id })));
+        productsService.findViewsByIds.mockClear();
+
+        await service.addItems(
+          USER_ID,
+          ids.map((productId) => ({ productId, quantity: 1 })),
+        );
+
+        expect(cart.save).toHaveBeenCalledTimes(1);
+        return productsService.findViewsByIds.mock.calls.length;
+      }
+
+      expect(await queriesFor(10)).toBe(await queriesFor(1));
+    });
+
+    it('scopes the cart to the authenticated shopper', async () => {
+      const cart = cartDocument();
+      stubCart(cart);
+      stubCatalogue([productView({ id: MILK.toHexString(), name: 'Milk' })]);
+
+      await service.addItems(USER_ID, [{ productId: MILK.toHexString(), quantity: 1 }]);
+
+      const [filter] = cartModel.findOneAndUpdate.mock.calls[0] as [Record<string, unknown>];
+      expect(filter.userId).toEqual(new Types.ObjectId(USER_ID));
+      expect(filter.storeId).toBe(STORE_ID);
     });
   });
 

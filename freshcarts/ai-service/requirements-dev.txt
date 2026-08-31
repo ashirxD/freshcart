@@ -1,0 +1,15 @@
+-r requirements.txt
+
+# Test tooling only.
+#   pytest   the runner
+#   httpx    required by FastAPI's TestClient to drive the ASGI app
+pytest==8.3.4
+httpx==0.28.1
+
+# Test-fixture rendering only. Pillow cannot shape Arabic script without a
+# libraqm build, so an Urdu grocery list rendered naively comes out as isolated
+# letters in the wrong order - which is not a fair test of the OCR pipeline.
+# These reshape and reorder the text so the fixture looks like real Urdu.
+# Not used by the service at runtime.
+arabic-reshaper==3.0.0
+python-bidi==0.6.6

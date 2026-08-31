@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -34,20 +34,34 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    },
-    [onClose],
-  );
+  /**
+   * `onClose` is almost always an inline arrow at the call site, so it is a new
+   * function on every render of the parent. Holding it in a ref keeps the
+   * effect below dependent on `open` alone.
+   *
+   * That matters more than it looks: with `onClose` in the dependency array the
+   * effect re-ran on every render and called `panelRef.focus()` each time —
+   * which pulled focus out of whatever field the shopper was typing in after
+   * every single keystroke, making any form inside a dialog unusable.
+   */
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
+
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current();
+    };
+
     document.addEventListener('keydown', handleKeyDown);
+
+    // Focus the panel once, on open — never again while it stays open.
     panelRef.current?.focus();
 
     return () => {
@@ -55,7 +69,7 @@ export function Modal({
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused.current?.focus();
     };
-  }, [open, handleKeyDown]);
+  }, [open]);
 
   if (!open || typeof document === 'undefined') return null;
 

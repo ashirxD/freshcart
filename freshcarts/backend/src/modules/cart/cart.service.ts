@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { StockStatus } from 'src/common/enums';
 import { ProductView, ProductsService } from 'src/modules/products';
 import { StoresService } from 'src/modules/stores';
@@ -15,6 +15,26 @@ import { Cart, CartDocument, MAX_CART_ITEMS } from './schemas';
 
 /** Why a line cannot be bought right now. `null` means it is fine. */
 export type CartItemIssue = 'UNAVAILABLE' | 'OUT_OF_STOCK' | 'QUANTITY_REDUCED';
+
+/** Why a bulk addition could not include a particular product. */
+export type CartAdditionFailureReason =
+  'PRODUCT_NOT_FOUND' | 'UNAVAILABLE' | 'OUT_OF_STOCK' | 'INSUFFICIENT_STOCK' | 'CART_FULL';
+
+export interface CartAdditionFailure {
+  productId: string;
+  /** Null when the product is not in the catalogue at all. */
+  productName: string | null;
+  requestedQuantity: number;
+  reason: CartAdditionFailureReason;
+  /** Present for INSUFFICIENT_STOCK and OUT_OF_STOCK. */
+  availableQuantity?: number;
+}
+
+export interface CartAdditionResult {
+  cart: CartView;
+  added: Array<{ productId: string; productName: string; quantity: number }>;
+  failed: CartAdditionFailure[];
+}
 
 export interface CartItemView {
   productId: string;
@@ -101,12 +121,146 @@ export class CartService {
 
     if (existing) {
       existing.quantity = requested;
+      // Re-agreeing to the line re-agrees to today's price.
+      existing.unitPriceSnapshot = product.sellingPrice;
     } else {
-      cart.items.push({ productId: product._id, quantity: dto.quantity, addedAt: new Date() });
+      cart.items.push({
+        productId: product._id,
+        quantity: dto.quantity,
+        unitPriceSnapshot: product.sellingPrice,
+        addedAt: new Date(),
+      });
     }
 
     await cart.save();
     return this.present(cart);
+  }
+
+  /**
+   * Adds several products at once, reporting per-product outcomes.
+   *
+   * This exists for the grocery-list scanner, which confirms a whole list in
+   * one action, and it is a method on THIS service rather than a second
+   * implementation somewhere else (§30). Every rule `addItem` applies applies
+   * here — the product must exist, be active, belong to this store, and have
+   * the stock to cover the resulting quantity — and quantities accumulate onto
+   * an existing line exactly as they do for a single add (§32).
+   *
+   * PARTIAL SUCCESS IS THE POINT (§31, §62)
+   *
+   * One sold-out item must not cost the shopper the other seven. So a line that
+   * cannot be added is reported, not thrown, and the caller shows both lists.
+   * The alternative — all or nothing — would mean a shopper photographing a
+   * ten-item list and getting nothing because the eggs ran out.
+   *
+   * Costs four queries regardless of how many products are added: one for the
+   * store, two for the batch catalogue read, one to save (§68).
+   */
+  async addItems(
+    userId: string,
+    requested: Array<{ productId: string; quantity: number }>,
+  ): Promise<CartAdditionResult> {
+    const storeId = await this.storesService.getActiveStoreObjectId();
+
+    // The same product listed twice in one request is one line with the
+    // quantities summed, which is what the cart would have done anyway had the
+    // two additions arrived separately.
+    const merged = new Map<string, number>();
+    for (const line of requested) {
+      merged.set(line.productId, (merged.get(line.productId) ?? 0) + line.quantity);
+    }
+
+    const productIds = [...merged.keys()].map((id) => new Types.ObjectId(id));
+
+    // Authoritative catalogue read. Prices, availability and stock come from
+    // here and only from here — never from whatever the client sent (§34, §61).
+    const views = await this.productsService.findViewsByIds(productIds, storeId);
+    const cart = await this.loadOrCreate(userId, storeId);
+
+    const added: CartAdditionResult['added'] = [];
+    const failed: CartAdditionFailure[] = [];
+
+    for (const [productId, quantity] of merged) {
+      const product = views.get(productId);
+
+      if (!product) {
+        // Scoped by storeId in the query above, so a product from another
+        // store is indistinguishable from one that does not exist (§55).
+        failed.push({
+          productId,
+          productName: null,
+          requestedQuantity: quantity,
+          reason: 'PRODUCT_NOT_FOUND',
+        });
+        continue;
+      }
+
+      if (!product.isActive) {
+        failed.push({
+          productId,
+          productName: product.name,
+          requestedQuantity: quantity,
+          reason: 'UNAVAILABLE',
+        });
+        continue;
+      }
+
+      const existing = cart.items.find((item) => item.productId.equals(product.id));
+      const resulting = (existing?.quantity ?? 0) + quantity;
+      const available = product.stock.quantity;
+
+      if (available <= 0) {
+        failed.push({
+          productId,
+          productName: product.name,
+          requestedQuantity: quantity,
+          reason: 'OUT_OF_STOCK',
+          availableQuantity: 0,
+        });
+        continue;
+      }
+
+      if (resulting > available) {
+        // §33: the shopper is told how many there actually are, so they can
+        // choose a smaller quantity rather than being told only "no".
+        failed.push({
+          productId,
+          productName: product.name,
+          requestedQuantity: quantity,
+          reason: 'INSUFFICIENT_STOCK',
+          availableQuantity: available,
+        });
+        continue;
+      }
+
+      if (!existing && cart.items.length >= MAX_CART_ITEMS) {
+        failed.push({
+          productId,
+          productName: product.name,
+          requestedQuantity: quantity,
+          reason: 'CART_FULL',
+        });
+        continue;
+      }
+
+      if (existing) {
+        existing.quantity = resulting;
+        existing.unitPriceSnapshot = product.sellingPrice;
+      } else {
+        cart.items.push({
+          productId: new Types.ObjectId(product.id),
+          quantity,
+          unitPriceSnapshot: product.sellingPrice,
+          addedAt: new Date(),
+        });
+      }
+
+      added.push({ productId, productName: product.name, quantity });
+    }
+
+    if (added.length > 0) await cart.save();
+
+    return { cart: await this.present(cart), added, failed };
   }
 
   async updateItem(userId: string, productId: string, dto: UpdateCartItemDto): Promise<CartView> {
@@ -120,6 +274,7 @@ export class CartService {
     this.assertStockCovers(product.name, dto.quantity, stock.quantity);
 
     item.quantity = dto.quantity;
+    item.unitPriceSnapshot = product.sellingPrice;
     await cart.save();
 
     return this.present(cart);
@@ -153,6 +308,70 @@ export class CartService {
       )
       .exec();
 
+    return this.present(cart);
+  }
+
+  // --- Checkout collaboration --------------------------------------------
+  // Checkout needs the cart as *stored* — product ids, quantities and the
+  // agreed prices — not the presented view, because it re-reads the catalogue
+  // itself and must not build an order on a second-hand copy of it.
+
+  /** The raw cart for this shopper at the active store, or null if they have none. */
+  async findOwnCart(userId: string, storeId: Types.ObjectId): Promise<CartDocument | null> {
+    return this.cartModel.findOne({ userId: new Types.ObjectId(userId), storeId }).exec();
+  }
+
+  /**
+   * Removes the lines that have just been turned into an order, leaving
+   * anything else untouched.
+   *
+   * FreshCarts checks out the whole cart, so in practice this empties it — but
+   * the operation is expressed as "remove exactly these products" rather than
+   * "clear", because a `$set: { items: [] }` would silently discard a line the
+   * shopper added in another tab while the order was being placed.
+   *
+   * Called only after the order is safely written (§13). It takes the session
+   * so it joins the order's unit of work where transactions are available.
+   */
+  async removePurchasedItems(
+    userId: string,
+    storeId: Types.ObjectId,
+    productIds: Types.ObjectId[],
+    session: ClientSession | null = null,
+  ): Promise<void> {
+    if (productIds.length === 0) return;
+
+    await this.cartModel
+      .updateOne(
+        { userId: new Types.ObjectId(userId), storeId },
+        { $pull: { items: { productId: { $in: productIds } } } },
+        { session: session ?? undefined },
+      )
+      .exec();
+  }
+
+  /**
+   * Records that the shopper has seen and accepted the current prices.
+   *
+   * This is the "yes, I have looked at the new prices" step §46 requires. It
+   * only ever copies live catalogue prices onto the agreed-price field — it
+   * cannot set an arbitrary price, and it changes nothing about what is charged.
+   */
+  async acceptCurrentPrices(userId: string): Promise<CartView> {
+    const storeId = await this.storesService.getActiveStoreObjectId();
+    const cart = await this.loadOwnCartOrFail(userId, storeId);
+
+    const views = await this.productsService.findViewsByIds(
+      cart.items.map((item) => item.productId),
+      storeId,
+    );
+
+    for (const item of cart.items) {
+      const product = views.get(item.productId.toString());
+      if (product) item.unitPriceSnapshot = product.sellingPrice;
+    }
+
+    await cart.save();
     return this.present(cart);
   }
 

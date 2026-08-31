@@ -1,13 +1,20 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, PipelineStage, Types } from 'mongoose';
+import { ClientSession, FilterQuery, Model, PipelineStage, Types } from 'mongoose';
 import { PaginatedResult, paginated } from 'src/common/dto';
 import { StockStatus, deriveStockStatus } from 'src/common/enums';
 import { escapeRegExp } from 'src/common/utils';
 import { PRODUCT_COLLECTION } from 'src/modules/products/schemas';
 import { StoresService } from 'src/modules/stores';
+import { AuthenticatedUser } from 'src/common/interfaces';
 import { QueryInventoryDto, UpdateInventoryDto } from './dto';
-import { Inventory, InventoryDocument } from './schemas';
+import {
+  Inventory,
+  InventoryAdjustment,
+  InventoryAdjustmentDocument,
+  InventoryDocument,
+  StockChangeReason,
+} from './schemas';
 
 /** Stock as the rest of the application consumes it: quantity plus derived state. */
 export interface StockView {
@@ -34,8 +41,22 @@ export class InventoryService {
 
   constructor(
     @InjectModel(Inventory.name) private readonly inventoryModel: Model<InventoryDocument>,
+    @InjectModel(InventoryAdjustment.name)
+    private readonly adjustmentModel: Model<InventoryAdjustmentDocument>,
     private readonly storesService: StoresService,
   ) {}
+
+  /**
+   * Which store a read or write applies to.
+   *
+   * An explicit scope always wins. It is supplied by store-operations callers,
+   * which resolve it from the authenticated principal (see `store-scope.ts`) —
+   * never from a request. Omitting it falls back to the configured active store,
+   * which is what the admin surfaces and the single-store catalogue do.
+   */
+  private async resolveStoreId(storeId?: Types.ObjectId): Promise<Types.ObjectId> {
+    return storeId ?? (await this.storesService.getActiveStoreObjectId());
+  }
 
   /** Turns a raw stock row into the shape every caller reads. */
   static toStockView(source: { quantity: number; lowStockThreshold: number } | null): StockView {
@@ -113,8 +134,11 @@ export class InventoryService {
    * through ProductsService, which would make inventory depend on the module
    * that depends on it.
    */
-  async list(query: QueryInventoryDto): Promise<PaginatedResult<InventoryRow>> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
+  async list(
+    query: QueryInventoryDto,
+    scopedStoreId?: Types.ObjectId,
+  ): Promise<PaginatedResult<InventoryRow>> {
+    const storeId = await this.resolveStoreId(scopedStoreId);
 
     const pipeline: PipelineStage[] = [
       { $match: { storeId } },
@@ -135,7 +159,28 @@ export class InventoryService {
       pipeline.push({ $match: { $or: [{ 'product.name': pattern }, { 'product.sku': pattern }] } });
     }
 
-    if (query.outOfStockOnly) {
+    // Mirrors `deriveStockStatus` exactly, in aggregation form. The two must
+    // agree or a filtered list would disagree with the badge on its own rows:
+    //   quantity <= 0                     -> OUT_OF_STOCK
+    //   quantity <= lowStockThreshold      -> LOW_STOCK
+    //   otherwise                          -> IN_STOCK
+    if (query.status === StockStatus.OUT_OF_STOCK) {
+      pipeline.push({ $match: { quantity: { $lte: 0 } } });
+    } else if (query.status === StockStatus.LOW_STOCK) {
+      pipeline.push({
+        $match: {
+          quantity: { $gt: 0 },
+          $expr: { $lte: ['$quantity', '$lowStockThreshold'] },
+        },
+      });
+    } else if (query.status === StockStatus.IN_STOCK) {
+      pipeline.push({
+        $match: {
+          quantity: { $gt: 0 },
+          $expr: { $gt: ['$quantity', '$lowStockThreshold'] },
+        },
+      });
+    } else if (query.outOfStockOnly) {
       pipeline.push({ $match: { quantity: { $lte: 0 } } });
     } else if (query.lowStockOnly) {
       pipeline.push({ $match: { $expr: { $lte: ['$quantity', '$lowStockThreshold'] } } });
@@ -187,8 +232,11 @@ export class InventoryService {
     });
   }
 
-  async findForProduct(productId: string): Promise<StockView & { productId: string }> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
+  async findForProduct(
+    productId: string,
+    scopedStoreId?: Types.ObjectId,
+  ): Promise<StockView & { productId: string }> {
+    const storeId = await this.resolveStoreId(scopedStoreId);
     const document = await this.inventoryModel
       .findOne({ productId: new Types.ObjectId(productId), storeId })
       .lean()
@@ -210,6 +258,7 @@ export class InventoryService {
   async update(
     productId: string,
     dto: UpdateInventoryDto,
+    options: { storeId?: Types.ObjectId; actor?: AuthenticatedUser } = {},
   ): Promise<StockView & { productId: string }> {
     if (dto.quantity !== undefined && dto.adjustBy !== undefined) {
       throw new BadRequestException(
@@ -225,11 +274,18 @@ export class InventoryService {
       throw new BadRequestException('Nothing to update');
     }
 
-    const storeId = await this.storesService.getActiveStoreObjectId();
+    const storeId = await this.resolveStoreId(options.storeId);
     const filter: FilterQuery<InventoryDocument> = {
       productId: new Types.ObjectId(productId),
       storeId,
     };
+
+    // Read for the audit trail only. The write below never trusts it: the
+    // adjustment path keeps its guard in the query filter, and the absolute path
+    // is last-write-wins by definition. A stale reading here can therefore make
+    // the recorded `previousQuantity` slightly historical under concurrency, but
+    // it can never make the stock level itself wrong.
+    const before = await this.inventoryModel.findOne(filter).select('quantity').lean().exec();
 
     let updated: InventoryDocument | null;
 
@@ -279,7 +335,203 @@ export class InventoryService {
         (dto.reason ? ' (' + dto.reason + ')' : ''),
     );
 
+    // Recorded only when the quantity actually moved and a real actor did it.
+    // A threshold-only edit is not a stock movement, and an unattributed row
+    // would be worse than no row.
+    if (options.actor && before && before.quantity !== updated.quantity) {
+      await this.recordAdjustment({
+        productId: new Types.ObjectId(productId),
+        storeId,
+        previousQuantity: before.quantity,
+        newQuantity: updated.quantity,
+        reason: dto.changeReason ?? StockChangeReason.CORRECTION,
+        note: dto.reason?.trim() || null,
+        actor: options.actor,
+      });
+    }
+
     return { productId, ...InventoryService.toStockView(updated) };
+  }
+
+  /**
+   * Writes the audit row.
+   *
+   * Failure is logged, never raised. The stock change has already been committed
+   * and is correct; losing its audit row is a bookkeeping loss, and turning that
+   * into a 500 would tell the manager their update failed when it did not — and
+   * they would very likely apply it a second time.
+   */
+  private async recordAdjustment(entry: {
+    productId: Types.ObjectId;
+    storeId: Types.ObjectId;
+    previousQuantity: number;
+    newQuantity: number;
+    reason: StockChangeReason;
+    note: string | null;
+    actor: AuthenticatedUser;
+  }): Promise<void> {
+    try {
+      await this.adjustmentModel.create({
+        productId: entry.productId,
+        storeId: entry.storeId,
+        previousQuantity: entry.previousQuantity,
+        newQuantity: entry.newQuantity,
+        delta: entry.newQuantity - entry.previousQuantity,
+        reason: entry.reason,
+        note: entry.note,
+        changedByUserId: new Types.ObjectId(entry.actor.userId),
+        changedByRole: entry.actor.role,
+      });
+    } catch (error) {
+      this.logger.error(
+        'Stock changed but the audit row could not be written for product ' +
+          entry.productId.toString(),
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /** The recent stock movements for one product, newest first. */
+  async recentAdjustments(
+    productId: string,
+    storeId: Types.ObjectId,
+    limit = 10,
+  ): Promise<
+    Array<{
+      previousQuantity: number;
+      newQuantity: number;
+      delta: number;
+      reason: StockChangeReason;
+      note: string | null;
+      changedByRole: string;
+      changedAt: Date;
+    }>
+  > {
+    const rows = await this.adjustmentModel
+      .find({ productId: new Types.ObjectId(productId), storeId })
+      .sort({ changedAt: -1 })
+      .limit(Math.min(limit, 50))
+      .select('previousQuantity newQuantity delta reason note changedByRole changedAt')
+      .lean()
+      .exec();
+
+    return rows.map((row) => ({
+      previousQuantity: row.previousQuantity,
+      newQuantity: row.newQuantity,
+      delta: row.delta,
+      reason: row.reason,
+      note: row.note,
+      changedByRole: row.changedByRole,
+      changedAt: row.changedAt,
+    }));
+  }
+
+  /**
+   * How many products sit in each availability band, for the operations
+   * dashboard.
+   *
+   * One aggregation over the store's stock rows, bucketed server-side. Counting
+   * this by paging the inventory list — or worse, by three separate count
+   * queries — is the kind of dashboard cost that grows with the catalogue for no
+   * reason. The bucket boundaries restate `deriveStockStatus` in aggregation
+   * form; the spec's §35 alert counts and the badge on each row must agree.
+   */
+  async countByStatus(storeId: Types.ObjectId): Promise<Record<StockStatus, number>> {
+    const rows = await this.inventoryModel
+      .aggregate<{ _id: StockStatus; count: number }>([
+        { $match: { storeId } },
+        {
+          $group: {
+            _id: {
+              $switch: {
+                branches: [
+                  { case: { $lte: ['$quantity', 0] }, then: StockStatus.OUT_OF_STOCK },
+                  {
+                    case: { $lte: ['$quantity', '$lowStockThreshold'] },
+                    then: StockStatus.LOW_STOCK,
+                  },
+                ],
+                default: StockStatus.IN_STOCK,
+              },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+
+    const counts: Record<StockStatus, number> = {
+      [StockStatus.IN_STOCK]: 0,
+      [StockStatus.LOW_STOCK]: 0,
+      [StockStatus.OUT_OF_STOCK]: 0,
+    };
+
+    for (const row of rows) counts[row._id] = row.count;
+
+    return counts;
+  }
+
+  // --- Order fulfilment ---------------------------------------------------
+
+  /**
+   * INVENTORY CONCURRENCY
+   * =====================
+   *
+   * Two shoppers reach for the last packet at the same moment. The naive
+   * sequence — read 1, see 1 >= 1, write 0 — lets both succeed, because both
+   * read before either wrote. That is not a rare race: it is the *expected*
+   * outcome under any real load, and it oversells.
+   *
+   * The fix is to never read. The stock check lives inside the update filter,
+   * so MongoDB evaluates the condition and applies the decrement as one atomic
+   * document operation:
+   *
+   *     { productId, storeId, quantity: { $gte: n } }  ->  { $inc: { quantity: -n } }
+   *
+   * Exactly one of the two concurrent writers matches that filter. The other
+   * matches nothing, gets `null` back, and is told the truth — there is not
+   * enough stock. No lock, no retry, no version field, and correct across
+   * however many API instances are running.
+   *
+   * Returns false rather than throwing, because the caller is decrementing a
+   * basket: it needs to know *which* line failed so it can name the product and
+   * undo the lines it already took.
+   */
+  async tryReserve(
+    productId: Types.ObjectId,
+    storeId: Types.ObjectId,
+    quantity: number,
+    session: ClientSession | null = null,
+  ): Promise<boolean> {
+    const result = await this.inventoryModel
+      .findOneAndUpdate(
+        // The guard IS the concurrency control. Never hoist it into an `if`.
+        { productId, storeId, quantity: { $gte: quantity } },
+        { $inc: { quantity: -quantity } },
+        { new: true, session: session ?? undefined },
+      )
+      .exec();
+
+    return result !== null;
+  }
+
+  /**
+   * Puts stock back — for a cancelled order, or to undo a partially applied
+   * reservation when a later line in the same basket could not be taken.
+   *
+   * Unconditional: there is no filter that could fail, because returning stock
+   * must always succeed. A failure here would leave units that exist on the
+   * shelf but not in the system.
+   */
+  async release(
+    productId: Types.ObjectId,
+    storeId: Types.ObjectId,
+    quantity: number,
+    session: ClientSession | null = null,
+  ): Promise<void> {
+    await this.inventoryModel
+      .updateOne({ productId, storeId }, { $inc: { quantity } }, { session: session ?? undefined })
+      .exec();
   }
 
   /** Removes the stock row for a product that is being deleted. */

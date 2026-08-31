@@ -5,6 +5,7 @@ a deliberate desktop adaptation, backed by a role-aware API.
 
 - `backend/` — NestJS + MongoDB (Mongoose) API
 - `frontend/` — Next.js App Router customer web app
+- `ai-service/` — Python + FastAPI OCR service behind "Scan Grocery List"
 
 Roles: `CUSTOMER`, `STORE_MANAGER`, `ADMIN` — one API and one RBAC system for all three.
 
@@ -17,6 +18,11 @@ Roles: `CUSTOMER`, `STORE_MANAGER`, `ADMIN` — one API and one RBAC system for 
 | Node.js | 20+ (developed on 22.12)         |
 | npm     | 10+                              |
 | MongoDB | 6+ running locally, or an Atlas cluster |
+| Python  | 3.11+ — only for `ai-service/` |
+| Tesseract | 5+ — only for `ai-service/`; see its README |
+
+Python and Tesseract are optional. Without them the grocery-list scanner is
+unavailable and hides itself; everything else works unchanged.
 
 ## Database setup
 
@@ -91,11 +97,55 @@ npm run dev
 ```
 
 Runs on `http://localhost:3000`. Other scripts: `npm run build`, `npm run typecheck`,
-`npm run lint`.
+`npm run lint`, `npm test`.
 
 Customer routes: `/`, `/categories`, `/categories/[slug]`, `/products/[slug]`, `/search`,
-`/cart`, `/favorites`. The back office lives under `/admin` (products, categories,
-inventory) and requires an ADMIN account.
+`/cart`, `/checkout`, `/checkout/confirmation/[id]`, `/orders`, `/orders/[id]`,
+`/addresses`, `/favorites`, `/scan`. The back office lives under `/admin` (products,
+categories, inventory) and requires an ADMIN account.
+
+## AI service
+
+```bash
+cd ai-service
+python -m venv .venv && .venv/Scripts/activate
+pip install -r requirements-dev.txt
+cp .env.example .env
+python scripts/fetch_tessdata.py          # eng + urd language models
+uvicorn app.main:app --reload --port 8000
+```
+
+Reads a photo of a grocery list and returns structured items. It never touches
+MongoDB, never sees a price, and is not reachable from the browser — the NestJS
+API is its only caller. See `ai-service/README.md` for the contract and for
+installing Tesseract.
+
+Point the API at it with `AI_SERVICE_URL`. When it is down, `GET /ocr/availability`
+returns `false`, the scanner hides itself, and the rest of FreshCarts is unaffected.
+
+## Deployment requirements
+
+Two things the purchase flow needs beyond a database and a port.
+
+**MongoDB transactions.** Order creation writes to inventory, orders and payments
+together. On a replica set (or Atlas) that runs as a real transaction. On a standalone
+`mongod` it falls back to a compensating-transaction saga: each write is individually
+atomic and is undone in reverse if a later step fails. Support is probed at runtime, not
+configured. The fallback's one weakness is a process crash between a write and its
+compensation, which over-counts stock rather than overselling it — so **production
+should run a replica set**. See `backend/src/common/database/transaction.runner.ts`.
+
+**The AI service, on a private address.** It performs no authentication of its own —
+it trusts that only the FreshCarts API can reach it — so exposing it publicly would
+expose an unauthenticated OCR endpoint. `AI_SERVICE_URL` must point at a private
+address in production, and it needs the `urd` language model (see
+`ai-service/scripts/fetch_tessdata.py`) or Urdu lists come back as noise.
+
+**A routing provider.** Delivery fees are charged against a measured road distance.
+`ROUTING_PROVIDER=estimate` multiplies a straight line by a constant — fine for
+development, dishonest on a receipt — so the application **refuses to boot in production**
+with it set. Production needs `ROUTING_PROVIDER=osrm` and `ROUTING_OSRM_BASE_URL`
+pointing at an OSRM-compatible service (self-hostable; no API key).
 
 ## Verifying it works
 
@@ -132,3 +182,30 @@ curl -i http://localhost:4000/api/v1/users -H "Authorization: Bearer <access-tok
 - Everything in the catalogue is scoped by `storeId`, and the active store is resolved
   from `DEFAULT_STORE_SLUG` or the oldest active store — never a hardcoded id.
 - Collection endpoints return `{ items, pagination: { page, limit, total, totalPages } }`.
+- Business failures carry a stable `code` (see `ErrorCode`) alongside a message written
+  for a shopper. Clients branch on the code and display the message; the message may be
+  reworded freely, the code may not.
+- Orders snapshot everything they display — item names, prices, the delivery address, the
+  measured distance. A historical order never reads through to a live Product, Address or
+  pricing rule, so it stays correct when those change.
+- Order status moves only through `OrdersService.changeStatus`, which validates the
+  transition against the state machine for that order's fulfilment method. No endpoint
+  accepts a status from a client.
+- Stock is taken with a single guarded `$inc` whose condition lives in the update filter.
+  Never read stock, check it, then write it — that races and oversells.
+- Order creation requires an `Idempotency-Key` header. A retry with the same key returns
+  the original order instead of creating a second one.
+- The AI service returns intelligence, never decisions. Product identity, price, stock and
+  the cart belong to NestJS; the AI tier contributes normalisation ("doodh" is milk) and
+  has no way to express a product id or a price at all.
+- Every AI response is validated against a schema before it is believed. A malformed one
+  is treated as a service failure, not as data.
+- Uploaded images are held in memory and never written to disk — no temporary file to
+  leak, no path to traverse. File type is decided by the magic bytes, never by the
+  filename or the declared Content-Type.
+- OCR confidence ("how well was this line read?") and match confidence ("is this the right
+  product?") are separate measurements and are never conflated. An unreported confidence
+  stays `null`; it is never rendered as a number nobody measured.
+- A scan changes nothing. The shopper reviews the result and confirms, and the confirm
+  request carries only product ids and quantities — everything else is re-read from the
+  catalogue.

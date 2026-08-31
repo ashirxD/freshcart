@@ -9,11 +9,20 @@ import {
 import type { Request, Response } from 'express';
 import { MongoServerError } from 'mongodb';
 import { Error as MongooseError } from 'mongoose';
+import type { ErrorCode } from 'src/common/errors';
 
 interface ErrorResponseBody {
   statusCode: number;
   message: string | string[];
   error: string;
+  /**
+   * Stable business error code, present only for failures the client is
+   * expected to branch on (see ErrorCode). Framework errors carry HTTP
+   * semantics that already say enough, so they have no code.
+   */
+  code?: ErrorCode;
+  /** Structured context for the code — the changed lines, the stock left. */
+  details?: Record<string, unknown>;
   path: string;
   timestamp: string;
 }
@@ -31,7 +40,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const { status, message, error } = this.resolve(exception);
+    const { status, message, error, code, details } = this.resolve(exception);
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
@@ -44,6 +53,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message,
       error,
+      ...(code ? { code } : {}),
+      ...(details ? { details } : {}),
       path: request.url,
       timestamp: new Date().toISOString(),
     };
@@ -55,6 +66,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     status: number;
     message: string | string[];
     error: string;
+    code?: ErrorCode;
+    details?: Record<string, unknown>;
   } {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -64,11 +77,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return { status, message: payload, error: exception.name };
       }
 
-      const record = payload as { message?: string | string[]; error?: string };
+      const record = payload as {
+        message?: string | string[];
+        error?: string;
+        code?: ErrorCode;
+        details?: Record<string, unknown>;
+      };
+
       return {
         status,
         message: record.message ?? exception.message,
         error: record.error ?? exception.name,
+        code: record.code,
+        details: record.details,
       };
     }
 

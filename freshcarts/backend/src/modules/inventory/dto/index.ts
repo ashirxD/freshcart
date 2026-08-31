@@ -1,6 +1,17 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { PaginationQueryDto } from 'src/common/dto';
+import { StockStatus } from 'src/common/enums';
+import { StockChangeReason } from '../schemas';
 
 /**
  * Stock adjustment. Exactly one of `quantity` (absolute) or `adjustBy`
@@ -35,6 +46,15 @@ export class UpdateInventoryDto {
   @IsString()
   @MaxLength(120)
   reason?: string;
+
+  /**
+   * Why the stock moved, from a controlled list. Recorded on the audit row so
+   * "how much did we write off as damaged?" is answerable; free text alone
+   * would not be.
+   */
+  @IsOptional()
+  @IsEnum(StockChangeReason, { message: 'changeReason must be a supported stock reason' })
+  changeReason?: StockChangeReason;
 }
 
 const toBoolean = ({ value }: { value: unknown }): unknown => {
@@ -50,6 +70,14 @@ export class QueryInventoryDto extends PaginationQueryDto {
   @MaxLength(80)
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   search?: string;
+
+  /**
+   * The availability band to show. Preferred over the two booleans below, which
+   * predate it and are kept so the existing admin screen keeps working.
+   */
+  @IsOptional()
+  @IsEnum(StockStatus, { message: 'status must be IN_STOCK, LOW_STOCK or OUT_OF_STOCK' })
+  status?: StockStatus;
 
   /** Narrows to items at or below their low-stock threshold. */
   @IsOptional()

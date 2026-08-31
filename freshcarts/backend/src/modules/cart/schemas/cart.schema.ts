@@ -14,10 +14,10 @@ export const MAX_CART_ITEMS = 100;
 /**
  * A line in the cart.
  *
- * It stores a product reference and a quantity — and nothing else. No name, no
- * price, no image: every one of those is re-read from the catalogue when the
- * cart is served, so a stale copy can never be shown or charged. The client
- * cannot submit them either; there is nowhere for them to land.
+ * It stores a product reference, a quantity, and the price the shopper was
+ * shown when they added it — nothing else. No name, no image: those are re-read
+ * from the catalogue whenever the cart is served, so a stale copy can never be
+ * displayed. The client cannot submit any of it; there is nowhere for it to land.
  */
 @Schema({ _id: false, timestamps: { createdAt: 'addedAt', updatedAt: false } })
 export class CartItem {
@@ -26,6 +26,24 @@ export class CartItem {
 
   @Prop({ type: Number, required: true, min: 1, max: MAX_CART_ITEM_QUANTITY })
   quantity: number;
+
+  /**
+   * The unit price at the moment this line was added or last changed.
+   *
+   * FOR CHANGE DETECTION ONLY. Nothing prices, charges or displays from this
+   * field — the catalogue remains the sole authority for what anything costs,
+   * and the cart subtotal is still computed from live prices on every read.
+   *
+   * It exists because "your milk went from Rs. 320 to Rs. 340" is impossible to
+   * say without a record of what the shopper agreed to, and silently charging
+   * the new price is precisely what must not happen. Checkout compares this
+   * against the live price, refuses to proceed while they differ, and only
+   * continues once the shopper has seen the change and accepted it.
+   *
+   * Null on lines added before this field existed: unknown, so no claim is made.
+   */
+  @Prop({ type: Number, default: null, min: 0 })
+  unitPriceSnapshot: number | null;
 
   addedAt: Date;
 }

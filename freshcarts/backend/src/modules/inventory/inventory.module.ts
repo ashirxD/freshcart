@@ -3,7 +3,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { StoresModule } from 'src/modules/stores';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
-import { Inventory, InventorySchema } from './schemas';
+import {
+  Inventory,
+  InventoryAdjustment,
+  InventoryAdjustmentSchema,
+  InventorySchema,
+} from './schemas';
 
 /**
  * Depends on nothing in the catalogue, so products, cart and favourites can all
@@ -12,7 +17,10 @@ import { Inventory, InventorySchema } from './schemas';
  */
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Inventory.name, schema: InventorySchema }]),
+    MongooseModule.forFeature([
+      { name: Inventory.name, schema: InventorySchema },
+      { name: InventoryAdjustment.name, schema: InventoryAdjustmentSchema },
+    ]),
     StoresModule,
   ],
   controllers: [InventoryController],
