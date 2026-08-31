@@ -63,7 +63,11 @@ export interface StoreOrderAction {
  * offered to staff (`DELIVERED` reached automatically, for instance).
  */
 const ACTIONS: Partial<
-  Record<OrderStatus, Omit<StoreOrderAction, 'status'> | ((method: FulfillmentMethod) => Omit<StoreOrderAction, 'status'>)>
+  Record<
+    OrderStatus,
+    | Omit<StoreOrderAction, 'status'>
+    | ((method: FulfillmentMethod) => Omit<StoreOrderAction, 'status'>)
+  >
 > = {
   [OrderStatus.CONFIRMED]: {
     action: 'CONFIRM',
@@ -135,15 +139,23 @@ const ACTIONS: Partial<
 /**
  * Statuses staff may drive an order to, per status.
  *
- * `REJECTED` is the accept/reject decision and belongs to PENDING alone — once a
- * store has accepted an order, backing out is a cancellation, which reads
- * differently to the customer and is recorded differently.
+ * The machine permits more edges than staff should be *offered*, and the
+ * difference is about not presenting the same decision twice:
+ *
+ * `REJECTED` belongs to PENDING alone. It is the accept-or-not decision.
+ *
+ * `CANCELLED` belongs to everything after PENDING. Once a store has accepted an
+ * order, backing out is a cancellation — it reads differently to the shopper and
+ * is recorded differently. Offering both on a pending order would put two
+ * buttons on screen for one choice, which §13 and §45 are explicitly about
+ * avoiding.
  *
  * `FAILED` is offered only from the two hand-over states, where "it did not work
  * out" has no other honest expression: nobody was home, nobody collected it.
  */
 function staffPermits(from: OrderStatus, to: OrderStatus): boolean {
   if (to === OrderStatus.REJECTED) return from === OrderStatus.PENDING;
+  if (to === OrderStatus.CANCELLED) return from !== OrderStatus.PENDING;
 
   if (to === OrderStatus.FAILED) {
     return from === OrderStatus.OUT_FOR_DELIVERY || from === OrderStatus.READY_FOR_PICKUP;
@@ -308,10 +320,7 @@ export interface StoreOrderDetailView extends StoreOrderSummaryView {
  * is not always the account holder. A pickup order has no such snapshot, so the
  * account is the only source, and the service supplies it.
  */
-function customerFor(
-  order: LeanOrder,
-  account: StoreCustomerView | null,
-): StoreCustomerView {
+function customerFor(order: LeanOrder, account: StoreCustomerView | null): StoreCustomerView {
   if (order.deliveryAddress) {
     return { name: order.deliveryAddress.recipientName, phone: order.deliveryAddress.phone };
   }

@@ -25,14 +25,16 @@ import {
   SeedProduct,
   buildSeedCategories,
   buildSeedProducts,
+  buildSeedSecondaryStore,
   buildSeedStore,
 } from './data/catalog.seed';
 import { buildSeedDeliveryPricingRules } from './data/delivery.seed';
-import { buildSeedUsers } from './data/users.seed';
+import { buildSeedStoreManagers, buildSeedUsers } from './data/users.seed';
 
 export interface SeedSummary {
   users: { created: number; skipped: number };
   stores: { created: number; skipped: number };
+  storeManagers: { created: number; skipped: number };
   categories: { created: number; skipped: number };
   products: { created: number; skipped: number };
   deliveryPricing: { created: number; skipped: number };
@@ -75,12 +77,15 @@ export class SeedService {
     if (options.fresh) await this.wipe();
 
     const users = await this.seedUsers();
-    const stores = await this.seedStore();
+    const stores = await this.seedStores();
+    // Store staff come after the stores: the User schema refuses to save a
+    // STORE_MANAGER that is not bound to one.
+    const storeManagers = await this.seedStoreManagers();
     const categories = await this.seedCategories();
     const products = await this.seedProducts();
     const deliveryPricing = await this.seedDeliveryPricing();
 
-    return { users, stores, categories, products, deliveryPricing };
+    return { users, stores, storeManagers, categories, products, deliveryPricing };
   }
 
   private async wipe(): Promise<void> {
@@ -121,17 +126,64 @@ export class SeedService {
     return { created, skipped };
   }
 
-  private async seedStore(): Promise<{ created: number; skipped: number }> {
-    const definition = buildSeedStore();
+  /**
+   * The primary store, and a second one that carries no catalogue.
+   *
+   * The second exists so store isolation is demonstrable by hand rather than
+   * only in the test suite — see `buildSeedSecondaryStore`. Created in order, so
+   * the primary remains the "oldest active store" that catalogue reads fall back
+   * to when DEFAULT_STORE_SLUG is unset.
+   */
+  private async seedStores(): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
 
-    if (await this.storeModel.exists({ slug: definition.slug })) {
-      return { created: 0, skipped: 1 };
+    for (const definition of [buildSeedStore(), buildSeedSecondaryStore()]) {
+      if (await this.storeModel.exists({ slug: definition.slug })) {
+        skipped += 1;
+        continue;
+      }
+
+      const store = await this.storesService.create(definition);
+      created += 1;
+      this.logger.log('Created store ' + store.slug);
     }
 
-    const store = await this.storesService.create(definition);
-    this.logger.log('Created store ' + store.slug);
+    return { created, skipped };
+  }
 
-    return { created: 1, skipped: 0 };
+  /** Store staff, each bound to one store. */
+  private async seedStoreManagers(): Promise<{ created: number; skipped: number }> {
+    const [primary, secondary] = await Promise.all([
+      this.storeModel.findOne({ slug: buildSeedStore().slug }).select('_id').lean().exec(),
+      this.storeModel.findOne({ slug: buildSeedSecondaryStore().slug }).select('_id').lean().exec(),
+    ]);
+
+    if (!primary || !secondary) {
+      this.logger.warn('Skipping store managers: the seeded stores are not present');
+      return { created: 0, skipped: 0 };
+    }
+
+    let created = 0;
+    let skipped = 0;
+
+    const managers = buildSeedStoreManagers({
+      primaryStoreId: primary._id.toString(),
+      secondaryStoreId: secondary._id.toString(),
+    });
+
+    for (const manager of managers) {
+      if (await this.usersService.findByPhone(manager.phone)) {
+        skipped += 1;
+        continue;
+      }
+
+      await this.usersService.create(manager);
+      created += 1;
+      this.logger.log('Created STORE_MANAGER ' + manager.phone);
+    }
+
+    return { created, skipped };
   }
 
   private async seedCategories(): Promise<{ created: number; skipped: number }> {

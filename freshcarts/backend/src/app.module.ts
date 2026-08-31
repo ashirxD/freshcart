@@ -21,7 +21,9 @@ import { InventoryModule } from 'src/modules/inventory';
 import { OrdersModule } from 'src/modules/orders';
 import { PaymentsModule } from 'src/modules/payments';
 import { ProductsModule } from 'src/modules/products';
+import { StoreManagerModule } from 'src/modules/store-manager';
 import { StoresModule } from 'src/modules/stores';
+import { SubstitutionsModule } from 'src/modules/substitutions';
 import { UsersModule } from 'src/modules/users/users.module';
 
 @Module({
@@ -66,6 +68,11 @@ import { UsersModule } from 'src/modules/users/users.module';
     // and owns no data of its own; when the AI service is down, only this
     // degrades and the rest of FreshCarts is unaffected.
     GroceryScanModule,
+    // Store operations. Sits at the top of the graph and owns no schema of its
+    // own beyond the substitution record: every read and write is delegated to
+    // the domain service that already owns it, scoped to the manager's store.
+    SubstitutionsModule,
+    StoreManagerModule,
   ],
   providers: [
     // Order matters: rate limit first, then authenticate, then authorise.

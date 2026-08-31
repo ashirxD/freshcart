@@ -37,6 +37,43 @@ export function buildSeedStore(): CreateStoreDto {
   };
 }
 
+/**
+ * A second store, with no catalogue of its own.
+ *
+ * It exists so that store isolation is something a developer can *see* rather
+ * than only read in a test: sign in as the manager bound to this store and the
+ * order queue is empty, because those orders belong to Gulberg. Without a second
+ * store, every cross-store assertion in the suite is testing a condition that
+ * cannot occur in the seeded data.
+ *
+ * The customer catalogue never touches it — catalogue reads resolve the single
+ * active store from `DEFAULT_STORE_SLUG`, which names Gulberg.
+ */
+export function buildSeedSecondaryStore(): CreateStoreDto {
+  return {
+    name: 'FreshCarts Johar Town',
+    slug: 'freshcarts-johar-town',
+    description: 'A second branch, used to verify that store data stays separated.',
+    address: {
+      line1: 'Shop 4, Block G1',
+      area: 'Johar Town',
+      city: 'Lahore',
+      province: 'Punjab',
+      postalCode: '54600',
+    },
+    location: { latitude: 31.4697, longitude: 74.2728 },
+    phone: '+923004567891',
+    email: 'johartown@freshcarts.local',
+    openingHours: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
+      day,
+      opensAt: '09:00',
+      closesAt: '22:00',
+      isClosed: false,
+    })),
+    isActive: true,
+  };
+}
+
 export interface SeedCategory {
   name: string;
   slug: string;

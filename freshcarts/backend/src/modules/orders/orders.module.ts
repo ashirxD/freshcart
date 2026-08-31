@@ -5,7 +5,9 @@ import { CartModule } from 'src/modules/cart/cart.module';
 import { CheckoutModule } from 'src/modules/checkout';
 import { InventoryModule } from 'src/modules/inventory';
 import { PaymentsModule } from 'src/modules/payments';
+import { Product, ProductSchema } from 'src/modules/products/schemas';
 import { StoresModule } from 'src/modules/stores';
+import { User, UserSchema } from 'src/modules/users/schemas';
 import { OrderNumberService } from './order-number.service';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
@@ -24,6 +26,10 @@ import { Order, OrderCounter, OrderCounterSchema, OrderSchema } from './schemas'
     MongooseModule.forFeature([
       { name: Order.name, schema: OrderSchema },
       { name: OrderCounter.name, schema: OrderCounterSchema },
+      // Read-only, projected to name + phone. See OrdersService for why.
+      { name: User.name, schema: UserSchema },
+      // Read-only, for the substituted line's catalogue snapshot.
+      { name: Product.name, schema: ProductSchema },
     ]),
     CheckoutModule,
     InventoryModule,

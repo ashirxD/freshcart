@@ -77,10 +77,17 @@ refuses to run when `NODE_ENV=production`.
 
 Demo accounts (from `.env`):
 
-| Role     | Phone           | Password        |
-| -------- | --------------- | --------------- |
-| ADMIN    | `+923001234567` | `Admin@12345`   |
-| CUSTOMER | `+923001234569` | `Customer@12345`|
+| Role                            | Phone           | Password         |
+| ------------------------------- | --------------- | ---------------- |
+| ADMIN                           | `+923001234567` | `Admin@12345`    |
+| CUSTOMER                        | `+923001234569` | `Customer@12345` |
+| STORE_MANAGER (Gulberg)         | `+923001234568` | `Manager@12345`  |
+| STORE_MANAGER (Johar Town)      | `+923001234571` | `Manager@12345`  |
+
+Two stores are seeded, each with its own manager. Only Gulberg has a catalogue —
+the second exists so store isolation is something you can check by signing in
+rather than only by reading a test: as the Johar Town manager, the order queue is
+empty because those orders belong to Gulberg.
 
 The seed deliberately includes an out-of-stock product, a low-stock product and a
 deactivated product, so every state the UI must handle is reachable immediately.
@@ -182,6 +189,15 @@ curl -i http://localhost:4000/api/v1/users -H "Authorization: Bearer <access-tok
 - Everything in the catalogue is scoped by `storeId`, and the active store is resolved
   from `DEFAULT_STORE_SLUG` or the oldest active store — never a hardcoded id.
 - Collection endpoints return `{ items, pagination: { page, limit, total, totalPages } }`.
+- Order status moves only through `OrdersService.changeStatus`, which validates every
+  transition against the state machine for that order's fulfilment method. No endpoint
+  anywhere assigns a status directly.
+- A store manager's scope comes from `AuthenticatedUser.storeId` (re-read from the
+  database on every request), never from a request. Store-scoped services take the store
+  as an explicit argument that lands **in the query filter**, so cross-store access is
+  structurally impossible rather than checked afterwards.
+- A substitution never increases what a customer pays. The accepted line keeps the
+  agreed total and the store absorbs any difference; a dearer replacement is refused.
 - Business failures carry a stable `code` (see `ErrorCode`) alongside a message written
   for a shopper. Clients branch on the code and display the message; the message may be
   reworded freely, the code may not.

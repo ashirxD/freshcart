@@ -30,7 +30,9 @@ describe('InventoryService', () => {
     adjustmentModel = {
       create: jest.fn().mockResolvedValue({}),
       find: jest.fn().mockReturnValue({
-        sort: () => ({ limit: () => ({ select: () => ({ lean: () => ({ exec: () => Promise.resolve([]) }) }) }) }),
+        sort: () => ({
+          limit: () => ({ select: () => ({ lean: () => ({ exec: () => Promise.resolve([]) }) }) }),
+        }),
       }),
     };
 

@@ -1,16 +1,19 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, FilterQuery, Model, Types } from 'mongoose';
 import { PaginatedResult, paginated } from 'src/common/dto';
 import { TransactionContext, TransactionRunner } from 'src/common/database';
 import { IdempotencyService } from 'src/common/idempotency';
-import { Role } from 'src/common/enums';
+import { Role, UnitType } from 'src/common/enums';
 import { BusinessException } from 'src/common/errors';
+import { escapeRegExp } from 'src/common/utils';
 import { CartService } from 'src/modules/cart/cart.service';
 import { CheckoutDraft, CheckoutService, CreateOrderDto } from 'src/modules/checkout';
 import { InventoryService } from 'src/modules/inventory';
 import { PaymentsService } from 'src/modules/payments';
 import { PaymentStatus } from 'src/modules/payments/enums';
+import { Product, ProductDocument } from 'src/modules/products/schemas';
+import { formatUnitLabel } from 'src/modules/products/product.view';
 import { StoresService } from 'src/modules/stores';
 import { OrderNumberService } from './order-number.service';
 import {
@@ -25,6 +28,7 @@ import {
   LeanOrder,
   OrderDetailView,
   OrderSummaryView,
+  statusLabel,
   toOrderDetailView,
   toOrderSummaryView,
 } from './order.view';
@@ -57,6 +61,13 @@ export class OrdersService {
      * narrower and cannot accidentally return more.
      */
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    /**
+     * Read-only. A substituted line must carry a real catalogue snapshot, and
+     * reading it here keeps `applySubstitution` from trusting values handed to
+     * it. ProductsService is not injected because products already depend on
+     * inventory and categories, and orders sit above all three.
+     */
+    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
     private readonly checkoutService: CheckoutService,
     private readonly inventoryService: InventoryService,
     private readonly paymentsService: PaymentsService,
@@ -106,6 +117,351 @@ export class OrdersService {
   async findForCustomer(userId: string, orderId: string): Promise<OrderDetailView> {
     const order = await this.loadOwnedOrFail(userId, orderId);
     return toOrderDetailView(order, await this.activeStoreName());
+  }
+
+  // --- Store operations ---------------------------------------------------
+
+  /**
+   * THE STORE QUEUE
+   *
+   * `storeId` is the first key in the filter and is supplied by the caller from
+   * the authenticated principal — never from the request. That is what makes
+   * cross-store access structurally impossible here rather than merely checked:
+   * there is no code path that loads an order and *then* compares its store,
+   * which is the shape that eventually gets written without the second half.
+   *
+   * Served by the compound index `{ storeId, status, createdAt }` that the order
+   * schema already declares for exactly this query.
+   */
+  async listForStore(
+    storeId: Types.ObjectId,
+    query: QueryStoreOrdersDto,
+  ): Promise<PaginatedResult<StoreOrderSummaryView>> {
+    const filter = this.buildStoreFilter(storeId, query);
+
+    const [orders, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(query.skip)
+        .limit(query.limit)
+        .lean<LeanOrder[]>()
+        .exec(),
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+
+    const customers = await this.loadCustomers(orders);
+
+    return paginated(
+      orders
+        .map((order) =>
+          toStoreOrderSummaryView(order, customers.get(order.userId.toString()) ?? null),
+        )
+        // Action-required first within the page, newest first inside each group.
+        // Sorted here rather than in the query because "needs action" is a
+        // property of the state machine, and restating its status list as a sort
+        // expression would be a second definition to keep in step.
+        .sort((a, b) => {
+          if (a.needsAction !== b.needsAction) return a.needsAction ? -1 : 1;
+          return b.placedAt.getTime() - a.placedAt.getTime();
+        }),
+      total,
+      { page: query.page, limit: query.limit },
+    );
+  }
+
+  async findForStore(storeId: Types.ObjectId, orderId: string): Promise<StoreOrderDetailView> {
+    const order = await this.loadForStoreOrFail(storeId, orderId);
+    const customers = await this.loadCustomers([order]);
+
+    return toStoreOrderDetailView(order, customers.get(order.userId.toString()) ?? null);
+  }
+
+  /**
+   * Moves an order along, on behalf of store staff.
+   *
+   * This method deliberately contains no transition rules. It establishes *who
+   * may act on this order* — the store scope — and then hands off to
+   * `changeStatus`, which owns the state machine, the history entry, the stock
+   * restoration and the payment settlement. §51: those rules live in one place,
+   * and a second entry point that re-implemented any of them would be the bug.
+   *
+   * Staleness needs no handling here either: `changeStatus` re-reads the order
+   * inside its unit of work, so if a colleague already advanced it, the
+   * transition this manager clicked is no longer legal and the machine rejects
+   * it with a 409 rather than overwriting the newer status (§63, §64).
+   */
+  async advanceForStore(
+    storeId: Types.ObjectId,
+    orderId: string,
+    next: OrderStatus,
+    actor: { userId: string; role: Role },
+    options: { reason?: string; note?: string } = {},
+  ): Promise<StoreOrderDetailView> {
+    // Establishes both existence and store ownership before anything is written.
+    const existing = await this.loadForStoreOrFail(storeId, orderId);
+
+    const isTermination = [
+      OrderStatus.CANCELLED,
+      OrderStatus.REJECTED,
+      OrderStatus.FAILED,
+    ].includes(next);
+
+    const reason = options.reason?.trim();
+
+    // A store closing an order must say why. The shopper reads it in their
+    // timeline, and "cancelled, no reason given" is not an acceptable thing to
+    // show somebody whose groceries are not coming. Enforced here rather than in
+    // a DTO because whether it is required depends on the target status.
+    if (isTermination && !reason) {
+      throw new BadRequestException(
+        'Please give a reason when rejecting, cancelling or failing an order.',
+      );
+    }
+
+    await this.changeStatus(existing._id, next, {
+      actor: actor.role,
+      actorId: new Types.ObjectId(actor.userId),
+      // The shopper reads this note in their own timeline, so a rejection reason
+      // reaches them rather than being buried in a staff-only field.
+      note: options.note?.trim() || (isTermination && reason ? reason : undefined),
+      cancellationReason: isTermination ? reason : undefined,
+    });
+
+    return this.findForStore(storeId, orderId);
+  }
+
+  /**
+   * The operational counts behind the dashboard.
+   *
+   * One `$facet` aggregation, not eight queries. §6 asks for a single dashboard
+   * endpoint and efficient queries; the whole summary is one round trip against
+   * the `{ storeId, status, createdAt }` index.
+   */
+  async dashboardCountsForStore(
+    storeId: Types.ObjectId,
+    now: Date = new Date(),
+  ): Promise<{
+    byStatus: Record<OrderStatus, number>;
+    needsAction: number;
+    completedToday: number;
+  }> {
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [result] = await this.orderModel
+      .aggregate<{
+        byStatus: Array<{ _id: OrderStatus; count: number }>;
+        completedToday: Array<{ value: number }>;
+      }>([
+        { $match: { storeId } },
+        {
+          $facet: {
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+            // A different question — bounded by time rather than by status — so
+            // it needs its own branch rather than a second request.
+            completedToday: [
+              { $match: { status: OrderStatus.DELIVERED, updatedAt: { $gte: startOfToday } } },
+              { $count: 'value' },
+            ],
+          },
+        },
+      ])
+      .exec();
+
+    const byStatus = Object.values(OrderStatus).reduce(
+      (acc, status) => {
+        acc[status] = 0;
+        return acc;
+      },
+      {} as Record<OrderStatus, number>,
+    );
+
+    for (const row of result?.byStatus ?? []) byStatus[row._id] = row.count;
+
+    const needsActionTotal = Object.values(OrderStatus)
+      .filter((status) => needsAction(status))
+      .reduce((sum, status) => sum + byStatus[status], 0);
+
+    return {
+      byStatus,
+      needsAction: needsActionTotal,
+      completedToday: result?.completedToday[0]?.value ?? 0,
+    };
+  }
+
+  private buildStoreFilter(
+    storeId: Types.ObjectId,
+    query: QueryStoreOrdersDto,
+  ): FilterQuery<OrderDocument> {
+    const filter: FilterQuery<OrderDocument> = { storeId };
+
+    if (query.status) filter.status = query.status;
+    if (query.fulfillmentMethod) filter.fulfillmentMethod = query.fulfillmentMethod;
+
+    // Derived from the state machine's own list, so "needs action" means the
+    // same thing in the filter, on the row badge and in the dashboard count.
+    if (query.needsAction) {
+      filter.status = { $in: Object.values(OrderStatus).filter((status) => needsAction(status)) };
+    }
+
+    if (query.placedFrom || query.placedTo) {
+      filter.createdAt = {
+        ...(query.placedFrom ? { $gte: query.placedFrom } : {}),
+        ...(query.placedTo ? { $lte: query.placedTo } : {}),
+      };
+    }
+
+    if (query.orderNumber) {
+      // Anchored and escaped: an unescaped operator in an order number would be
+      // both a wrong result and a ReDoS vector.
+      filter.orderNumber = new RegExp('^' + escapeRegExp(query.orderNumber.toUpperCase()));
+    }
+
+    return filter;
+  }
+
+  /**
+   * Loads an order inside the caller's store, or reports it as missing.
+   *
+   * "Not found" rather than "forbidden", matching `loadOwnedOrFail`: telling a
+   * manager that an order id is real but belongs to another store is itself a
+   * small leak, and there is nothing they could do with the distinction.
+   */
+  private async loadForStoreOrFail(storeId: Types.ObjectId, orderId: string): Promise<LeanOrder> {
+    if (!Types.ObjectId.isValid(orderId)) throw new NotFoundException('Order not found');
+
+    const order = await this.orderModel
+      .findOne({ _id: new Types.ObjectId(orderId), storeId })
+      .lean<LeanOrder>()
+      .exec();
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    return order;
+  }
+
+  /**
+   * The fulfilment identity for a page of orders, in one query.
+   *
+   * Projected to two fields at the database, so nothing else about the account
+   * is even read — the narrowest way to honour §12. One query per page rather
+   * than one per order keeps the queue free of an N+1.
+   */
+  private async loadCustomers(orders: LeanOrder[]): Promise<Map<string, StoreCustomerView>> {
+    const ids = [...new Set(orders.map((order) => order.userId.toString()))];
+    if (ids.length === 0) return new Map();
+
+    const users = await this.userModel
+      .find({ _id: { $in: ids.map((id) => new Types.ObjectId(id)) } })
+      .select('fullName phone')
+      .lean()
+      .exec();
+
+    return new Map(
+      users.map((user) => [user._id.toString(), { name: user.fullName, phone: user.phone }]),
+    );
+  }
+
+  // --- Line substitution --------------------------------------------------
+
+  /**
+   * The facts the substitution flow needs about a store's order, in one read.
+   *
+   * Deliberately not `findForStore`: that builds the staff presentation view,
+   * which withholds the customer's user id by design. The substitution record
+   * genuinely needs it — the shopper has to be able to find and answer their own
+   * proposals — so it is fetched here, narrowly and explicitly, rather than by
+   * widening a view that many screens render.
+   */
+  async loadStoreOrderForEdit(
+    storeId: Types.ObjectId,
+    orderId: string,
+  ): Promise<{
+    id: Types.ObjectId;
+    userId: Types.ObjectId;
+    orderNumber: string;
+    status: OrderStatus;
+    statusLabel: string;
+    items: OrderItem[];
+  }> {
+    const order = await this.loadForStoreOrFail(storeId, orderId);
+
+    return {
+      id: order._id,
+      userId: order.userId,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      statusLabel: statusLabel(order.status, order.fulfillmentMethod),
+      items: order.items,
+    };
+  }
+
+  /**
+   * Swaps one order line for a different product.
+   *
+   * WHAT THIS DOES NOT TOUCH: `pricing`. Not the subtotal, not the total, not
+   * the delivery fee. The replacement line keeps the exact `lineTotal` the
+   * shopper agreed to, and `unitPrice` is re-derived from it so that
+   * `unitPrice × quantity === lineTotal` stays an exact integer identity — the
+   * order schema verifies the pricing identity on every save, and a substitution
+   * that disturbed it would refuse to persist. The caller guarantees the
+   * division is clean before proposing.
+   *
+   * Owned by this service because this service owns the order document.
+   * SubstitutionsService decides *whether* a swap is allowed; only this method
+   * performs it.
+   */
+  async applySubstitution(
+    orderId: Types.ObjectId,
+    swap: {
+      originalProductId: Types.ObjectId;
+      replacementProductId: Types.ObjectId;
+      replacementQuantity: number;
+    },
+    session: ClientSession | null = null,
+  ): Promise<void> {
+    const order = await this.orderModel.findById(orderId).session(session).exec();
+    if (!order) throw new NotFoundException('Order not found');
+
+    const line = order.items.find((item) => item.productId.equals(swap.originalProductId));
+    if (!line) throw new NotFoundException('That product is not on this order');
+
+    // Read from the catalogue so the swapped line carries a real snapshot rather
+    // than values a caller passed in.
+    const replacement = await this.productModel
+      .findOne({ _id: swap.replacementProductId, storeId: order.storeId })
+      .lean<{
+        _id: Types.ObjectId;
+        name: string;
+        brand?: string;
+        sku: string;
+        unitType: UnitType;
+        unitValue: number;
+        images?: Array<{ url: string; sortOrder: number }>;
+      }>()
+      .exec();
+
+    if (!replacement) throw new NotFoundException('Replacement product not found');
+
+    const chargedLineTotal = line.lineTotal;
+
+    line.productId = replacement._id;
+    line.productName = replacement.name;
+    line.brand = replacement.brand ?? null;
+    line.sku = replacement.sku;
+    line.unitType = replacement.unitType;
+    line.unitValue = replacement.unitValue;
+    line.unitLabel = formatUnitLabel(replacement.unitType, replacement.unitValue);
+    line.productImage =
+      [...(replacement.images ?? [])].sort((a, b) => a.sortOrder - b.sortOrder)[0]?.url ?? null;
+    line.quantity = swap.replacementQuantity;
+    line.unitPrice = chargedLineTotal / swap.replacementQuantity;
+    line.lineTotal = chargedLineTotal;
+
+    await order.save({ session: session ?? undefined });
+
+    this.logger.log('Order ' + order.orderNumber + ': line substituted for ' + replacement.sku);
   }
 
   // --- Order creation -----------------------------------------------------

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, User } from 'lucide-react';
+import { ClipboardList, Settings, ShoppingCart, User } from 'lucide-react';
 import { SearchBar } from '@/components/common/search-bar';
 import { useCartCount } from '@/features/cart/cart.hooks';
 import { cn } from '@/lib/cn';
@@ -20,6 +20,13 @@ export function DesktopNavigation() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const cartCount = useCartCount();
+
+  const backOffice =
+    user?.role === 'STORE_MANAGER'
+      ? { href: '/store-manager', label: 'Store console', icon: ClipboardList }
+      : user?.role === 'ADMIN'
+        ? { href: '/admin/products', label: 'Admin', icon: Settings }
+        : null;
 
   // Search and cart get dedicated affordances here, so they are dropped from the links.
   const links = PRIMARY_NAV.filter((item) => !['/search', '/cart'].includes(item.href));
@@ -59,6 +66,23 @@ export function DesktopNavigation() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {/*
+            Back-office roles get a way in from the storefront. Without it a
+            manager who signs in lands here with no route to the console they
+            actually need. Rendered from the role on the verified session, so it
+            simply is not there for a shopper — and it is a convenience, not a
+            gate: both destinations enforce their own access server-side.
+          */}
+          {backOffice ? (
+            <Link
+              href={backOffice.href}
+              className="min-h-touch text-primary hover:bg-surface-muted flex items-center gap-1.5 rounded-full px-3 text-sm font-semibold"
+            >
+              <backOffice.icon className="size-4" aria-hidden="true" />
+              {backOffice.label}
+            </Link>
+          ) : null}
+
           {SECONDARY_NAV.map((item) => {
             const Icon = item.icon;
             return (

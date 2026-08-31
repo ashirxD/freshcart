@@ -13,6 +13,8 @@ import { StoresService } from 'src/modules/stores';
 import { OrderNumberService } from './order-number.service';
 import { FulfillmentMethod, OrderStatus } from './order-status.machine';
 import { OrdersService } from './orders.service';
+import { ProductDocument } from 'src/modules/products/schemas';
+import { UserDocument } from 'src/modules/users/schemas';
 import { OrderDocument } from './schemas';
 
 const STORE_ID = new Types.ObjectId('64b000000000000000000001');
@@ -100,6 +102,8 @@ describe('OrdersService', () => {
   type MockModel = Record<string, jest.Mock>;
 
   let orderModel: MockModel;
+  let userModel: MockModel;
+  let productModel: MockModel;
   let checkoutService: { validate: jest.Mock };
   let inventoryService: { tryReserve: jest.Mock; release: jest.Mock };
   let paymentsService: {
@@ -165,6 +169,17 @@ describe('OrdersService', () => {
       markFailedForCancellation: jest.fn().mockResolvedValue(undefined),
     };
     cartService = { removePurchasedItems: jest.fn().mockResolvedValue(undefined) };
+    // Store-facing reads project the account to name + phone; customer-facing
+    // reads never touch it.
+    userModel = {
+      find: jest.fn().mockReturnValue({
+        select: () => ({ lean: () => ({ exec: () => Promise.resolve([]) }) }),
+      }),
+    };
+    // Only read by `applySubstitution`, which these tests do not exercise.
+    productModel = {
+      findOne: jest.fn().mockReturnValue({ lean: () => ({ exec: () => Promise.resolve(null) }) }),
+    };
     idempotencyService = {
       claim: jest.fn().mockResolvedValue({ kind: 'CLAIMED' }),
       complete: jest.fn().mockResolvedValue(undefined),
@@ -173,6 +188,8 @@ describe('OrdersService', () => {
 
     service = new OrdersService(
       orderModel as unknown as Model<OrderDocument>,
+      userModel as unknown as Model<UserDocument>,
+      productModel as unknown as Model<ProductDocument>,
       checkoutService as unknown as CheckoutService,
       inventoryService as unknown as InventoryService,
       paymentsService as unknown as PaymentsService,
