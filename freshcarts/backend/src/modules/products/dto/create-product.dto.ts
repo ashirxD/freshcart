@@ -10,7 +10,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   Max,
   MaxLength,
@@ -22,8 +21,30 @@ import { UnitType } from 'src/common/enums';
 import { SLUG_PATTERN } from 'src/common/utils';
 import { MAX_PRICE_PKR } from '../schemas';
 
+/**
+ * Where a product photograph is reachable.
+ *
+ * Two forms are accepted, and only two:
+ *
+ *   /media/<key>.jpg        an image this API stored, served from its own origin
+ *   https://host/path.jpg   an image hosted elsewhere
+ *
+ * A rooted path has to be allowed because that is exactly what the upload
+ * endpoint returns: baking the API's origin into the value at write time would
+ * put `http://localhost:4000` inside a product document, and that value is
+ * wrong the moment the API is reachable at a real domain.
+ *
+ * `javascript:` and `data:` are excluded by construction — the pattern requires
+ * a leading slash or an explicit http(s) scheme — which matters because this
+ * string ends up in an `src` attribute.
+ */
+export const IMAGE_URL_PATTERN = /^(\/[A-Za-z0-9._~\-/]+|https?:\/\/[^\s"'<>]+)$/;
+
 export class ProductImageDto {
-  @IsUrl({ require_tld: false }, { message: 'Each image needs a valid URL' })
+  @IsString()
+  @Matches(IMAGE_URL_PATTERN, {
+    message: 'An image must be an uploaded path or an http(s) URL',
+  })
   @MaxLength(600)
   url: string;
 

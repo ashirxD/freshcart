@@ -10,6 +10,8 @@ import {
   type ProductFormValues,
 } from '@/lib/validation/catalog.schema';
 import type { Category, ProductDetail } from '@/types/catalog';
+import { CategoryCombobox } from './category-combobox';
+import { ImageUploader } from './image-uploader';
 import { CheckboxField, FormSection, SelectField, TextareaField } from './form-field';
 
 export interface ProductFormProps {
@@ -50,7 +52,10 @@ export function ProductForm({
       shortDescription: product?.shortDescription ?? '',
       description: product?.description ?? '',
       categoryId: product?.categoryId ?? '',
+      categoryCreateName: '',
       subcategoryId: product?.subcategoryId ?? '',
+      subcategoryCreateName: '',
+      images: product?.images ?? [],
       sellingPrice: product?.sellingPrice ?? Number.NaN,
       compareAtPrice: product?.compareAtPrice ? String(product.compareAtPrice) : '',
       unitType: product?.unitType ?? 'PIECE',
@@ -66,10 +71,19 @@ export function ProductForm({
   });
 
   const categoryId = watch('categoryId');
+  const categoryCreateName = watch('categoryCreateName');
+  const subcategoryId = watch('subcategoryId');
+  const subcategoryCreateName = watch('subcategoryCreateName');
+  const images = watch('images');
   const isActive = watch('isActive');
   const isFeatured = watch('isFeatured');
 
-  const subcategories = categories.find((category) => category.id === categoryId)?.children ?? [];
+  // A category that does not exist yet has no children to offer. Creating the
+  // parent and a child in one save is supported; picking an existing child of
+  // a category that is itself unsaved is not a coherent thing to ask for.
+  const subcategories = categoryId
+    ? (categories.find((category) => category.id === categoryId)?.children ?? [])
+    : [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="gap-gutter flex flex-col">
@@ -102,34 +116,75 @@ export function ProductForm({
         />
       </FormSection>
 
-      <FormSection title="Placement" description="Where this product is found in the store.">
-        <SelectField
+      <FormSection
+        title="Placement"
+        description="Where this product is found in the store. Type a new name to add a category."
+      >
+        <CategoryCombobox
           label="Category"
-          placeholder="Choose a category"
-          options={categories.map((category) => ({
-            value: category.id,
-            label: category.name,
-          }))}
+          placeholder="Search, or type a new category"
+          options={categories.map((category) => ({ id: category.id, name: category.name }))}
           error={errors.categoryId?.message}
-          {...register('categoryId', {
-            // Changing the parent invalidates the child, so it is cleared rather
-            // than left pointing at a subcategory of a different category.
-            onChange: () => setValue('subcategoryId', ''),
-          })}
+          value={categoryId ? { id: categoryId } : { createName: categoryCreateName }}
+          onChange={(next) => {
+            setValue('categoryId', next.id ?? '', { shouldDirty: true });
+            setValue('categoryCreateName', next.createName ?? '', { shouldDirty: true });
+            // Changing the parent invalidates the child, so it is cleared
+            // rather than left pointing at a subcategory of another category.
+            setValue('subcategoryId', '');
+            setValue('subcategoryCreateName', '');
+          }}
         />
 
-        <SelectField
+        <CategoryCombobox
           label="Subcategory"
-          placeholder={categoryId ? 'None' : 'Choose a category first'}
           hint="Optional, but it makes the product much easier to find."
+          placeholder={
+            categoryId || categoryCreateName
+              ? 'Search, or type a new one'
+              : 'Choose a category first'
+          }
+          emptyHint={
+            categoryCreateName
+              ? 'This category is new, so it has no subcategories yet — type one to create it too.'
+              : 'This category has no subcategories yet. Type a name to create one.'
+          }
+          disabled={!categoryId && !categoryCreateName}
           options={subcategories.map((subcategory) => ({
-            value: subcategory.id,
-            label: subcategory.name,
+            id: subcategory.id,
+            name: subcategory.name,
           }))}
-          disabled={!categoryId}
           error={errors.subcategoryId?.message}
-          {...register('subcategoryId')}
+          value={subcategoryId ? { id: subcategoryId } : { createName: subcategoryCreateName }}
+          onChange={(next) => {
+            setValue('subcategoryId', next.id ?? '', { shouldDirty: true });
+            setValue('subcategoryCreateName', next.createName ?? '', { shouldDirty: true });
+          }}
         />
+      </FormSection>
+
+      <FormSection
+        title="Photos"
+        description="The first photo is what shoppers see on the product card."
+      >
+        <ImageUploader
+          images={images}
+          onChange={(next) => setValue('images', next, { shouldDirty: true, shouldValidate: true })}
+        />
+
+        {errors.images?.message ? (
+          <p role="alert" className="text-danger text-sm">
+            {errors.images.message}
+          </p>
+        ) : null}
+
+        {/* Per-image alt-text errors: zod reports them by index, and the
+            uploader renders the fields, so the summary lives here. */}
+        {Array.isArray(errors.images) && errors.images.some(Boolean) ? (
+          <p role="alert" className="text-danger text-sm">
+            Every photo needs a short description.
+          </p>
+        ) : null}
       </FormSection>
 
       <FormSection title="Price" description="Whole rupees. There is no paisa in this catalogue.">

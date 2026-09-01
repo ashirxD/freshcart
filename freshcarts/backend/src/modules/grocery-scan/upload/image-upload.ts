@@ -23,46 +23,14 @@
 
 import { memoryStorage } from 'multer';
 import { BusinessException } from 'src/common/errors';
+import { ALLOWED_MIME_TYPES, detectImageType, type UploadedImage } from 'src/common/upload';
 
 /**
- * The subset of multer's file object this code uses.
- *
- * Declared here rather than pulling in `@types/multer`: six fields against a
- * dependency, and this keeps the shape the code actually relies on visible
- * (§75).
+ * Image identification lives in `common/upload` now, because product
+ * photography needs the same check. Re-exported here so every existing import
+ * of this module keeps working, and so the scanner's own code reads unchanged.
  */
-export interface UploadedImage {
-  originalname: string;
-  mimetype: string;
-  size: number;
-  buffer: Buffer;
-}
-
-/** Content types a phone camera or a screenshot actually produces. */
-export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-
-/**
- * File signatures for the formats above.
- *
- * This is the check that matters: `list.jpg` containing a shell script has the
- * right name, the right extension and whatever Content-Type the client felt
- * like sending — and none of those bytes at offset zero.
- */
-const MAGIC_BYTES: Array<{ mime: string; offset: number; bytes: number[]; suffix?: number[] }> = [
-  // JPEG: FF D8 FF
-  { mime: 'image/jpeg', offset: 0, bytes: [0xff, 0xd8, 0xff] },
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  { mime: 'image/png', offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
-  // WEBP: "RIFF" .... "WEBP" — the format marker is at offset 8, not 0.
-  {
-    mime: 'image/webp',
-    offset: 0,
-    bytes: [0x52, 0x49, 0x46, 0x46],
-    suffix: [0x57, 0x45, 0x42, 0x50],
-  },
-];
-
-const WEBP_SUFFIX_OFFSET = 8;
+export { ALLOWED_MIME_TYPES, detectImageType, type UploadedImage } from 'src/common/upload';
 
 /** Multer options for the scan endpoint. */
 export function scanUploadOptions(maxBytes: number) {
@@ -96,31 +64,6 @@ export function scanUploadOptions(maxBytes: number) {
       callback(null, true);
     },
   };
-}
-
-/** Detects the true format of a buffer, or null when it is not an image. */
-export function detectImageType(buffer: Buffer): string | null {
-  for (const signature of MAGIC_BYTES) {
-    if (buffer.length < signature.offset + signature.bytes.length) continue;
-
-    const matches = signature.bytes.every(
-      (byte, index) => buffer[signature.offset + index] === byte,
-    );
-
-    if (!matches) continue;
-
-    if (signature.suffix) {
-      if (buffer.length < WEBP_SUFFIX_OFFSET + signature.suffix.length) continue;
-      const suffixMatches = signature.suffix.every(
-        (byte, index) => buffer[WEBP_SUFFIX_OFFSET + index] === byte,
-      );
-      if (!suffixMatches) continue;
-    }
-
-    return signature.mime;
-  }
-
-  return null;
 }
 
 /** A verified upload: bytes that really are an image of the type reported. */

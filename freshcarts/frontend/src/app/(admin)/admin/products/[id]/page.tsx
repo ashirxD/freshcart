@@ -7,12 +7,8 @@ import { Container } from '@/components/layout/container';
 import { AvailabilityBadge } from '@/components/product/badges';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  useAdminCategories,
-  useAdminProduct,
-  useUpdateProduct,
-} from '@/features/admin/admin.hooks';
-import { toProductInput } from '@/lib/validation/catalog.schema';
+import { useAdminCategories, useAdminProduct } from '@/features/admin/admin.hooks';
+import { useProductSubmit } from '@/features/admin/use-product-submit';
 
 export default function Page() {
   const router = useRouter();
@@ -20,7 +16,12 @@ export default function Page() {
 
   const product = useAdminProduct(id);
   const { data: categories = [] } = useAdminCategories();
-  const update = useUpdateProduct(id, () => router.push('/admin/products'));
+
+  // Same path as creation: an edit may also introduce a new category.
+  const { submit, isSubmitting } = useProductSubmit({
+    productId: id,
+    onDone: () => router.push('/admin/products'),
+  });
 
   return (
     <Container className="gap-lg flex max-w-2xl flex-col">
@@ -50,11 +51,9 @@ export default function Page() {
         <ProductForm
           product={product.data}
           categories={categories}
-          isSubmitting={update.isPending}
+          isSubmitting={isSubmitting}
           onCancel={() => router.push('/admin/products')}
-          onSubmit={(values) =>
-            update.mutate(toProductInput(values, { includeOpeningStock: false }))
-          }
+          onSubmit={(values) => void submit(values)}
         />
       ) : null}
     </Container>

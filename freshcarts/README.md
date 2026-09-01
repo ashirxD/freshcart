@@ -124,8 +124,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 The API boots on `http://localhost:4000`, with routes under `/api/v1` and health probes
 at the unprefixed `/health` and `/health/ready`.
 
-Seed the development catalogue — one store, 31 categories/subcategories, 53 grocery
-products with stock, and the demo accounts:
+Seed the starting data — the store (FreshCarts Salamat Pura, Lahore), the
+31-category tree, the delivery pricing bands, and the accounts:
 
 ```bash
 npm run seed
@@ -135,24 +135,37 @@ npm run seed
 through the real services (so it passes the same validation as an admin would), and
 refuses to run when `NODE_ENV=production`.
 
-Demo accounts, read from `.env` and **for development only** — these credentials are
-documented here because the seeder refuses to run when `NODE_ENV=production`, and they
-exist in no other environment:
+Accounts, read from `.env` and **for development only** — the seeder refuses to run
+when `NODE_ENV=production`, so these exist in no other environment. Phone, email and
+password all come from environment variables, so no real contact detail or usable
+credential is committed to the repository:
 
-| Role                            | Phone           | Password         |
-| ------------------------------- | --------------- | ---------------- |
-| ADMIN                           | `+923001234567` | `Admin@12345`    |
-| CUSTOMER                        | `+923001234569` | `Customer@12345` |
-| STORE_MANAGER (Gulberg)         | `+923001234568` | `Manager@12345`  |
-| STORE_MANAGER (Johar Town)      | `+923001234571` | `Manager@12345`  |
+| Role | Phone | Password | Set in `.env` |
+| ---- | ----- | -------- | ------------- |
+| ADMIN | `SEED_ADMIN_PHONE` | `SEED_ADMIN_PASSWORD` | + `SEED_ADMIN_EMAIL` |
+| STORE_MANAGER | `SEED_MANAGER_PHONE` | `SEED_MANAGER_PASSWORD` | + `SEED_MANAGER_EMAIL` |
+| CUSTOMER | `SEED_CUSTOMER_PHONE` | `SEED_CUSTOMER_PASSWORD` | — |
 
-Two stores are seeded, each with its own manager. Only Gulberg has a catalogue —
-the second exists so store isolation is something you can check by signing in
-rather than only by reading a test: as the Johar Town manager, the order queue is
-empty because those orders belong to Gulberg.
+A phone may be typed as `03001234567`, `923001234567` or `+923001234567` — all three
+normalise to the same account.
 
-The seed deliberately includes an out-of-stock product, a low-stock product and a
-deactivated product, so every state the UI must handle is reachable immediately.
+There is **one store**, and the store manager is bound to it. Everything downstream is
+still keyed by `storeId`, so adding a second branch is data entry at `/admin/stores`
+rather than a code change — but nothing is seeded speculatively.
+
+**No products are seeded.** The catalogue is entered by hand at `/admin/products`, by
+whoever knows what the shop actually stocks and what it charges. Seeding invented
+products would put fabricated prices in front of a real shopper the moment the store
+went live, and every one would have to be found and deleted first.
+
+The category tree *is* seeded, because a product cannot be created without a category
+to file it under — so the first product can be added straight after seeding, with no
+setup step in between. Categories are editable at `/admin/categories`.
+
+One consequence worth knowing: immediately after seeding the storefront is empty, and
+the low-stock and out-of-stock states have nothing to demonstrate them until you add a
+product and set its stock. That is a deliberate trade — an empty shop is honest, a shop
+full of made-up prices is not.
 
 Other scripts: `npm run build`, `npm test`, `npm run lint`, `npm run lint:check`.
 

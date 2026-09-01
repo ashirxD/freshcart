@@ -64,6 +64,14 @@ export interface ProductInput {
   lowStockThreshold?: number;
 }
 
+/** What the upload endpoint hands back. `url` is a rooted path, not an origin. */
+export interface StoredImage {
+  url: string;
+  key: string;
+  contentType: string;
+  bytes: number;
+}
+
 /**
  * Back-office transport. These hit the same endpoints the storefront reads
  * from — the only difference is the ADMIN token, which is what unlocks the
@@ -134,6 +142,19 @@ export const adminApi = {
   // the same operation.
 
   dashboard: () => apiFetch<AdminDashboard>('/admin/dashboard'),
+
+  /**
+   * Uploads one product photograph.
+   *
+   * FormData is passed through the client untouched and WITHOUT a Content-Type
+   * header — the browser sets it including the multipart boundary, and setting
+   * it by hand produces a body no server can parse.
+   */
+  uploadProductImage: (file: File) => {
+    const body = new FormData();
+    body.append('image', file);
+    return apiFetch<StoredImage>('/admin/media/product-image', { method: 'POST', body });
+  },
 
   // --- Orders ------------------------------------------------------------
 

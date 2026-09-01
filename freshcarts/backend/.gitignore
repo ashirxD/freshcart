@@ -9,3 +9,6 @@ coverage/
 .idea/
 .vscode/
 *.tsbuildinfo
+
+# Uploaded product photography (local storage). Never committed.
+var/

@@ -4,13 +4,18 @@ import { useRouter } from 'next/navigation';
 import { ProductForm } from '@/components/admin/product-form';
 import { Container } from '@/components/layout/container';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdminCategories, useCreateProduct } from '@/features/admin/admin.hooks';
-import { toProductInput } from '@/lib/validation/catalog.schema';
+import { useAdminCategories } from '@/features/admin/admin.hooks';
+import { useProductSubmit } from '@/features/admin/use-product-submit';
 
 export default function Page() {
   const router = useRouter();
   const { data: categories = [], isPending } = useAdminCategories();
-  const create = useCreateProduct(() => router.push('/admin/products'));
+
+  // Handles the case where the admin typed a category that does not exist yet:
+  // it is created first, then the product is created against it.
+  const { submit, isSubmitting } = useProductSubmit({
+    onDone: () => router.push('/admin/products'),
+  });
 
   return (
     <Container className="gap-lg flex max-w-2xl flex-col">
@@ -21,11 +26,9 @@ export default function Page() {
       ) : (
         <ProductForm
           categories={categories}
-          isSubmitting={create.isPending}
+          isSubmitting={isSubmitting}
           onCancel={() => router.push('/admin/products')}
-          onSubmit={(values) =>
-            create.mutate(toProductInput(values, { includeOpeningStock: true }))
-          }
+          onSubmit={(values) => void submit(values)}
         />
       )}
     </Container>

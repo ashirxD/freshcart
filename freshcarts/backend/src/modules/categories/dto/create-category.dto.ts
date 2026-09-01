@@ -5,7 +5,6 @@ import {
   IsMongoId,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   Max,
   MaxLength,
@@ -13,6 +12,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { SLUG_PATTERN } from 'src/common/utils';
+import { IMAGE_URL_PATTERN } from 'src/modules/products/dto';
 
 export class CreateCategoryDto {
   @IsString()
@@ -34,8 +34,12 @@ export class CreateCategoryDto {
   @MaxLength(400)
   description?: string;
 
+  /** An uploaded path or an http(s) URL — see IMAGE_URL_PATTERN. */
   @IsOptional()
-  @IsUrl({ require_tld: false }, { message: 'imageUrl must be a valid URL' })
+  @IsString()
+  @Matches(IMAGE_URL_PATTERN, {
+    message: 'The image must be an uploaded path or an http(s) URL',
+  })
   @MaxLength(500)
   imageUrl?: string;
 

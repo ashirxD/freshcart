@@ -14,8 +14,20 @@ const parsed = schema.safeParse({
 
 if (!parsed.success) {
   throw new Error(
-    'Invalid client environment configuration: ' + parsed.error.issues.map((i) => i.message).join(', '),
+    'Invalid client environment configuration: ' +
+      parsed.error.issues.map((i) => i.message).join(', '),
   );
 }
 
-export const env = parsed.data;
+/**
+ * The API's origin, without the version prefix.
+ *
+ * Uploaded product photography is served at `/media/<key>`, which sits at the
+ * origin rather than under `/api/v1` — an image URL is stored on a product
+ * document and must not move when the API version does. Derived here rather
+ * than configured separately, so there is no second variable to keep in step
+ * with the first.
+ */
+const apiOrigin = new URL(parsed.data.apiUrl).origin;
+
+export const env = { ...parsed.data, apiOrigin };

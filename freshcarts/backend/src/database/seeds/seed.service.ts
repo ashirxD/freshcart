@@ -16,19 +16,12 @@ import { Favorite, FavoriteDocument } from 'src/modules/favorites/schemas';
 import { Order, OrderDocument } from 'src/modules/orders/schemas';
 import { Payment, PaymentDocument } from 'src/modules/payments/schemas';
 import { Inventory, InventoryDocument } from 'src/modules/inventory/schemas';
-import { ProductsService } from 'src/modules/products';
 import { SettingsService } from 'src/modules/settings';
 import { Product, ProductDocument } from 'src/modules/products/schemas';
 import { Store, StoreDocument, StoresService } from 'src/modules/stores';
 import { User, UserDocument } from 'src/modules/users/schemas';
 import { UsersService } from 'src/modules/users/users.service';
-import {
-  SeedProduct,
-  buildSeedCategories,
-  buildSeedProducts,
-  buildSeedSecondaryStore,
-  buildSeedStore,
-} from './data/catalog.seed';
+import { buildSeedCategories, buildSeedStore } from './data/catalog.seed';
 import { buildSeedDeliveryPricingRules } from './data/delivery.seed';
 import { buildSeedStoreManagers, buildSeedUsers } from './data/users.seed';
 
@@ -37,7 +30,6 @@ export interface SeedSummary {
   stores: { created: number; skipped: number };
   storeManagers: { created: number; skipped: number };
   categories: { created: number; skipped: number };
-  products: { created: number; skipped: number };
   deliveryPricing: { created: number; skipped: number };
 }
 
@@ -49,7 +41,6 @@ export class SeedService {
     private readonly usersService: UsersService,
     private readonly storesService: StoresService,
     private readonly categoriesService: CategoriesService,
-    private readonly productsService: ProductsService,
     private readonly configService: ConfigService<AppConfig, true>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Store.name) private readonly storeModel: Model<StoreDocument>,
@@ -84,10 +75,9 @@ export class SeedService {
     // STORE_MANAGER that is not bound to one.
     const storeManagers = await this.seedStoreManagers();
     const categories = await this.seedCategories();
-    const products = await this.seedProducts();
     const deliveryPricing = await this.seedDeliveryPricing();
 
-    return { users, stores, storeManagers, categories, products, deliveryPricing };
+    return { users, stores, storeManagers, categories, deliveryPricing };
   }
 
   private async wipe(): Promise<void> {
@@ -129,50 +119,42 @@ export class SeedService {
   }
 
   /**
-   * The primary store, and a second one that carries no catalogue.
+   * The store. One, because the platform runs one.
    *
-   * The second exists so store isolation is demonstrable by hand rather than
-   * only in the test suite — see `buildSeedSecondaryStore`. Created in order, so
-   * the primary remains the "oldest active store" that catalogue reads fall back
-   * to when DEFAULT_STORE_SLUG is unset.
+   * Everything downstream is still keyed by `storeId`, so adding a second is
+   * data entry from /admin/stores rather than a change here — but nothing is
+   * seeded speculatively.
    */
   private async seedStores(): Promise<{ created: number; skipped: number }> {
-    let created = 0;
-    let skipped = 0;
+    const definition = buildSeedStore();
 
-    for (const definition of [buildSeedStore(), buildSeedSecondaryStore()]) {
-      if (await this.storeModel.exists({ slug: definition.slug })) {
-        skipped += 1;
-        continue;
-      }
-
-      const store = await this.storesService.create(definition);
-      created += 1;
-      this.logger.log('Created store ' + store.slug);
+    if (await this.storeModel.exists({ slug: definition.slug })) {
+      return { created: 0, skipped: 1 };
     }
 
-    return { created, skipped };
+    const store = await this.storesService.create(definition);
+    this.logger.log('Created store ' + store.slug);
+
+    return { created: 1, skipped: 0 };
   }
 
-  /** Store staff, each bound to one store. */
+  /** Store staff, bound to the store. */
   private async seedStoreManagers(): Promise<{ created: number; skipped: number }> {
-    const [primary, secondary] = await Promise.all([
-      this.storeModel.findOne({ slug: buildSeedStore().slug }).select('_id').lean().exec(),
-      this.storeModel.findOne({ slug: buildSeedSecondaryStore().slug }).select('_id').lean().exec(),
-    ]);
+    const primary = await this.storeModel
+      .findOne({ slug: buildSeedStore().slug })
+      .select('_id')
+      .lean()
+      .exec();
 
-    if (!primary || !secondary) {
-      this.logger.warn('Skipping store managers: the seeded stores are not present');
+    if (!primary) {
+      this.logger.warn('Skipping store managers: the seeded store is not present');
       return { created: 0, skipped: 0 };
     }
 
     let created = 0;
     let skipped = 0;
 
-    const managers = buildSeedStoreManagers({
-      primaryStoreId: primary._id.toString(),
-      secondaryStoreId: secondary._id.toString(),
-    });
+    const managers = buildSeedStoreManagers({ primaryStoreId: primary._id.toString() });
 
     for (const manager of managers) {
       if (await this.usersService.findByPhone(manager.phone)) {
@@ -253,79 +235,13 @@ export class SeedService {
     return category._id;
   }
 
-  private async seedProducts(): Promise<{ created: number; skipped: number }> {
-    const storeId = await this.storesService.getActiveStoreObjectId();
-
-    const categories = await this.categoryModel.find({ storeId }).select('_id slug').lean().exec();
-
-    const idBySlug = new Map(
-      categories.map((category) => [category.slug, category._id.toString()]),
-    );
-
-    let created = 0;
-    let skipped = 0;
-
-    for (const definition of buildSeedProducts()) {
-      if (await this.productModel.exists({ sku: definition.sku, storeId })) {
-        skipped += 1;
-        continue;
-      }
-
-      const categoryId = idBySlug.get(definition.category);
-      const subcategoryId = idBySlug.get(definition.subcategory);
-
-      if (!categoryId || !subcategoryId) {
-        this.logger.warn(
-          'Skipping ' + definition.sku + ': category "' + definition.category + '" not seeded',
-        );
-        skipped += 1;
-        continue;
-      }
-
-      await this.productsService.create(
-        this.toCreateProductDto(definition, categoryId, subcategoryId),
-      );
-      created += 1;
-    }
-
-    this.logger.log('Products: ' + created + ' created, ' + skipped + ' skipped');
-    return { created, skipped };
-  }
-
-  private toCreateProductDto(definition: SeedProduct, categoryId: string, subcategoryId: string) {
-    return {
-      name: definition.name,
-      brand: definition.brand,
-      description: definition.description,
-      shortDescription: definition.shortDescription,
-      categoryId,
-      subcategoryId,
-      sellingPrice: definition.sellingPrice,
-      compareAtPrice: definition.compareAtPrice ?? null,
-      unitType: definition.unitType,
-      unitValue: definition.unitValue,
-      sku: definition.sku,
-      barcode: definition.barcode,
-      searchTerms: definition.searchTerms,
-      isActive: definition.isActive ?? true,
-      isFeatured: definition.isFeatured ?? false,
-      initialQuantity: definition.quantity,
-      lowStockThreshold: definition.lowStockThreshold ?? 5,
-      // No images: no object storage is configured in development, and a broken
-      // remote URL is worse than the generated placeholder the UI renders.
-      images: [],
-    };
-  }
-
   /**
-   * Delivery pricing bands for the active store.
-   *
-   * Written only when the store has none, so a developer's own tuning survives
-   * a re-run. The resulting set is checked for gaps and overlaps and any
-   * problem is logged loudly — a misconfigured band does not throw here, but it
-   * will make the pricing engine refuse to price a delivery at runtime, and
-   * discovering that during checkout is much worse than reading it now.
+   * NOTE: there is no `seedProducts`. The catalogue is entered by hand from
+   * /admin/products — see the note in `catalog.seed.ts`. The Product model is
+   * still injected above, because `--fresh` has to be able to clear the
+   * collection whatever put rows in it.
    */
+
   private async seedDeliveryPricing(): Promise<{ created: number; skipped: number }> {
     const storeId = await this.storesService.getActiveStoreObjectId();
     const existing = await this.pricingRuleModel.countDocuments({ storeId }).exec();

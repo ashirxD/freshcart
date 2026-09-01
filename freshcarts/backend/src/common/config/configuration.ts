@@ -100,6 +100,19 @@ export interface AppConfig {
     /** Turns the feature off entirely, without removing the deployment. */
     enabled: boolean;
   };
+  /**
+   * Product photography. Deployment configuration, not business configuration:
+   * WHERE files are written is a property of the machine, not a decision an
+   * operator makes about how the shop trades.
+   */
+  media: {
+    /** Absolute or relative to the process cwd. Must be a mounted volume in production. */
+    storageDir: string;
+    /** URL prefix the files are served under, e.g. "/media". */
+    publicPath: string;
+    /** Refused above this. The browser downscales first, so this is a backstop. */
+    maxImageBytes: number;
+  };
   scan: {
     /** Refused above this, before the bytes leave this process. */
     maxImageBytes: number;
@@ -188,6 +201,11 @@ export default (): AppConfig => {
       timeoutMs: toInt(process.env.AI_SERVICE_TIMEOUT_MS, 25_000),
       connectRetries: toInt(process.env.AI_SERVICE_CONNECT_RETRIES, 1),
       enabled: toBool(process.env.AI_SERVICE_ENABLED, true),
+    },
+    media: {
+      storageDir: process.env.MEDIA_STORAGE_DIR ?? './var/media',
+      publicPath: '/' + (process.env.MEDIA_PUBLIC_PATH ?? 'media').replace(/^\/+|\/+$/g, ''),
+      maxImageBytes: toInt(process.env.MEDIA_MAX_IMAGE_BYTES, 5 * 1024 * 1024),
     },
     scan: {
       maxImageBytes: toInt(process.env.SCAN_MAX_IMAGE_BYTES, 8 * 1024 * 1024),

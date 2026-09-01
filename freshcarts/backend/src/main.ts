@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { resolve } from 'node:path';
 import { AppModule } from './app.module';
 import { AppConfig } from './common/config/configuration';
 
@@ -23,8 +24,38 @@ async function bootstrap(): Promise<void> {
     app.set('trust proxy', 1);
   }
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      // Product photography is served from this origin and rendered by the web
+      // client on another. The default `same-origin` policy would make the
+      // browser refuse to paint those images.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(cookieParser());
+
+  /**
+   * Uploaded product photography.
+   *
+   * Served from the API rather than proxied through Next, because the files are
+   * written by this process and nothing is gained by a second hop. Registered
+   * BEFORE the global prefix is set, and with its own prefix, so the URLs are
+   * `/media/<key>` rather than `/api/v1/media/<key>` — an image URL is stored on
+   * a product document and must not move when the API version does.
+   *
+   * `index: false` so the directory is never listed, and `dotfiles: 'deny'` so
+   * nothing beginning with a dot is reachable even if one is somehow written.
+   */
+  const media = configService.get('media', { infer: true });
+
+  app.useStaticAssets(resolve(media.storageDir), {
+    prefix: media.publicPath,
+    index: false,
+    dotfiles: 'deny',
+    // Content-addressed names, so a stored image never changes under its URL.
+    maxAge: '30d',
+    immutable: true,
+  });
 
   // Health probes stay off the versioned prefix so infrastructure can hit /health.
   app.setGlobalPrefix(apiPrefix, {

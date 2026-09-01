@@ -20,6 +20,7 @@ import { FavoritesModule } from 'src/modules/favorites/favorites.module';
 import { GroceryScanModule } from 'src/modules/grocery-scan';
 import { HealthModule } from 'src/modules/health/health.module';
 import { InventoryModule } from 'src/modules/inventory';
+import { MediaModule } from 'src/modules/media';
 import { OrdersModule } from 'src/modules/orders';
 import { PaymentsModule } from 'src/modules/payments';
 import { ProductsModule } from 'src/modules/products';
@@ -61,6 +62,9 @@ import { UsersModule } from 'src/modules/users/users.module';
     StoresModule,
     CategoriesModule,
     InventoryModule,
+    // Product photography. Sits beside the catalogue rather than inside it:
+    // the catalogue stores an image URL, it does not care where bytes live.
+    MediaModule,
     ProductsModule,
     CartModule,
     FavoritesModule,

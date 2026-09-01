@@ -1,6 +1,8 @@
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
+import { env } from '@/lib/env';
 import { initialsFor, placeholderTint } from '@/lib/format';
+import { resolveImageUrl } from '@/lib/image';
 
 export interface ProductImageProps {
   image: { url: string; alt: string } | null;
@@ -20,9 +22,17 @@ export interface ProductImageProps {
  * no object storage is configured yet; this is what makes that state presentable
  * instead of embarrassing.
  *
+ * It is also the one place a stored image path becomes a loadable URL. Uploaded
+ * photography is stored as a rooted path (`/media/<key>.jpg`) rather than an
+ * absolute URL, because the API's origin differs between development and
+ * production and a value baked in at write time would be wrong in one of them.
+ * That path has to be resolved against the API origin, not the web app's — the
+ * two are different servers, and `/media/...` means nothing on port 3000.
+ *
  * Remote images are rendered `unoptimized`: the optimizer refuses hosts that are
- * not in `next.config.mjs` `images.remotePatterns`, and an admin may paste a URL
- * from anywhere. Add the real bucket host there to switch optimisation on.
+ * not in `next.config.mjs` `images.remotePatterns`, and an admin may still paste
+ * a URL from anywhere. Uploads are already downscaled in the browser before they
+ * are sent, so the bytes here are reasonable without the optimizer.
  */
 export function ProductImage({ image, name, sizes, className, priority }: ProductImageProps) {
   if (!image) {
@@ -42,7 +52,7 @@ export function ProductImage({ image, name, sizes, className, priority }: Produc
 
   return (
     <Image
-      src={image.url}
+      src={resolveImageUrl(image.url, env.apiOrigin)}
       alt={image.alt}
       fill
       unoptimized

@@ -86,8 +86,38 @@ export const productFormSchema = z
     shortDescription: z.string().max(200),
     description: z.string().max(4000),
 
-    categoryId: z.string().min(1, 'Choose a category'),
+    /**
+     * Either an existing category id, or a name to create.
+     *
+     * Modelled as a pair rather than a bare id so the form knows, without
+     * guessing, whether saving has to create a category first — and so the
+     * "about to create" state can be shown to the admin before it happens.
+     */
+    categoryId: z.string(),
+    categoryCreateName: z.string(),
+
     subcategoryId: z.string(),
+    subcategoryCreateName: z.string(),
+
+    /**
+     * Uploaded already — the form holds only the stored path. Alt text is
+     * required on every one, and the server rejects a blank one too: an image
+     * with no description is invisible to a screen reader, and on a grocery
+     * app the photograph is often the product identification.
+     */
+    images: z
+      .array(
+        z.object({
+          url: z.string().min(1),
+          alt: z
+            .string()
+            .trim()
+            .min(1, 'Describe each photo')
+            .max(160, 'That description is too long'),
+          sortOrder: z.number().int().min(0).max(99),
+        }),
+      )
+      .max(8, 'A product can have at most 8 photos'),
 
     sellingPrice: priceField,
     /**
@@ -130,6 +160,10 @@ export const productFormSchema = z
     initialQuantity: countField(1_000_000),
     lowStockThreshold: countField(100_000),
   })
+  .refine((values) => Boolean(values.categoryId || values.categoryCreateName.trim()), {
+    message: 'Choose a category, or create a new one',
+    path: ['categoryId'],
+  })
   .refine(
     (values) =>
       values.compareAtPrice.trim() === '' || Number(values.compareAtPrice) > values.sellingPrice,
@@ -143,9 +177,22 @@ export const productFormSchema = z
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
 
+/**
+ * Turns a filled-in form into an API request.
+ *
+ * `categoryId` and `subcategoryId` are passed in rather than read from the
+ * form, because a category the admin asked to create does not have an id until
+ * it has been created — that happens in the submit handler, immediately before
+ * this call. Taking them as arguments makes it impossible to forget: there is
+ * no way to build a payload without having resolved them first.
+ */
 export function toProductInput(
   values: ProductFormValues,
-  options: { includeOpeningStock: boolean },
+  options: {
+    includeOpeningStock: boolean;
+    categoryId: string;
+    subcategoryId: string | null;
+  },
 ): ProductInput {
   const compareAtPrice = values.compareAtPrice.trim();
 
@@ -154,8 +201,15 @@ export function toProductInput(
     brand: orUndefined(values.brand),
     shortDescription: orUndefined(values.shortDescription),
     description: orUndefined(values.description),
-    categoryId: values.categoryId,
-    subcategoryId: values.subcategoryId || null,
+    categoryId: options.categoryId,
+    subcategoryId: options.subcategoryId,
+    images: values.images.map((image, index) => ({
+      url: image.url,
+      alt: image.alt.trim(),
+      // Re-derived from position: the array order is what the admin arranged,
+      // and a stale sortOrder from a removed item would contradict it.
+      sortOrder: index,
+    })),
     sellingPrice: values.sellingPrice,
     // Explicit null clears an existing discount; the server accepts that.
     compareAtPrice: compareAtPrice === '' ? null : Number(compareAtPrice),
