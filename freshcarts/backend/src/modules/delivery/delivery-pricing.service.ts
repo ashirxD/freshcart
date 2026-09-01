@@ -1,6 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { assertMoney } from 'src/common/utils';
 import { BusinessException } from 'src/common/errors';
 import { DeliveryPricingRule, DeliveryPricingRuleDocument } from './schemas';
@@ -15,6 +21,27 @@ export interface PricingBand {
   priority: number;
 }
 
+/** A band plus whether it is switched on. What the admin screen lists. */
+export interface DeliveryRuleView extends PricingBand {
+  isActive: boolean;
+}
+
+/** What an admin form submits. */
+export interface DeliveryRuleInput {
+  label: string;
+  minDistanceMeters: number;
+  maxDistanceMeters: number;
+  fee: number;
+  priority: number;
+  isActive: boolean;
+}
+
+/** The persisted fields both view mappers read. */
+type LeanPricingRule = Pick<
+  DeliveryPricingRule,
+  'label' | 'minDistanceMeters' | 'maxDistanceMeters' | 'fee' | 'priority' | 'isActive'
+> & { _id: Types.ObjectId };
+
 export interface PricedDelivery {
   fee: number;
   ruleId: string;
@@ -23,6 +50,13 @@ export interface PricedDelivery {
 
 /** More bands than any real pricing policy needs. See `activeBands`. */
 const MAX_ACTIVE_PRICING_RULES = 50;
+
+/**
+ * The admin listing includes deactivated rules, so its cap is higher than the
+ * pricing path's — but it is still a cap, because an unbounded `find()` on a
+ * collection an admin can add to is exactly the pattern section 39 forbids.
+ */
+const MAX_CONFIGURED_PRICING_RULES = 200;
 
 /** What is wrong with a rule set, reported by {@link validateRuleSet}. */
 export interface RuleSetProblem {
@@ -189,5 +223,188 @@ export class DeliveryPricingService {
       fee: rule.fee,
       priority: rule.priority,
     }));
+  }
+
+  // --- Configuration (admin) ----------------------------------------------
+  //
+  // These four methods manage the rule *set*. They do not price anything —
+  // `priceFor` above remains the only thing that turns a distance into a fee,
+  // and it is unaffected by what an admin does here beyond reading the rows
+  // that result. Section 17: the engine stays authoritative, the admin surface
+  // only edits its configuration.
+
+  /**
+   * Every rule for a store, active or not, with the problems the set has.
+   *
+   * The problems come back beside the rules rather than as a separate call,
+   * because a gap between two bands is a property of the set and an admin
+   * cannot act on the list without seeing them together.
+   */
+  async listRules(
+    storeId: Types.ObjectId,
+    maxServiceDistanceMeters: number,
+  ): Promise<{
+    rules: DeliveryRuleView[];
+    problems: RuleSetProblem[];
+  }> {
+    const rules = await this.ruleModel
+      .find({ storeId })
+      .sort({ minDistanceMeters: 1, priority: -1 })
+      .limit(MAX_CONFIGURED_PRICING_RULES)
+      .lean()
+      .exec();
+
+    const active = rules
+      .filter((rule) => rule.isActive)
+      .map((rule) => DeliveryPricingService.toBand(rule));
+
+    return {
+      rules: rules.map((rule) => DeliveryPricingService.toRuleView(rule)),
+      problems: DeliveryPricingService.validateRuleSet(active, maxServiceDistanceMeters),
+    };
+  }
+
+  async createRule(storeId: Types.ObjectId, input: DeliveryRuleInput): Promise<DeliveryRuleView> {
+    await this.assertNoActiveOverlap(storeId, input, null);
+
+    const created = await this.ruleModel.create({ ...input, storeId });
+    this.logger.log('Delivery pricing rule created: ' + created.label);
+
+    return DeliveryPricingService.toRuleView(created.toObject());
+  }
+
+  /**
+   * Edits one rule.
+   *
+   * The store id is in the filter, not compared afterwards — the same rule the
+   * rest of the codebase follows, so an admin acting on the wrong store gets a
+   * 404 rather than a silent cross-store write.
+   */
+  async updateRule(
+    storeId: Types.ObjectId,
+    ruleId: string,
+    input: Partial<DeliveryRuleInput>,
+  ): Promise<DeliveryRuleView> {
+    const existing = await this.loadRuleOrFail(storeId, ruleId);
+
+    const merged: DeliveryRuleInput = {
+      label: input.label ?? existing.label,
+      minDistanceMeters: input.minDistanceMeters ?? existing.minDistanceMeters,
+      maxDistanceMeters: input.maxDistanceMeters ?? existing.maxDistanceMeters,
+      fee: input.fee ?? existing.fee,
+      priority: input.priority ?? existing.priority,
+      isActive: input.isActive ?? existing.isActive,
+    };
+
+    if (merged.isActive) {
+      await this.assertNoActiveOverlap(storeId, merged, existing._id);
+    }
+
+    Object.assign(existing, merged);
+    const saved = await existing.save();
+
+    return DeliveryPricingService.toRuleView(saved.toObject());
+  }
+
+  /**
+   * Removes a rule.
+   *
+   * Safe to delete outright, unlike a product: an order snapshots the fee it
+   * was charged and only keeps `pricingRuleId` as a breadcrumb, so deleting the
+   * rule cannot change a historical total. The last *active* rule is refused
+   * anyway — a store with no bands cannot price a delivery at all, and finding
+   * that out at a shopper's checkout is not acceptable.
+   */
+  async deleteRule(
+    storeId: Types.ObjectId,
+    ruleId: string,
+  ): Promise<{ deleted: true; id: string }> {
+    const existing = await this.loadRuleOrFail(storeId, ruleId);
+
+    if (existing.isActive) {
+      const remaining = await this.ruleModel.countDocuments({
+        storeId,
+        isActive: true,
+        _id: { $ne: existing._id },
+      });
+
+      if (remaining === 0) {
+        throw new ConflictException(
+          'This is the only active pricing rule. Add a replacement before deleting it, or deliveries cannot be priced.',
+        );
+      }
+    }
+
+    await this.ruleModel.deleteOne({ _id: existing._id, storeId }).exec();
+    this.logger.log('Delivery pricing rule deleted: ' + existing.label);
+
+    return { deleted: true, id: ruleId };
+  }
+
+  /**
+   * Refuses a rule that would overlap an existing active band.
+   *
+   * `validateRuleSet` reports overlaps for a set that already exists; this
+   * stops one being created. Both are needed: the report explains a set seeded
+   * or migrated into a bad state, this prevents an admin walking into one.
+   */
+  private async assertNoActiveOverlap(
+    storeId: Types.ObjectId,
+    candidate: Pick<DeliveryRuleInput, 'minDistanceMeters' | 'maxDistanceMeters' | 'isActive'>,
+    excludeId: Types.ObjectId | null,
+  ): Promise<void> {
+    if (candidate.isActive === false) return;
+
+    if (candidate.maxDistanceMeters <= candidate.minDistanceMeters) {
+      throw new BadRequestException(
+        'The upper distance must be greater than the lower distance, otherwise the band covers nothing.',
+      );
+    }
+
+    const filter: FilterQuery<DeliveryPricingRuleDocument> = {
+      storeId,
+      isActive: true,
+      // Half-open bands overlap when each starts before the other ends.
+      minDistanceMeters: { $lt: candidate.maxDistanceMeters },
+      maxDistanceMeters: { $gt: candidate.minDistanceMeters },
+    };
+
+    if (excludeId) filter._id = { $ne: excludeId };
+
+    const clash = await this.ruleModel.findOne(filter).select('label').lean().exec();
+
+    if (clash) {
+      throw new ConflictException(
+        'That distance range overlaps the active rule "' + clash.label + '".',
+      );
+    }
+  }
+
+  private async loadRuleOrFail(
+    storeId: Types.ObjectId,
+    ruleId: string,
+  ): Promise<DeliveryPricingRuleDocument> {
+    if (!Types.ObjectId.isValid(ruleId)) throw new NotFoundException('Pricing rule not found');
+
+    const rule = await this.ruleModel.findOne({ _id: new Types.ObjectId(ruleId), storeId }).exec();
+
+    if (!rule) throw new NotFoundException('Pricing rule not found');
+
+    return rule;
+  }
+
+  private static toBand(rule: LeanPricingRule): PricingBand {
+    return {
+      id: rule._id.toString(),
+      label: rule.label,
+      minDistanceMeters: rule.minDistanceMeters,
+      maxDistanceMeters: rule.maxDistanceMeters,
+      fee: rule.fee,
+      priority: rule.priority,
+    };
+  }
+
+  private static toRuleView(rule: LeanPricingRule): DeliveryRuleView {
+    return { ...DeliveryPricingService.toBand(rule), isActive: rule.isActive };
   }
 }

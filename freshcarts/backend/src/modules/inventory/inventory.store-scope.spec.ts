@@ -2,6 +2,7 @@ import { Model, Types } from 'mongoose';
 import { Role, StockStatus } from 'src/common/enums';
 import { AuthenticatedUser } from 'src/common/interfaces';
 import { StoresService } from 'src/modules/stores';
+import { SettingsService } from 'src/modules/settings';
 import { InventoryService } from './inventory.service';
 import { InventoryAdjustmentDocument, InventoryDocument, StockChangeReason } from './schemas';
 
@@ -61,6 +62,7 @@ describe('InventoryService — store scope and audit', () => {
       inventoryModel as unknown as Model<InventoryDocument>,
       adjustmentModel as unknown as Model<InventoryAdjustmentDocument>,
       storesService as unknown as StoresService,
+      { defaultLowStockThreshold: jest.fn().mockResolvedValue(5) } as unknown as SettingsService,
     );
   });
 

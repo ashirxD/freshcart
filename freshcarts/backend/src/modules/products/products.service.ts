@@ -158,6 +158,29 @@ export class ProductsService {
   }
 
   /** Distinct brands in the catalogue, for the filter panel. */
+  /**
+   * How many products the store sells, split by whether shoppers can see them.
+   *
+   * One grouped aggregation rather than two counts, and it lives here because
+   * ProductsService owns the collection — the admin dashboard composes counts,
+   * it does not query other modules' data (section 99).
+   */
+  async countForStore(
+    storeId: Types.ObjectId,
+  ): Promise<{ activeProducts: number; inactiveProducts: number }> {
+    const rows = await this.productModel
+      .aggregate<{ _id: boolean; count: number }>([
+        { $match: { storeId } },
+        { $group: { _id: '$isActive', count: { $sum: 1 } } },
+      ])
+      .exec();
+
+    return {
+      activeProducts: rows.find((row) => row._id === true)?.count ?? 0,
+      inactiveProducts: rows.find((row) => row._id === false)?.count ?? 0,
+    };
+  }
+
   async listBrands(): Promise<string[]> {
     const storeId = await this.storesService.getActiveStoreObjectId();
 
@@ -251,7 +274,9 @@ export class ProductsService {
     try {
       await this.inventoryService.ensureFor(product._id, storeId, {
         quantity: dto.initialQuantity ?? 0,
-        lowStockThreshold: dto.lowStockThreshold ?? 5,
+        // Omitted deliberately when the admin did not set one: InventoryService
+        // applies the platform default, so the number lives in one place.
+        lowStockThreshold: dto.lowStockThreshold,
       });
     } catch (error) {
       // A product with no stock row would read as permanently out of stock and

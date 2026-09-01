@@ -3,6 +3,7 @@ import { CurrentUser, Roles } from 'src/common/decorators';
 import { Role } from 'src/common/enums';
 import { AuthenticatedUser } from 'src/common/interfaces';
 import { ParseObjectIdPipe } from 'src/common/pipes';
+import { AuditAction, AuditEntity, AuditService } from 'src/modules/audit';
 import { QueryInventoryDto, UpdateInventoryDto } from 'src/modules/inventory/dto';
 import { InventoryService } from 'src/modules/inventory';
 import { OrderStatus, OrdersService, QueryStoreOrdersDto } from 'src/modules/orders';
@@ -51,6 +52,12 @@ export class StoreManagerController {
     private readonly inventoryService: InventoryService,
     private readonly productsService: ProductsService,
     private readonly substitutionsService: SubstitutionsService,
+    /**
+     * Section 26 names store operations explicitly: a manager changing stock or
+     * moving an order is an administrative action and belongs in the trail
+     * beside an admin's. The actor is the verified principal, never the body.
+     */
+    private readonly auditService: AuditService,
   ) {}
 
   // --- Dashboard ----------------------------------------------------------
@@ -85,20 +92,31 @@ export class StoreManagerController {
    * in `advanceForStore` — server-side, and shared with the reject endpoint.
    */
   @Patch('orders/:id/status')
-  updateOrderStatus(
+  async updateOrderStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateStoreOrderStatusDto,
   ) {
     const storeId = resolveManagerStoreId(user);
 
-    return this.ordersService.advanceForStore(
+    const order = await this.ordersService.advanceForStore(
       storeId,
       id,
       dto.status,
       { userId: user.userId, role: user.role },
       { reason: dto.reason },
     );
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.ORDER_STATUS_CHANGED,
+      entityType: AuditEntity.ORDER,
+      entityId: id,
+      storeId,
+      metadata: { orderNumber: order.orderNumber, status: dto.status },
+    });
+
+    return order;
   }
 
   /**
@@ -110,7 +128,7 @@ export class StoreManagerController {
    * becomes the customer's explanation.
    */
   @Post('orders/:id/reject')
-  rejectOrder(
+  async rejectOrder(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: RejectStoreOrderDto,
@@ -120,7 +138,7 @@ export class StoreManagerController {
 
     const customerFacing = REJECTION_REASON_TEXT[dto.reason] + (note ? ' ' + note : '');
 
-    return this.ordersService.advanceForStore(
+    const order = await this.ordersService.advanceForStore(
       storeId,
       id,
       OrderStatus.REJECTED,
@@ -132,6 +150,24 @@ export class StoreManagerController {
         reason: this.rejectionReasonCode(dto.reason, note),
       },
     );
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.ORDER_STATUS_CHANGED,
+      entityType: AuditEntity.ORDER,
+      entityId: id,
+      storeId,
+      // The reason CODE, not the manager's free-text note: the code is what
+      // makes "how many orders did we reject for being out of stock?"
+      // answerable, and the note may name a customer.
+      metadata: {
+        orderNumber: order.orderNumber,
+        status: OrderStatus.REJECTED,
+        reason: dto.reason,
+      },
+    });
+
+    return order;
   }
 
   private rejectionReasonCode(reason: OrderRejectionReason, note?: string): string {
@@ -219,15 +255,29 @@ export class StoreManagerController {
    * verified principal rather than to anything in the body.
    */
   @Patch('inventory/:productId')
-  updateInventory(
+  async updateInventory(
     @CurrentUser() user: AuthenticatedUser,
     @Param('productId', ParseObjectIdPipe) productId: string,
     @Body() dto: UpdateInventoryDto,
   ) {
-    return this.inventoryService.update(productId, dto, {
-      storeId: resolveManagerStoreId(user),
-      actor: user,
+    const storeId = resolveManagerStoreId(user);
+
+    const result = await this.inventoryService.update(productId, dto, { storeId, actor: user });
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.INVENTORY_ADJUSTED,
+      entityType: AuditEntity.INVENTORY,
+      entityId: productId,
+      storeId,
+      metadata: {
+        quantity: result.quantity,
+        lowStockThreshold: result.lowStockThreshold,
+        changeReason: dto.changeReason,
+      },
     });
+
+    return result;
   }
 
   // --- Products -----------------------------------------------------------
@@ -264,15 +314,25 @@ export class StoreManagerController {
    * order history that references it.
    */
   @Patch('products/:id/availability')
-  updateProductAvailability(
+  async updateProductAvailability(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: UpdateProductAvailabilityDto,
   ) {
-    return this.productsService.setActive(
-      id,
-      dto.availability === 'AVAILABLE',
-      resolveManagerStoreId(user),
-    );
+    const storeId = resolveManagerStoreId(user);
+    const isActive = dto.availability === 'AVAILABLE';
+
+    const product = await this.productsService.setActive(id, isActive, storeId);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.PRODUCT_STATUS_CHANGED,
+      entityType: AuditEntity.PRODUCT,
+      entityId: id,
+      storeId,
+      metadata: { sku: product.sku, name: product.name, isActive },
+    });
+
+    return product;
   }
 }

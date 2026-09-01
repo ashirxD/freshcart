@@ -72,11 +72,6 @@ class EnvironmentVariables {
   ROUTING_OSRM_BASE_URL?: string;
 
   @IsOptional()
-  @IsInt()
-  @Min(1000, { message: 'DELIVERY_MAX_DISTANCE_METERS must be at least 1000 (1 km)' })
-  DELIVERY_MAX_DISTANCE_METERS?: number;
-
-  @IsOptional()
   @Matches(/^[A-Za-z]{2,6}$/, { message: 'ORDER_NUMBER_PREFIX must be 2-6 letters' })
   ORDER_NUMBER_PREFIX?: string;
 

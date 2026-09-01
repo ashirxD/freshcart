@@ -11,7 +11,7 @@
  * without a deploy, and the seeder writes them only when a store has none.
  *
  * The furthest band ends at 12,000 m, matching the default
- * DELIVERY_MAX_DISTANCE_METERS. If that limit is raised without adding a band,
+ * the configured service radius. If that limit is raised without adding a band,
  * `validateRuleSet` reports the gap and the pricing engine refuses to invent a
  * fee for the uncovered range.
  */

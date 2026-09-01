@@ -76,7 +76,7 @@ describe('CheckoutService', () => {
   let cartService: { findOwnCart: jest.Mock };
   let productsService: { findViewsByIds: jest.Mock };
   let addressesService: { findOwnedOrFail: jest.Mock };
-  let deliveryService: { quote: jest.Mock; maxDistanceMeters: number };
+  let deliveryService: { quote: jest.Mock; maxDistanceMeters: jest.Mock };
   let paymentsService: { availableMethods: jest.Mock; assertMethodIsAvailable: jest.Mock };
   let storesService: { assertAcceptingOrders: jest.Mock };
   let service: CheckoutService;
@@ -93,7 +93,9 @@ describe('CheckoutService', () => {
     cartService = { findOwnCart: jest.fn() };
     productsService = { findViewsByIds: jest.fn() };
     addressesService = { findOwnedOrFail: jest.fn() };
-    deliveryService = { quote: jest.fn(), maxDistanceMeters: 12_000 };
+    // The radius is business configuration read from settings, so it is an
+    // async lookup rather than a synchronous property.
+    deliveryService = { quote: jest.fn(), maxDistanceMeters: jest.fn().mockResolvedValue(12_000) };
     paymentsService = {
       availableMethods: jest
         .fn()

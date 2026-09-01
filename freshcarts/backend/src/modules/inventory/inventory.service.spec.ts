@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import { StockStatus } from 'src/common/enums';
 import { StoresService } from 'src/modules/stores';
+import { SettingsService } from 'src/modules/settings';
 import { InventoryService } from './inventory.service';
 import { InventoryAdjustmentDocument, InventoryDocument } from './schemas';
 
@@ -44,6 +45,7 @@ describe('InventoryService', () => {
       inventoryModel as unknown as Model<InventoryDocument>,
       adjustmentModel as unknown as Model<InventoryAdjustmentDocument>,
       storesService,
+      { defaultLowStockThreshold: jest.fn().mockResolvedValue(5) } as unknown as SettingsService,
     );
   });
 

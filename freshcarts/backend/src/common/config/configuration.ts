@@ -1,7 +1,20 @@
 /**
- * Typed application configuration, loaded once at bootstrap.
- * Every value the app needs is read from here — never from `process.env` directly
- * outside this file, so configuration stays testable and auditable.
+ * ENVIRONMENT configuration, loaded once at bootstrap.
+ *
+ * Every value the app needs from the environment is read here — never from
+ * `process.env` directly outside this file, so configuration stays testable and
+ * auditable.
+ *
+ * Section 25 draws a line this file sits on one side of. What belongs here
+ * answers "where does this process find its dependencies, and how is it
+ * deployed?": connection strings, secrets, ports, provider choices, timeouts.
+ *
+ * What does NOT belong here is business configuration — the delivery radius,
+ * the default low-stock threshold, the support number. Those are decisions an
+ * operator makes, not a deployer, and changing one must not require a redeploy.
+ * They live in the `platform_settings` document and are read through
+ * SettingsService. Adding a business rule to this file is the mistake that
+ * section 25 names.
  */
 /**
  * A JWT lifetime such as "15m" or "7d". Typed as a template literal rather than
@@ -53,10 +66,6 @@ export interface AppConfig {
     estimateRoadFactor: number;
     /** Average road speed, for the `estimate` provider's duration figure. */
     estimateSpeedKph: number;
-  };
-  delivery: {
-    /** Beyond this, delivery is refused and the shopper is offered pickup. */
-    maxDistanceMeters: number;
   };
   orders: {
     /** Leading segment of the customer-facing order number, e.g. "FC". */
@@ -161,9 +170,6 @@ export default (): AppConfig => {
       timeoutMs: toInt(process.env.ROUTING_TIMEOUT_MS, 4_000),
       estimateRoadFactor: toFloat(process.env.ROUTING_ESTIMATE_ROAD_FACTOR, 1.35),
       estimateSpeedKph: toFloat(process.env.ROUTING_ESTIMATE_SPEED_KPH, 22),
-    },
-    delivery: {
-      maxDistanceMeters: toInt(process.env.DELIVERY_MAX_DISTANCE_METERS, 12_000),
     },
     orders: {
       numberPrefix: (process.env.ORDER_NUMBER_PREFIX ?? 'FC').toUpperCase(),

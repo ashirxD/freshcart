@@ -131,10 +131,20 @@ export class UsersService {
     return user.save();
   }
 
-  async list(query: QueryUsersDto): Promise<PaginatedResult<PublicUser>> {
+  /**
+   * Paginated account listing.
+   *
+   * `roleOverride` pins the role server-side and takes precedence over anything
+   * in the query. The admin customer and store-manager screens pass it, so
+   * neither endpoint can be steered into returning the other's accounts by a
+   * query parameter — which also means a customer list can never surface an
+   * admin's phone number.
+   */
+  async list(query: QueryUsersDto, roleOverride?: Role): Promise<PaginatedResult<PublicUser>> {
     const filter: FilterQuery<UserDocument> = {};
 
-    if (query.role) filter.role = query.role;
+    const role = roleOverride ?? query.role;
+    if (role) filter.role = role;
     if (query.isActive !== undefined) filter.isActive = query.isActive;
 
     if (query.search) {
@@ -174,6 +184,59 @@ export class UsersService {
       dto.role === Role.STORE_MANAGER && dto.storeId ? new Types.ObjectId(dto.storeId) : null;
 
     // Any role change invalidates issued tokens: the old role is baked into them.
+    user.refreshTokenHash = null;
+
+    return user.save();
+  }
+
+  /**
+   * Headcount by role, for the admin dashboard. One grouped aggregation rather
+   * than three counts, and the only place this shape is produced.
+   */
+  async countByRole(): Promise<{
+    customers: number;
+    activeCustomers: number;
+    storeManagers: number;
+    admins: number;
+  }> {
+    const rows = await this.userModel
+      .aggregate<{ _id: { role: Role; isActive: boolean }; count: number }>([
+        { $group: { _id: { role: '$role', isActive: '$isActive' }, count: { $sum: 1 } } },
+      ])
+      .exec();
+
+    const total = (role: Role, isActive?: boolean): number =>
+      rows
+        .filter(
+          (row) =>
+            row._id.role === role && (isActive === undefined || row._id.isActive === isActive),
+        )
+        .reduce((sum, row) => sum + row.count, 0);
+
+    return {
+      customers: total(Role.CUSTOMER),
+      activeCustomers: total(Role.CUSTOMER, true),
+      storeManagers: total(Role.STORE_MANAGER),
+      admins: total(Role.ADMIN),
+    };
+  }
+
+  /**
+   * Moves a store manager to a different store. ADMIN-only by virtue of its
+   * only caller; the role itself is unchanged.
+   *
+   * The refresh-token hash is cleared for the same reason a role change clears
+   * it: the previous store binding is baked into any issued access token, and a
+   * reassigned manager must not keep the old queue open until it expires.
+   */
+  async assignStore(userId: string, storeId: Types.ObjectId): Promise<UserDocument> {
+    const user = await this.findByIdOrFail(userId);
+
+    if (user.role !== Role.STORE_MANAGER) {
+      throw new BadRequestException('Only a store manager can be assigned to a store');
+    }
+
+    user.storeId = storeId;
     user.refreshTokenHash = null;
 
     return user.save();

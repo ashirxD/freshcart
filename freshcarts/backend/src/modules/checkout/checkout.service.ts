@@ -60,7 +60,7 @@ export class CheckoutService {
   /** The server-authoritative preview, shaped for the API boundary. */
   async preview(userId: string, dto: CheckoutPreviewDto): Promise<CheckoutPreviewView> {
     const draft = await this.validate(userId, dto);
-    return CheckoutService.toPreviewView(draft, this.deliveryService.maxDistanceMeters);
+    return CheckoutService.toPreviewView(draft, await this.deliveryService.maxDistanceMeters());
   }
 
   /**

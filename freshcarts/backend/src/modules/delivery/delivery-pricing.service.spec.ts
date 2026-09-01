@@ -122,7 +122,7 @@ describe('DeliveryPricingService', () => {
     });
 
     it('reports a service area that reaches further than pricing does', () => {
-      // Raising DELIVERY_MAX_DISTANCE_METERS without adding a band is the
+      // Raising the service radius without adding a band is the
       // realistic way this configuration goes wrong.
       const problems = DeliveryPricingService.validateRuleSet(standardBands(), 20_000);
 

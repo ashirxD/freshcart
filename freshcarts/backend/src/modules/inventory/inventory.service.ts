@@ -7,6 +7,7 @@ import { escapeRegExp } from 'src/common/utils';
 import { PRODUCT_COLLECTION } from 'src/modules/products/schemas';
 import { StoresService } from 'src/modules/stores';
 import { AuthenticatedUser } from 'src/common/interfaces';
+import { SettingsService } from 'src/modules/settings';
 import { QueryInventoryDto, UpdateInventoryDto } from './dto';
 import {
   Inventory,
@@ -44,6 +45,7 @@ export class InventoryService {
     @InjectModel(InventoryAdjustment.name)
     private readonly adjustmentModel: Model<InventoryAdjustmentDocument>,
     private readonly storesService: StoresService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -76,6 +78,11 @@ export class InventoryService {
    * Creates the stock row for a new product, or returns the existing one.
    * Upsert rather than create-then-check, so two concurrent product imports
    * cannot produce a duplicate (the unique index would reject the second).
+   *
+   * An unspecified threshold falls back to the platform default rather than to
+   * a constant, so an admin who decides five is too low for this catalogue does
+   * not have to edit code — and existing rows keep the threshold they already
+   * have, because a default is not a retroactive rewrite.
    */
   async ensureFor(
     productId: Types.ObjectId,
@@ -90,7 +97,8 @@ export class InventoryService {
             productId,
             storeId,
             quantity: initial.quantity ?? 0,
-            lowStockThreshold: initial.lowStockThreshold ?? 5,
+            lowStockThreshold:
+              initial.lowStockThreshold ?? (await this.settingsService.defaultLowStockThreshold()),
           },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true },

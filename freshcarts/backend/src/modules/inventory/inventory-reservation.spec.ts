@@ -1,5 +1,6 @@
 import { Model, Types } from 'mongoose';
 import { StoresService } from 'src/modules/stores';
+import { SettingsService } from 'src/modules/settings';
 import { InventoryService } from './inventory.service';
 import { InventoryAdjustmentDocument, InventoryDocument } from './schemas';
 
@@ -55,6 +56,9 @@ describe('InventoryService — reservation', () => {
       // reconstructible from the order's own history.
       { create: jest.fn() } as unknown as Model<InventoryAdjustmentDocument>,
       { getActiveStoreObjectId: jest.fn() } as unknown as StoresService,
+      // Reservation never creates a stock row, so the default threshold is
+      // never read on this path.
+      { defaultLowStockThreshold: jest.fn() } as unknown as SettingsService,
     );
   };
 

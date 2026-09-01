@@ -33,7 +33,13 @@ import {
   toOrderSummaryView,
 } from './order.view';
 import { User, UserDocument } from 'src/modules/users/schemas';
-import { QueryOrdersDto, QueryStoreOrdersDto } from './dto';
+import { QueryAdminOrdersDto, QueryOrdersDto, QueryStoreOrdersDto } from './dto';
+import {
+  AdminOrderDetailView,
+  AdminOrderMetrics,
+  AdminOrderStoreRef,
+  AdminOrderSummaryView,
+} from './admin-order.view';
 import {
   StoreCustomerView,
   StoreOrderDetailView,
@@ -288,6 +294,261 @@ export class OrdersService {
       needsAction: needsActionTotal,
       completedToday: result?.completedToday[0]?.value ?? 0,
     };
+  }
+
+  // --- Platform operations (ADMIN) ----------------------------------------
+  //
+  // The admin surface differs from the store surface in exactly one dimension:
+  // it is not bound to a store. Everything else — the projection, the state
+  // machine, the reason requirement — is the same code, deliberately, so an
+  // admin cannot reach an outcome a manager could not.
+
+  /**
+   * Every store's orders, filtered and paginated.
+   *
+   * Store names are resolved in one query for the whole page, not one per row.
+   * There are a handful of stores, so the map is loaded whole and reused.
+   */
+  async listForAdmin(query: QueryAdminOrdersDto): Promise<PaginatedResult<AdminOrderSummaryView>> {
+    const filter = await this.buildAdminFilter(query);
+
+    const [orders, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(query.skip)
+        .limit(query.limit)
+        .lean<LeanOrder[]>()
+        .exec(),
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+
+    const [customers, stores] = await Promise.all([this.loadCustomers(orders), this.storeNames()]);
+
+    return paginated(
+      orders.map((order) => ({
+        ...toStoreOrderSummaryView(order, customers.get(order.userId.toString()) ?? null),
+        store: this.storeRef(stores, order.storeId),
+      })),
+      total,
+      { page: query.page, limit: query.limit },
+    );
+  }
+
+  async findForAdmin(orderId: string): Promise<AdminOrderDetailView> {
+    if (!Types.ObjectId.isValid(orderId)) throw new NotFoundException('Order not found');
+
+    const order = await this.orderModel
+      .findById(new Types.ObjectId(orderId))
+      .lean<LeanOrder>()
+      .exec();
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    const [customers, stores] = await Promise.all([this.loadCustomers([order]), this.storeNames()]);
+
+    return {
+      ...toStoreOrderDetailView(order, customers.get(order.userId.toString()) ?? null),
+      store: this.storeRef(stores, order.storeId),
+    };
+  }
+
+  /**
+   * AN ADMIN OVERRIDE, NOT A BYPASS.
+   *
+   * Section 21 is explicit that elevated permission must not become
+   * `order.status = whatever`, and this method is what that looks like in code:
+   *
+   *   - the transition still goes through `changeStatus`, so the state machine
+   *     for THIS order's fulfilment method still rejects a pickup order being
+   *     sent out for delivery, or a cancelled order being marked delivered;
+   *   - a reason is ALWAYS required, not only for terminal states as it is for
+   *     store staff, because an admin acting outside the normal queue is by
+   *     definition doing something that needs explaining;
+   *   - the actor is the verified principal, and the caller records an audit
+   *     row against it.
+   *
+   * What an admin genuinely gains over a manager is reach — any store — and
+   * nothing else. If a transition is illegal, it is illegal for them too.
+   */
+  async overrideStatusForAdmin(
+    orderId: string,
+    next: OrderStatus,
+    actor: { userId: string; role: Role },
+    reason: string,
+  ): Promise<AdminOrderDetailView> {
+    const trimmed = reason.trim();
+
+    if (!trimmed) {
+      throw new BadRequestException(
+        'An override needs a reason. It is recorded against your account and shown to the customer.',
+      );
+    }
+
+    if (!Types.ObjectId.isValid(orderId)) throw new NotFoundException('Order not found');
+
+    const isTermination = [
+      OrderStatus.CANCELLED,
+      OrderStatus.REJECTED,
+      OrderStatus.FAILED,
+    ].includes(next);
+
+    await this.changeStatus(new Types.ObjectId(orderId), next, {
+      actor: actor.role,
+      actorId: new Types.ObjectId(actor.userId),
+      note: trimmed,
+      cancellationReason: isTermination ? trimmed : undefined,
+    });
+
+    return this.findForAdmin(orderId);
+  }
+
+  /**
+   * The order half of the admin dashboard, in one aggregation.
+   *
+   * Revenue counts orders that were actually fulfilled or are still on their
+   * way to being fulfilled — a cancelled or rejected order is not revenue, and
+   * showing it as such would be exactly the invented metric section 4 forbids.
+   * Totals come from the order's own pricing snapshot, never re-derived from
+   * today's catalogue.
+   */
+  async platformMetrics(now: Date = new Date()): Promise<AdminOrderMetrics> {
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - 6);
+
+    const earned = { $nin: [OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.FAILED] };
+
+    const [result] = await this.orderModel
+      .aggregate<{
+        byStatus: Array<{ _id: OrderStatus; count: number }>;
+        today: Array<{ count: number; revenue: number }>;
+        week: Array<{ count: number; revenue: number }>;
+      }>([
+        {
+          $facet: {
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+            today: [
+              { $match: { createdAt: { $gte: startOfToday }, status: earned } },
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$pricing.total' } } },
+            ],
+            week: [
+              { $match: { createdAt: { $gte: startOfWeek }, status: earned } },
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$pricing.total' } } },
+            ],
+          },
+        },
+      ])
+      .exec();
+
+    const byStatus = Object.values(OrderStatus).reduce(
+      (acc, status) => {
+        acc[status] = 0;
+        return acc;
+      },
+      {} as Record<OrderStatus, number>,
+    );
+
+    for (const row of result?.byStatus ?? []) byStatus[row._id] = row.count;
+
+    return {
+      ordersToday: result?.today[0]?.count ?? 0,
+      revenueToday: result?.today[0]?.revenue ?? 0,
+      ordersThisWeek: result?.week[0]?.count ?? 0,
+      revenueThisWeek: result?.week[0]?.revenue ?? 0,
+      pending: byStatus[OrderStatus.PENDING],
+      needsAction: Object.values(OrderStatus)
+        .filter((status) => needsAction(status))
+        .reduce((sum, status) => sum + byStatus[status], 0),
+      outForDelivery: byStatus[OrderStatus.OUT_FOR_DELIVERY],
+      readyForPickup: byStatus[OrderStatus.READY_FOR_PICKUP],
+      byStatus,
+    };
+  }
+
+  /**
+   * Total spend and order count for one shopper, for the customer detail
+   * screen. One grouped aggregation against `{ userId, createdAt }`, so it
+   * stays a single indexed read however long their history is.
+   */
+  async customerOrderSummary(
+    userId: Types.ObjectId,
+  ): Promise<{ orderCount: number; totalSpent: number; lastOrderAt: Date | null }> {
+    const [result] = await this.orderModel
+      .aggregate<{ orderCount: number; totalSpent: number; lastOrderAt: Date }>([
+        {
+          $match: {
+            userId,
+            status: { $nin: [OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.FAILED] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            orderCount: { $sum: 1 },
+            totalSpent: { $sum: '$pricing.total' },
+            lastOrderAt: { $max: '$createdAt' },
+          },
+        },
+      ])
+      .exec();
+
+    return {
+      orderCount: result?.orderCount ?? 0,
+      totalSpent: result?.totalSpent ?? 0,
+      lastOrderAt: result?.lastOrderAt ?? null,
+    };
+  }
+
+  /**
+   * The admin filter: the store filters, plus store and customer.
+   *
+   * Built on `buildStoreFilter` so "needs action", the date range and the order
+   * number prefix mean the same thing on both surfaces — restating them here
+   * would be a second definition to keep in step.
+   */
+  private async buildAdminFilter(query: QueryAdminOrdersDto): Promise<FilterQuery<OrderDocument>> {
+    // A placeholder store id, immediately overwritten or deleted below. The
+    // shared builder requires one because every other caller genuinely has one.
+    const filter = this.buildStoreFilter(new Types.ObjectId(), query);
+
+    if (query.storeId) {
+      filter.storeId = new Types.ObjectId(query.storeId);
+    } else {
+      delete filter.storeId;
+    }
+
+    if (query.customer) {
+      const pattern = new RegExp(escapeRegExp(query.customer), 'i');
+
+      const matches = await this.userModel
+        .find({ $or: [{ fullName: pattern }, { phone: pattern }] })
+        .select('_id')
+        // Bounded: a one-letter search must not load the user collection into
+        // an `$in`. A search this broad is not a search, and narrowing it is
+        // the admin's job.
+        .limit(200)
+        .lean()
+        .exec();
+
+      filter.userId = { $in: matches.map((user) => user._id) };
+    }
+
+    return filter;
+  }
+
+  /** Store id to name, for admin rows. A handful of documents, projected to two fields. */
+  private async storeNames(): Promise<Map<string, string>> {
+    const stores = await this.storesService.list(true);
+    return new Map(stores.map((store) => [store._id.toString(), store.name]));
+  }
+
+  private storeRef(names: Map<string, string>, storeId: Types.ObjectId): AdminOrderStoreRef {
+    const id = storeId.toString();
+    // A deleted store must not blank the column on an order that still exists.
+    return { id, name: names.get(id) ?? 'Unknown store' };
   }
 
   private buildStoreFilter(

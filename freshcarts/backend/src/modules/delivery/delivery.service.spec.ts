@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { AppConfig } from 'src/common/config/configuration';
 import { BusinessException, ErrorCode } from 'src/common/errors';
+import { SettingsService } from 'src/modules/settings';
 import { DeliveryPricingService } from './delivery-pricing.service';
 import { DeliveryService } from './delivery.service';
 import { EstimateRoutingProvider } from './routing';
@@ -17,10 +18,11 @@ describe('DeliveryService', () => {
   let pricingService: { priceFor: jest.Mock };
   let service: DeliveryService;
 
-  const configService = {
-    get: (key: string) =>
-      key === 'delivery' ? { maxDistanceMeters: 12_000 } : { isProduction: false },
-  } as unknown as ConfigService<AppConfig, true>;
+  // The service radius is business configuration now, so the double answers the
+  // one question DeliveryService asks of settings.
+  const settingsService = {
+    maxDeliveryDistanceMeters: jest.fn().mockResolvedValue(12_000),
+  } as unknown as SettingsService;
 
   beforeEach(() => {
     routingService = { calculateRoute: jest.fn() };
@@ -29,7 +31,7 @@ describe('DeliveryService', () => {
     service = new DeliveryService(
       routingService as unknown as RoutingService,
       pricingService as unknown as DeliveryPricingService,
-      configService,
+      settingsService,
     );
   });
 
@@ -116,8 +118,8 @@ describe('DeliveryService', () => {
     expect(pricingService.priceFor).not.toHaveBeenCalled();
   });
 
-  it('exposes the configured radius so the UI need not hardcode it', () => {
-    expect(service.maxDistanceMeters).toBe(12_000);
+  it('exposes the configured radius so the UI need not hardcode it', async () => {
+    await expect(service.maxDistanceMeters()).resolves.toBe(12_000);
   });
 });
 

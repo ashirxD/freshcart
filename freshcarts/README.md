@@ -9,6 +9,66 @@ a deliberate desktop adaptation, backed by a role-aware API.
 
 Roles: `CUSTOMER`, `STORE_MANAGER`, `ADMIN` — one API and one RBAC system for all three.
 
+**API reference:** [`backend/API.md`](backend/API.md) — every endpoint, its role, its
+request, its response and its errors.
+
+---
+
+## Architecture
+
+```
+                      Browser (Next.js)
+                             │  HTTPS, Bearer access token + httpOnly refresh cookie
+                             ▼
+                  NestJS API  ──────────────►  MongoDB
+                 (the business layer)          (replica set in production)
+                             │
+                             │  private network only
+                             ▼
+                   FastAPI AI service  ──►  Tesseract OCR
+```
+
+**NestJS is the authoritative business layer.** Prices, totals, delivery fees,
+stock, order status and roles are decided there and nowhere else. Every one of
+those is recomputed server-side from the database, whatever a client sends.
+
+**Python is the AI/OCR layer and nothing more.** It never touches MongoDB, never
+sees a price, and cannot express a product id. It contributes normalisation
+("doodh" is milk) and returns intelligence, never decisions. The browser never
+talks to it — the API is its only caller — so it stays on a private address.
+
+**Business logic never moves into Python, and the AI service is never made a
+second source of truth.** When it is down, only the scanner degrades.
+
+### Repository structure
+
+```
+freshcarts/
+├── backend/                     NestJS + Mongoose
+│   ├── API.md                   the endpoint reference
+│   └── src/
+│       ├── common/              config, guards, errors, pipes, idempotency, transactions
+│       ├── database/seeds/      development seed data
+│       └── modules/
+│           ├── auth/ users/ stores/          identity and scope
+│           ├── categories/ products/ inventory/   the catalogue
+│           ├── cart/ favorites/ addresses/        the shopper's own data
+│           ├── delivery/ payments/ checkout/ orders/  the purchase flow
+│           ├── grocery-scan/    OCR orchestration and product matching
+│           ├── substitutions/ store-manager/  store operations
+│           ├── settings/ audit/ admin/        platform administration
+│           └── health/
+├── frontend/                    Next.js App Router
+│   └── src/
+│       ├── app/(customer)/ (auth)/ (store-manager)/ (admin)/   route groups
+│       ├── components/          UI kit and feature components
+│       ├── features/            API transport + TanStack Query hooks, per domain
+│       ├── lib/                 API client, formatting, validation schemas
+│       └── store/               Zustand — client state only, never server state
+└── ai-service/                  FastAPI + Tesseract
+    └── app/                     api/ core/ ocr/ schemas/ services/
+```
+
 ---
 
 ## Prerequisites
@@ -75,7 +135,9 @@ npm run seed
 through the real services (so it passes the same validation as an admin would), and
 refuses to run when `NODE_ENV=production`.
 
-Demo accounts (from `.env`):
+Demo accounts, read from `.env` and **for development only** — these credentials are
+documented here because the seeder refuses to run when `NODE_ENV=production`, and they
+exist in no other environment:
 
 | Role                            | Phone           | Password         |
 | ------------------------------- | --------------- | ---------------- |
@@ -92,7 +154,23 @@ empty because those orders belong to Gulberg.
 The seed deliberately includes an out-of-stock product, a low-stock product and a
 deactivated product, so every state the UI must handle is reachable immediately.
 
-Other scripts: `npm run build`, `npm test`, `npm run lint`.
+Other scripts: `npm run build`, `npm test`, `npm run lint`, `npm run lint:check`.
+
+### Configuration: two kinds, kept apart
+
+**Environment configuration** lives in `.env` and is read only by
+`src/common/config/configuration.ts`. It answers *where does this process find its
+dependencies, and how is it deployed?* — `MONGODB_URI`, `JWT_ACCESS_SECRET`,
+`AI_SERVICE_URL`, `CORS_ORIGINS`, `ROUTING_PROVIDER`. Changing one needs a redeploy.
+
+**Business configuration** lives in the database and is edited at `/admin/settings` and
+`/admin/delivery-pricing`. It answers *how does FreshCarts trade?* — the delivery
+radius, the distance bands and their fees, the default low-stock threshold, the support
+contact, and the platform-wide ordering switch. Changing one takes effect on the next
+request, is attributable to an admin in the audit trail, and needs no deploy.
+
+There is deliberately no `DELIVERY_MAX_DISTANCE_METERS` environment variable: a
+delivery radius is a business decision, not a deployment one.
 
 ## Frontend
 
@@ -106,10 +184,21 @@ npm run dev
 Runs on `http://localhost:3000`. Other scripts: `npm run build`, `npm run typecheck`,
 `npm run lint`, `npm test`.
 
-Customer routes: `/`, `/categories`, `/categories/[slug]`, `/products/[slug]`, `/search`,
+**Customer** — `/`, `/categories`, `/categories/[slug]`, `/products/[slug]`, `/search`,
 `/cart`, `/checkout`, `/checkout/confirmation/[id]`, `/orders`, `/orders/[id]`,
-`/addresses`, `/favorites`, `/scan`. The back office lives under `/admin` (products,
-categories, inventory) and requires an ADMIN account.
+`/addresses`, `/favorites`, `/scan`.
+
+**Store manager** (STORE_MANAGER) — `/store-manager`, `/store-manager/orders`,
+`/store-manager/orders/[id]`, `/store-manager/inventory`, `/store-manager/products`.
+
+**Admin** (ADMIN) — `/admin` (dashboard), `/admin/orders`, `/admin/orders/[id]`,
+`/admin/products`, `/admin/categories`, `/admin/inventory`, `/admin/customers`,
+`/admin/customers/[id]`, `/admin/store-managers`, `/admin/stores`,
+`/admin/delivery-pricing`, `/admin/settings`.
+
+The role gate on each area is a usability measure, not the security boundary —
+every endpoint behind it is guarded server-side by role, so a visitor who renders
+a back-office shell can still do nothing with it.
 
 ## AI service
 
@@ -153,6 +242,34 @@ address in production, and it needs the `urd` language model (see
 development, dishonest on a receipt — so the application **refuses to boot in production**
 with it set. Production needs `ROUTING_PROVIDER=osrm` and `ROUTING_OSRM_BASE_URL`
 pointing at an OSRM-compatible service (self-hostable; no API key).
+
+## Testing, linting and builds
+
+Every gate, per service. All three suites pass with no skipped tests.
+
+| | Backend | Frontend | AI service |
+| --- | --- | --- | --- |
+| Lint | `npm run lint:check` | `npm run lint` | — |
+| Types | `npx tsc --noEmit` | `npm run typecheck` | Pydantic, at runtime |
+| Tests | `npm test` | `npm test` | `pytest` |
+| Build | `npm run build` | `npm run build` | `uvicorn app.main:app` |
+
+```bash
+cd backend    && npm run lint:check && npx tsc --noEmit && npm test && npm run build
+cd frontend   && npm run lint && npm run typecheck && npm test && npm run build
+cd ai-service && .venv/Scripts/python -m pytest
+```
+
+What the suites cover: auth and RBAC, store scope and cross-store isolation, the order
+state machine on both fulfilment paths, idempotent order creation, guarded stock writes,
+delivery pricing at its band boundaries, historical snapshots, the admin surface and its
+override rules, audit-log sanitisation, OCR validation and failure handling, and the
+customer, store and admin screens.
+
+`backend/src/module-graph.spec.ts` is worth knowing about: it resolves the real
+dependency graph for both root contexts with only the database stubbed. A missing module
+import is invisible to `tsc` and to `nest build` — it surfaces at startup — and that test
+is what turns it into a CI failure instead.
 
 ## Verifying it works
 

@@ -14,6 +14,7 @@ import { CurrentUser, Public, Roles } from 'src/common/decorators';
 import { Role } from 'src/common/enums';
 import { AuthenticatedUser } from 'src/common/interfaces';
 import { ParseObjectIdPipe } from 'src/common/pipes';
+import { AuditAction, AuditEntity, AuditService } from 'src/modules/audit';
 import { CategoriesService } from './categories.service';
 import {
   CreateCategoryDto,
@@ -30,7 +31,11 @@ import { UpdateCategoryStatusDto } from './dto/update-category-status.dto';
  */
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(
+    private readonly categoriesService: CategoriesService,
+    /** See ProductsController for why the audit call sits at this layer. */
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * `includeInactive` is honoured for staff only. A customer who guesses the
@@ -55,8 +60,18 @@ export class CategoriesController {
 
   @Post()
   @Roles(Role.ADMIN)
-  create(@Body() dto: CreateCategoryDto) {
-    return this.categoriesService.create(dto);
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateCategoryDto) {
+    const category = await this.categoriesService.create(dto);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.CATEGORY_CREATED,
+      entityType: AuditEntity.CATEGORY,
+      entityId: category.id,
+      metadata: { name: category.name, slug: category.slug },
+    });
+
+    return category;
   }
 
   /** Bulk reorder. Declared before `:id` so the literal path wins the match. */
@@ -68,15 +83,43 @@ export class CategoriesController {
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  update(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateCategoryDto) {
-    return this.categoriesService.update(id, dto);
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    const category = await this.categoriesService.update(id, dto);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.CATEGORY_UPDATED,
+      entityType: AuditEntity.CATEGORY,
+      entityId: id,
+      metadata: { name: category.name, fields: Object.keys(dto).join(',') },
+    });
+
+    return category;
   }
 
   /** Deactivate/reactivate. Separate from PATCH so the intent is auditable. */
   @Patch(':id/status')
   @Roles(Role.ADMIN)
-  setStatus(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateCategoryStatusDto) {
-    return this.categoriesService.setActive(id, dto.isActive);
+  async setStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateCategoryStatusDto,
+  ) {
+    const category = await this.categoriesService.setActive(id, dto.isActive);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.CATEGORY_STATUS_CHANGED,
+      entityType: AuditEntity.CATEGORY,
+      entityId: id,
+      metadata: { name: category.name, isActive: dto.isActive },
+    });
+
+    return category;
   }
 
   @Delete(':id')

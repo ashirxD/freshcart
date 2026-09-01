@@ -7,6 +7,12 @@ import { cn } from '@/lib/cn';
 export interface SearchBarProps {
   defaultValue?: string;
   placeholder?: string;
+  /**
+   * The accessible name of the field. Defaults to the storefront's product
+   * search, but every other search — customers, orders, staff — must say what
+   * it searches, or a screen reader announces four identical controls.
+   */
+  label?: string;
   /** Called with the debounced term as the shopper types. */
   onSearch?: (term: string) => void;
   /** Called when the shopper submits (Enter or the on-screen search key). */
@@ -26,6 +32,7 @@ export interface SearchBarProps {
 export function SearchBar({
   defaultValue = '',
   placeholder = 'Search for atta, doodh, sabzi...',
+  label = 'Search products',
   onSearch,
   onSubmit,
   debounceMs = 300,
@@ -62,23 +69,23 @@ export function SearchBar({
       role="search"
       onSubmit={handleSubmit}
       className={cn(
-        'flex min-h-touch w-full items-center gap-2 rounded-full bg-surface-sunken px-gutter',
-        'focus-within:ring-2 focus-within:ring-primary/25',
+        'min-h-touch bg-surface-sunken px-gutter flex w-full items-center gap-2 rounded-full',
+        'focus-within:ring-primary/25 focus-within:ring-2',
         className,
       )}
     >
-      <Search className="size-5 shrink-0 text-outline" aria-hidden="true" />
+      <Search className="text-outline size-5 shrink-0" aria-hidden="true" />
 
       <input
         type="search"
         value={term}
         autoFocus={autoFocus}
         placeholder={placeholder}
-        aria-label="Search products"
+        aria-label={label}
         enterKeyHint="search"
         onChange={(event) => setTerm(event.target.value)}
         className={cn(
-          'w-full bg-transparent py-3 text-base text-text outline-none',
+          'text-text w-full bg-transparent py-3 text-base outline-none',
           'placeholder:text-outline',
           // The browser's own clear button would duplicate ours.
           '[&::-webkit-search-cancel-button]:hidden',
@@ -90,7 +97,7 @@ export function SearchBar({
           type="button"
           onClick={() => setTerm('')}
           aria-label="Clear search"
-          className="-mr-1 shrink-0 rounded-full p-1 text-outline hover:bg-surface-muted"
+          className="text-outline hover:bg-surface-muted -mr-1 shrink-0 rounded-full p-1"
         >
           <X className="size-4" aria-hidden="true" />
         </button>

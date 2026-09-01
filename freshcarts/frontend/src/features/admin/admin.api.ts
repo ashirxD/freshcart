@@ -1,6 +1,25 @@
 import { toQueryString } from '@/features/catalog/catalog.api';
 import { apiFetch } from '@/lib/api/client';
 import type {
+  AdminCustomerDetail,
+  AdminCustomerSummary,
+  AdminDashboard,
+  AdminOrderDetail,
+  AdminOrderQuery,
+  AdminOrderSummary,
+  AdminStore,
+  AdminStoreManager,
+  AuditLogEntry,
+  CreateStoreManagerInput,
+  DeliveryRule,
+  DeliveryRuleInput,
+  DeliveryRuleSet,
+  PlatformSettings,
+  PlatformSettingsInput,
+  StoreInput,
+  UpdateStoreManagerInput,
+} from '@/types/admin';
+import type {
   Category,
   CategoryDetail,
   InventoryRow,
@@ -10,6 +29,7 @@ import type {
   ProductQuery,
   StockUpdateResult,
 } from '@/types/catalog';
+import type { OrderStatus } from '@/types/order';
 
 /** What a category form submits. The server derives the slug regardless. */
 export interface CategoryInput {
@@ -105,4 +125,106 @@ export const adminApi = {
     productId: string,
     input: { quantity?: number; adjustBy?: number; lowStockThreshold?: number; reason?: string },
   ) => apiFetch<StockUpdateResult>('/inventory/' + productId, { method: 'PATCH', body: input }),
+
+  // --- Control centre ----------------------------------------------------
+  //
+  // One request for the dashboard, not one per tile. Everything below hangs
+  // off `/admin`, except products, categories and stores, which reuse the
+  // routes above — the API deliberately does not maintain two endpoints for
+  // the same operation.
+
+  dashboard: () => apiFetch<AdminDashboard>('/admin/dashboard'),
+
+  // --- Orders ------------------------------------------------------------
+
+  orders: (query: AdminOrderQuery) =>
+    apiFetch<Paginated<AdminOrderSummary>>(
+      '/admin/orders' + toQueryString({ ...query, limit: 20 }),
+    ),
+
+  order: (id: string) => apiFetch<AdminOrderDetail>('/admin/orders/' + id),
+
+  /** The reason is mandatory: the server refuses an override without one. */
+  overrideOrderStatus: (id: string, input: { status: OrderStatus; reason: string }) =>
+    apiFetch<AdminOrderDetail>('/admin/orders/' + id + '/status', {
+      method: 'PATCH',
+      body: input,
+    }),
+
+  // --- Customers ---------------------------------------------------------
+
+  customers: (query: { page?: number; search?: string; isActive?: boolean }) =>
+    apiFetch<Paginated<AdminCustomerSummary>>(
+      '/admin/customers' + toQueryString({ ...query, limit: 20 }),
+    ),
+
+  customer: (id: string) => apiFetch<AdminCustomerDetail>('/admin/customers/' + id),
+
+  setCustomerStatus: (id: string, isActive: boolean) =>
+    apiFetch<AdminCustomerSummary>('/admin/customers/' + id + '/status', {
+      method: 'PATCH',
+      body: { isActive },
+    }),
+
+  // --- Store managers ----------------------------------------------------
+
+  storeManagers: (query: { page?: number; search?: string; isActive?: boolean }) =>
+    apiFetch<Paginated<AdminStoreManager>>(
+      '/admin/store-managers' + toQueryString({ ...query, limit: 20 }),
+    ),
+
+  createStoreManager: (input: CreateStoreManagerInput) =>
+    apiFetch<AdminStoreManager>('/admin/store-managers', { method: 'POST', body: input }),
+
+  updateStoreManager: (id: string, input: UpdateStoreManagerInput) =>
+    apiFetch<AdminStoreManager>('/admin/store-managers/' + id, { method: 'PATCH', body: input }),
+
+  setStoreManagerStatus: (id: string, isActive: boolean) =>
+    apiFetch<AdminStoreManager>('/admin/store-managers/' + id + '/status', {
+      method: 'PATCH',
+      body: { isActive },
+    }),
+
+  // --- Stores ------------------------------------------------------------
+  // The existing ADMIN-guarded `/stores` routes, not a parallel admin copy.
+
+  stores: () => apiFetch<AdminStore[]>('/stores' + toQueryString({ includeInactive: true })),
+
+  store: (id: string) => apiFetch<AdminStore>('/stores/' + id),
+
+  createStore: (input: StoreInput) =>
+    apiFetch<AdminStore>('/stores', { method: 'POST', body: input }),
+
+  updateStore: (id: string, input: Partial<StoreInput>) =>
+    apiFetch<AdminStore>('/stores/' + id, { method: 'PATCH', body: input }),
+
+  // --- Delivery pricing --------------------------------------------------
+
+  deliveryRules: () => apiFetch<DeliveryRuleSet>('/admin/delivery/pricing-rules'),
+
+  createDeliveryRule: (input: DeliveryRuleInput) =>
+    apiFetch<DeliveryRule>('/admin/delivery/pricing-rules', { method: 'POST', body: input }),
+
+  updateDeliveryRule: (id: string, input: Partial<DeliveryRuleInput>) =>
+    apiFetch<DeliveryRule>('/admin/delivery/pricing-rules/' + id, {
+      method: 'PATCH',
+      body: input,
+    }),
+
+  deleteDeliveryRule: (id: string) =>
+    apiFetch<{ deleted: true; id: string }>('/admin/delivery/pricing-rules/' + id, {
+      method: 'DELETE',
+    }),
+
+  // --- Settings & audit --------------------------------------------------
+
+  settings: () => apiFetch<PlatformSettings>('/admin/settings'),
+
+  updateSettings: (input: PlatformSettingsInput) =>
+    apiFetch<PlatformSettings>('/admin/settings', { method: 'PATCH', body: input }),
+
+  auditLogs: (query: { page?: number; action?: string; entityType?: string; entityId?: string }) =>
+    apiFetch<Paginated<AuditLogEntry>>(
+      '/admin/audit-logs' + toQueryString({ ...query, limit: 20 }),
+    ),
 };

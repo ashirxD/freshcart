@@ -1,6 +1,8 @@
-import { redirect } from 'next/navigation';
+import { AdminDashboardScreen } from './dashboard-screen';
 
-/** The back office opens on the catalogue, which is what it is for. */
+export const metadata = { title: 'Dashboard' };
+
+/** The back office opens on the control centre, which is what it is for. */
 export default function Page() {
-  redirect('/admin/products');
+  return <AdminDashboardScreen />;
 }

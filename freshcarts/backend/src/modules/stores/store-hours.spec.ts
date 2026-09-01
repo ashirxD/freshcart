@@ -2,18 +2,25 @@ import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { AppConfig } from 'src/common/config/configuration';
 import { ErrorCode } from 'src/common/errors';
+import { SettingsService } from 'src/modules/settings';
 import { StoreDocument } from './schemas';
 import { StoresService } from './stores.service';
 
 /** Store-local time is UTC+5 (Pakistan), which is what the default configures. */
 const PKT_OFFSET_MINUTES = 300;
 
-function buildService(offsetMinutes = PKT_OFFSET_MINUTES) {
+function buildService(offsetMinutes = PKT_OFFSET_MINUTES, orderingEnabled = true) {
   const configService = {
     get: () => ({ defaultSlug: undefined, timezoneOffsetMinutes: offsetMinutes }),
   } as unknown as ConfigService<AppConfig, true>;
 
-  return new StoresService({} as unknown as Model<StoreDocument>, configService);
+  // Ordering is enabled unless a test says otherwise: these cases are about
+  // opening hours, and the platform pause is a separate gate with its own test.
+  const settingsService = {
+    isOrderingEnabled: jest.fn().mockResolvedValue(orderingEnabled),
+  } as unknown as SettingsService;
+
+  return new StoresService({} as unknown as Model<StoreDocument>, configService, settingsService);
 }
 
 function store(overrides: Partial<StoreDocument> = {}): StoreDocument {

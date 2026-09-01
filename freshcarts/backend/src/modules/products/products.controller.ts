@@ -14,6 +14,7 @@ import { CurrentUser, Public, Roles } from 'src/common/decorators';
 import { Role } from 'src/common/enums';
 import { AuthenticatedUser } from 'src/common/interfaces';
 import { ParseObjectIdPipe } from 'src/common/pipes';
+import { AuditAction, AuditEntity, AuditService } from 'src/modules/audit';
 import {
   CreateProductDto,
   QueryProductsDto,
@@ -32,7 +33,16 @@ import { ProductsService } from './products.service';
  */
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    /**
+     * Audit recording lives in the controller rather than the service because
+     * the actor is a property of the request, not of the domain operation. A
+     * seeder or a future import job calls the same service methods and should
+     * not have to invent an actor to satisfy a log.
+     */
+    private readonly auditService: AuditService,
+  ) {}
 
   @Public()
   @Get()
@@ -65,20 +75,64 @@ export class ProductsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  create(@Body() dto: CreateProductDto) {
-    return this.productsService.create(dto);
+  async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateProductDto) {
+    const product = await this.productsService.create(dto);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.PRODUCT_CREATED,
+      entityType: AuditEntity.PRODUCT,
+      entityId: product.id,
+      metadata: { sku: product.sku, name: product.name, sellingPrice: product.sellingPrice },
+    });
+
+    return product;
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  update(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateProductDto) {
-    return this.productsService.update(id, dto);
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateProductDto,
+  ) {
+    const product = await this.productsService.update(id, dto);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.PRODUCT_UPDATED,
+      entityType: AuditEntity.PRODUCT,
+      entityId: id,
+      // The fields touched and the resulting price. Not the whole DTO: section
+      // 27 asks for who/what/which/when, not a copy of the request body.
+      metadata: {
+        sku: product.sku,
+        fields: Object.keys(dto).join(','),
+        sellingPrice: product.sellingPrice,
+      },
+    });
+
+    return product;
   }
 
   @Patch(':id/status')
   @Roles(Role.ADMIN)
-  setStatus(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateProductStatusDto) {
-    return this.productsService.setActive(id, dto.isActive);
+  async setStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateProductStatusDto,
+  ) {
+    const product = await this.productsService.setActive(id, dto.isActive);
+
+    await this.auditService.record({
+      actor: { userId: user.userId, role: user.role },
+      action: AuditAction.PRODUCT_STATUS_CHANGED,
+      entityType: AuditEntity.PRODUCT,
+      entityId: id,
+      metadata: { sku: product.sku, name: product.name, isActive: dto.isActive },
+    });
+
+    return product;
   }
 
   @Delete(':id')

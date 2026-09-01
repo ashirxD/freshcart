@@ -5,8 +5,12 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import { AppConfig } from 'src/common/config/configuration';
 import { BusinessException } from 'src/common/errors';
 import { slugify, uniqueSlug } from 'src/common/utils';
+import { SettingsService } from 'src/modules/settings';
 import { CreateStoreDto, UpdateStoreDto } from './dto';
 import { OpeningHours, Store, StoreDocument } from './schemas';
+
+/** More stores than this platform is built to run from one back office. */
+const MAX_STORES = 200;
 
 @Injectable()
 export class StoresService {
@@ -22,6 +26,7 @@ export class StoresService {
   constructor(
     @InjectModel(Store.name) private readonly storeModel: Model<StoreDocument>,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -109,8 +114,19 @@ export class StoresService {
    *
    * Called from checkout, so an out-of-hours basket fails at validation rather
    * than becoming an order nobody will pick.
+   *
+   * Two independent gates, checked in the order an operator would expect. The
+   * platform pause comes first because it is deliberate and immediate — an
+   * admin stopping the queue during an incident should not be overridden by a
+   * store that happens to be inside its published hours.
    */
   async assertAcceptingOrders(): Promise<StoreDocument> {
+    if (!(await this.settingsService.isOrderingEnabled())) {
+      throw BusinessException.storeUnavailable(
+        'FreshCarts is not taking new orders at the moment. Please try again shortly.',
+      );
+    }
+
     const store = await this.findActiveStore();
 
     if (!this.isAcceptingOrders(store)) {
@@ -135,10 +151,18 @@ export class StoresService {
     return { day: shifted.getUTCDay(), time: hours + ':' + minutes };
   }
 
+  /**
+   * Every store, for the admin list and for resolving store names on an order
+   * page. Capped rather than paginated: the admin surface wants them all in one
+   * map, and a platform with more stores than this needs a different screen
+   * anyway — but section 39 rules out an uncapped `find()` on a collection an
+   * admin can add to, however unlikely the cap is to bind.
+   */
   list(includeInactive = false): Promise<StoreDocument[]> {
     return this.storeModel
       .find(includeInactive ? {} : { isActive: true })
       .sort({ createdAt: 1 })
+      .limit(MAX_STORES)
       .exec();
   }
 

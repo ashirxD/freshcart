@@ -9,6 +9,8 @@ import { AllExceptionsFilter } from 'src/common/filters';
 import { JwtAuthGuard, RolesGuard } from 'src/common/guards';
 import { DatabaseModule } from 'src/database/database.module';
 import { AddressesModule } from 'src/modules/addresses';
+import { AdminModule } from 'src/modules/admin';
+import { AuditModule } from 'src/modules/audit';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { CartModule } from 'src/modules/cart/cart.module';
 import { CategoriesModule } from 'src/modules/categories';
@@ -21,6 +23,7 @@ import { InventoryModule } from 'src/modules/inventory';
 import { OrdersModule } from 'src/modules/orders';
 import { PaymentsModule } from 'src/modules/payments';
 import { ProductsModule } from 'src/modules/products';
+import { SettingsModule } from 'src/modules/settings';
 import { StoreManagerModule } from 'src/modules/store-manager';
 import { StoresModule } from 'src/modules/stores';
 import { SubstitutionsModule } from 'src/modules/substitutions';
@@ -45,6 +48,11 @@ import { UsersModule } from 'src/modules/users/users.module';
     DatabaseModule,
     // Provides the unit-of-work boundary every multi-collection write uses.
     DatabaseSupportModule,
+    // Platform concerns, both global and both dependency-free: business
+    // configuration that delivery/checkout/inventory read, and the audit trail
+    // that administrative writes across the graph record into.
+    SettingsModule,
+    AuditModule,
     AuthModule,
     UsersModule,
     HealthModule,
@@ -73,6 +81,9 @@ import { UsersModule } from 'src/modules/users/users.module';
     // the domain service that already owns it, scoped to the manager's store.
     SubstitutionsModule,
     StoreManagerModule,
+    // The control centre. Sits beside store operations at the top of the graph,
+    // owns no schema of its own, and nothing depends on it.
+    AdminModule,
   ],
   providers: [
     // Order matters: rate limit first, then authenticate, then authorise.

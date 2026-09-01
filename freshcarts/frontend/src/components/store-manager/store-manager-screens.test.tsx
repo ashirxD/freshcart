@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithProviders, signIn, signOut, testCustomer } from '@/test/render';
+import { renderWithProviders, signIn, testCustomer } from '@/test/render';
 import {
   makeInventoryRow,
   makeStoreDashboard,
@@ -60,10 +60,9 @@ beforeEach(() => {
   signIn(testStoreManager);
 });
 
-afterEach(() => {
-  signOut();
-  vi.unstubAllGlobals();
-});
+// No teardown here: vitest.setup.ts already unmounts, clears the session and
+// drops the stubs, in that order. Doing it again here ran the session reset
+// BEFORE the unmount, which is what produced the "not wrapped in act" warnings.
 
 describe('StoreShell', () => {
   it('shows the console to store staff', async () => {
@@ -211,9 +210,7 @@ describe('DashboardScreen', () => {
   });
 
   it('shows a friendly error and a retry when the dashboard fails', async () => {
-    stubRoutes([
-      { match: '/store-manager/dashboard', body: { message: 'boom' }, status: 500 },
-    ]);
+    stubRoutes([{ match: '/store-manager/dashboard', body: { message: 'boom' }, status: 500 }]);
 
     renderWithProviders(<DashboardScreen />);
 
@@ -240,9 +237,7 @@ describe('DashboardScreen', () => {
 
 describe('InventoryScreen', () => {
   it('lists stock with its derived status and threshold (§30)', async () => {
-    stubRoutes([
-      { match: '/store-manager/inventory', body: paginate([makeInventoryRow()]) },
-    ]);
+    stubRoutes([{ match: '/store-manager/inventory', body: paginate([makeInventoryRow()]) }]);
 
     renderWithProviders(<InventoryScreen />);
 

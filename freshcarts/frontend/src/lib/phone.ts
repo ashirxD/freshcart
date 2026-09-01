@@ -17,6 +17,14 @@ export function normalisePkPhone(input: string): string {
   return digits;
 }
 
+/**
+ * Whether the input is a Pakistani mobile number in any of the forms the
+ * normaliser accepts. Feedback only — the server validates independently.
+ */
+export function isValidPkMobile(input: string): boolean {
+  return PK_MOBILE_E164.test(normalisePkPhone(input));
+}
+
 /** Renders a stored E.164 number in the local form shoppers recognise. */
 export function formatPkPhone(e164: string): string {
   if (!PK_MOBILE_E164.test(e164)) return e164;

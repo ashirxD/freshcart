@@ -17,6 +17,7 @@ import { Order, OrderDocument } from 'src/modules/orders/schemas';
 import { Payment, PaymentDocument } from 'src/modules/payments/schemas';
 import { Inventory, InventoryDocument } from 'src/modules/inventory/schemas';
 import { ProductsService } from 'src/modules/products';
+import { SettingsService } from 'src/modules/settings';
 import { Product, ProductDocument } from 'src/modules/products/schemas';
 import { Store, StoreDocument, StoresService } from 'src/modules/stores';
 import { User, UserDocument } from 'src/modules/users/schemas';
@@ -63,6 +64,7 @@ export class SeedService {
     @InjectModel(DeliveryPricingRule.name)
     private readonly pricingRuleModel: Model<DeliveryPricingRuleDocument>,
     private readonly deliveryPricingService: DeliveryPricingService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -345,7 +347,9 @@ export class SeedService {
 
   private async reportPricingProblems(storeId: Types.ObjectId): Promise<void> {
     const bands = await this.deliveryPricingService.activeBands(storeId);
-    const maxDistance = this.configService.get('delivery', { infer: true }).maxDistanceMeters;
+    // The service radius is business configuration, so it comes from the
+    // settings document the admin screen edits — not from the environment.
+    const maxDistance = await this.settingsService.maxDeliveryDistanceMeters();
 
     for (const problem of DeliveryPricingService.validateRuleSet(bands, maxDistance)) {
       this.logger.warn('Delivery pricing ' + problem.kind + ': ' + problem.message);

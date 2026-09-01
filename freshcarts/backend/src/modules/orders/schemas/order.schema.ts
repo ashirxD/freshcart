@@ -374,6 +374,22 @@ OrderSchema.index({ storeId: 1, status: 1, createdAt: -1 });
 OrderSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 /**
+ * The admin queue, which is not scoped to a store.
+ *
+ * Every index above leads with `userId` or `storeId`, so none of them can serve
+ * "every store's orders, newest first" — the admin list and the dashboard's
+ * revenue facets both issue exactly that. Without a `createdAt` prefix Mongo
+ * would collect the whole collection and sort it in memory, which is not merely
+ * slow: an in-memory sort is capped at 32 MB and then FAILS the query outright.
+ * On a growing order collection that is a correctness problem with a date on it.
+ */
+OrderSchema.index({ createdAt: -1 });
+
+// The same queue narrowed to one status, which is how the dashboard's tiles
+// link into it ("2 new orders" -> the list of them, across every store).
+OrderSchema.index({ status: 1, createdAt: -1 });
+
+/**
  * Structural invariants, enforced at the persistence layer so no write path can
  * bypass them.
  *

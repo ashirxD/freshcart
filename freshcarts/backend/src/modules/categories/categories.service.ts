@@ -260,6 +260,14 @@ export class CategoriesService {
    * Validates a category reference coming from a product write.
    * Returns the resolved ids so ProductsService never has to re-query.
    */
+  /**
+   * How many active categories the store has. A plain indexed count, owned by
+   * the service that owns the collection, for the admin dashboard.
+   */
+  countActive(storeId: Types.ObjectId): Promise<number> {
+    return this.categoryModel.countDocuments({ storeId, isActive: true }).exec();
+  }
+
   async assertValidProductCategories(
     categoryId: string,
     subcategoryId: string | null | undefined,
