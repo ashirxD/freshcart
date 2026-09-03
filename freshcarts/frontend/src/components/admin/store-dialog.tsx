@@ -255,7 +255,7 @@ export function StoreDialog({
           />
         </div>
 
-        <fieldset className="border-outline-variant gap-xs flex flex-col rounded-lg border p-3">
+        <fieldset className="border-outline-variant gap-tight flex flex-col rounded-xl border p-3">
           <legend className="text-text px-1 text-sm font-medium">Opening hours</legend>
 
           {form.openingHours.map((window) => (

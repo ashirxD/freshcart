@@ -73,7 +73,7 @@ export function AuditLogPanel() {
   });
 
   return (
-    <section className="gap-gutter border-outline-variant bg-surface p-gutter flex flex-col rounded-lg border">
+    <section className="gap-gutter ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-2xl ring-1">
       <div className="gap-gutter flex flex-wrap items-end justify-between">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-text text-base font-semibold">Activity log</h2>

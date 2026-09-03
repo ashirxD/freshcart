@@ -19,6 +19,13 @@ export interface SearchBarProps {
   onSubmit?: (term: string) => void;
   debounceMs?: number;
   autoFocus?: boolean;
+  /**
+   * `hero` is the storefront's main search: a taller field with a visible
+   * search button, because a shopper who is not sure what to do next needs
+   * something obvious to press. `bar` is the compact version for the header
+   * and for back-office lists.
+   */
+  variant?: 'bar' | 'hero';
   className?: string;
 }
 
@@ -28,15 +35,22 @@ export interface SearchBarProps {
  * whole results page on every keystroke for no benefit.
  *
  * Debouncing lives here so no screen fires a request per character typed.
+ *
+ * THE FOCUS TREATMENT (§18)
+ * On focus the field goes to white, gains a soft green ring and lifts on a
+ * shadow — it comes forward rather than merely changing colour. That is the one
+ * animation in this component: no expanding width, no moving placeholder, both
+ * of which shift the layout under a thumb that is already on its way down.
  */
 export function SearchBar({
   defaultValue = '',
-  placeholder = 'Search for atta, doodh, sabzi...',
+  placeholder = 'Search atta, doodh, sabzi…',
   label = 'Search products',
   onSearch,
   onSubmit,
   debounceMs = 300,
   autoFocus = false,
+  variant = 'bar',
   className,
 }: SearchBarProps) {
   const [term, setTerm] = useState(defaultValue);
@@ -64,17 +78,30 @@ export function SearchBar({
     onSubmit?.(term);
   };
 
+  const isHero = variant === 'hero';
+
   return (
     <form
       role="search"
       onSubmit={handleSubmit}
       className={cn(
-        'min-h-touch bg-surface-sunken px-gutter flex w-full items-center gap-2 rounded-full',
-        'focus-within:ring-primary/25 focus-within:ring-2',
+        'group flex w-full items-center gap-2',
+        'ease-standard border transition-[background-color,border-color,box-shadow] duration-200',
+        'focus-within:border-primary/45 focus-within:bg-surface focus-within:shadow-raised',
+        isHero
+          ? 'ps-loose bg-surface border-outline-variant shadow-card min-h-14 rounded-2xl pe-2'
+          : 'px-gutter bg-surface-sunken min-h-touch rounded-full border-transparent',
         className,
       )}
     >
-      <Search className="text-outline size-5 shrink-0" aria-hidden="true" />
+      <Search
+        className={cn(
+          'text-outline shrink-0 transition-colors duration-200',
+          'group-focus-within:text-primary',
+          isHero ? 'size-5' : 'size-5',
+        )}
+        aria-hidden="true"
+      />
 
       <input
         type="search"
@@ -85,8 +112,9 @@ export function SearchBar({
         enterKeyHint="search"
         onChange={(event) => setTerm(event.target.value)}
         className={cn(
-          'text-text w-full bg-transparent py-3 text-base outline-none',
+          'text-text w-full min-w-0 bg-transparent outline-none',
           'placeholder:text-outline',
+          isHero ? 'py-3.5 text-base' : 'py-3 text-base',
           // The browser's own clear button would duplicate ours.
           '[&::-webkit-search-cancel-button]:hidden',
         )}
@@ -97,9 +125,26 @@ export function SearchBar({
           type="button"
           onClick={() => setTerm('')}
           aria-label="Clear search"
-          className="text-outline hover:bg-surface-muted -mr-1 shrink-0 rounded-full p-1"
+          className="text-outline hover:bg-surface-muted hover:text-text -me-1 shrink-0 rounded-full p-1.5 transition-colors"
         >
           <X className="size-4" aria-hidden="true" />
+        </button>
+      ) : null}
+
+      {isHero ? (
+        <button
+          type="submit"
+          className={cn(
+            'bg-primary text-on-primary shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold',
+            'ease-standard transition-[background-color,transform] duration-150',
+            'hover:bg-primary-container active:translate-y-px',
+            // On a narrow phone the label would crowd the field, so it becomes
+            // an icon — with the label kept for screen readers.
+            'flex min-h-11 items-center gap-1.5',
+          )}
+        >
+          <Search className="size-4 sm:hidden" aria-hidden="true" />
+          <span className="max-sm:sr-only">Search</span>
         </button>
       ) : null}
     </form>

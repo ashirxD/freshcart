@@ -16,7 +16,7 @@ export interface QuantitySelectorProps {
   size?: 'sm' | 'md';
   /**
    * What is being counted, phrased to follow a verb:
-   * "quantity of Olper's Full Cream Milk" reads as "Increase quantity of…".
+   * "quantity of Olpers Full Cream Milk" reads as "Increase quantity of…".
    */
   label?: string;
   /** Named in the remove label, so "Remove" is never ambiguous on a busy screen. */
@@ -28,6 +28,17 @@ export interface QuantitySelectorProps {
  * Presentational only: it reports the requested quantity and lets the caller
  * decide what that means (cart mutation, optimistic update, refetch). Stock
  * limits shown here are a convenience — the server remains the authority.
+ *
+ * THE MORPH (§25)
+ * On a product card this control replaces the "Add" button in place, and it
+ * arrives with `animate-pop` so the swap reads as one object changing rather
+ * than two components trading places. It is the single most repeated
+ * interaction on a grocery run, so it is worth the 260ms.
+ *
+ * THE COUNT (§34)
+ * The number itself is keyed on its value, so each change ticks in. The live
+ * region around it deliberately does NOT remount — re-creating an `aria-live`
+ * element is how announcements get lost.
  */
 export function QuantitySelector({
   value,
@@ -47,12 +58,13 @@ export function QuantitySelector({
   const canIncrease = !disabled && (max === undefined || value + step <= max);
   const willRemove = removable && value - step < min;
 
-  const buttonSize = size === 'sm' ? 'size-9' : 'size-touch';
+  const buttonSize = size === 'sm' ? 'size-9' : 'size-11';
 
   return (
     <div
       className={cn(
-        'border-outline-variant bg-surface inline-flex items-center justify-between gap-1 rounded-full border',
+        'animate-pop inline-flex items-center justify-between gap-1 rounded-full',
+        'bg-primary/8 ring-primary/15 ring-1',
         size === 'sm' ? 'p-0.5' : 'p-1',
         disabled && 'opacity-50',
         className,
@@ -65,7 +77,9 @@ export function QuantitySelector({
         aria-label={willRemove ? 'Remove ' + (itemName ?? 'item') : 'Decrease ' + label}
         className={cn(
           'text-primary flex items-center justify-center rounded-full',
-          'hover:bg-surface-muted disabled:text-outline disabled:pointer-events-none',
+          'ease-standard transition-[background-color,color,transform] duration-150 active:scale-90',
+          'hover:bg-surface disabled:text-outline disabled:pointer-events-none',
+          willRemove && 'hover:text-danger',
           buttonSize,
         )}
       >
@@ -81,11 +95,13 @@ export function QuantitySelector({
         aria-live="polite"
         aria-label={value + ' — ' + label}
         className={cn(
-          'text-text min-w-8 text-center font-semibold tabular-nums',
+          'text-text min-w-7 overflow-hidden text-center font-bold tabular-nums',
           size === 'sm' ? 'text-sm' : 'text-base',
         )}
       >
-        {value}
+        <span key={value} className="animate-tick inline-block">
+          {value}
+        </span>
       </span>
 
       <button
@@ -95,6 +111,7 @@ export function QuantitySelector({
         aria-label={'Increase ' + label}
         className={cn(
           'bg-primary text-on-primary flex items-center justify-center rounded-full',
+          'ease-standard transition-[background-color,transform] duration-150 active:scale-90',
           'hover:bg-primary-container disabled:bg-surface-sunken disabled:text-outline',
           buttonSize,
         )}

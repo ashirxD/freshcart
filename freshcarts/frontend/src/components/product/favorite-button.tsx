@@ -57,18 +57,44 @@ export function FavoriteButton({
       aria-label={label}
       aria-pressed={isFavorite}
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-full',
-        'bg-surface/90 text-outline shadow-card backdrop-blur-[2px]',
-        'hover:text-danger transition-colors',
-        isFavorite && 'text-danger',
-        size === 'sm' ? 'size-9' : 'size-11',
+        // THE TARGET, which is bigger than the disc.
+        //
+        // On a product card the heart reads best as a 36px disc, but 36px is
+        // an uncomfortable thumb target and there are twenty of them on a
+        // phone screen (§54). So the BUTTON is 44px and transparent, and the
+        // disc inside it is the thing you see. The visual weight is unchanged;
+        // the tappable area is a third larger.
+        'group/fav flex shrink-0 items-center justify-center rounded-full',
+        'ease-standard transition-transform duration-150 active:scale-90',
+        size === 'sm' ? 'size-11' : 'size-12',
         className,
       )}
     >
-      <Heart
-        className={cn(size === 'sm' ? 'size-4' : 'size-5', isFavorite && 'fill-current')}
+      <span
         aria-hidden="true"
-      />
+        className={cn(
+          'flex items-center justify-center rounded-full',
+          'bg-surface/90 shadow-card backdrop-blur-[2px]',
+          'ease-standard transition-colors duration-150',
+          'group-hover/fav:bg-surface group-hover/fav:text-tomato',
+          isFavorite ? 'text-tomato' : 'text-outline',
+          size === 'sm' ? 'size-9' : 'size-11',
+        )}
+      >
+        {/*
+          The heart is keyed on its state, so switching it on remounts the glyph
+          and `animate-heart` plays: one 1.32× beat and back, ~380ms (§39). It is
+          deliberately not a bounce or a burst of particles — this control gets
+          pressed dozens of times on a shopping run.
+        */}
+        <Heart
+          key={String(isFavorite)}
+          className={cn(
+            size === 'sm' ? 'size-4' : 'size-5',
+            isFavorite && 'animate-heart fill-current',
+          )}
+        />
+      </span>
     </button>
   );
 }

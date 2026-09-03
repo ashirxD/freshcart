@@ -65,7 +65,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
     <>
       <Link
         href="/admin/orders"
-        className="text-text-muted hover:text-text min-h-touch mb-xs inline-flex items-center gap-2 text-sm"
+        className="text-text-muted hover:text-text min-h-touch mb-tight inline-flex items-center gap-2 text-sm"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         All orders
@@ -74,7 +74,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
       <AdminPageHeader
         title={order.orderNumber}
         description={
-          <span className="gap-xs flex flex-wrap items-center">
+          <span className="gap-tight flex flex-wrap items-center">
             <OrderStatusBadge status={order.status} label={order.statusLabel} size="sm" />
             <span>·</span>
             <span>{order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}</span>
@@ -95,8 +95,8 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
         }
       />
 
-      <div className="gap-lg grid lg:grid-cols-[2fr_1fr]">
-        <div className="gap-lg flex flex-col">
+      <div className="gap-loose grid lg:grid-cols-[2fr_1fr]">
+        <div className="gap-loose flex flex-col">
           <Section title="Items">
             <ul className="flex flex-col">
               {order.items.map((item) => (
@@ -123,7 +123,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
               ))}
             </ul>
 
-            <dl className="border-outline-variant mt-gutter gap-xs flex flex-col border-t pt-3 text-sm">
+            <dl className="border-outline-variant mt-gutter gap-tight flex flex-col border-t pt-3 text-sm">
               <Row label="Subtotal" value={formatPkr(order.pricing.subtotal)} />
 
               {order.fulfillmentMethod === 'DELIVERY' ? (
@@ -166,7 +166,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
           </Section>
         </div>
 
-        <div className="gap-lg flex flex-col">
+        <div className="gap-loose flex flex-col">
           <Section title="Customer">
             <p className="text-text text-sm font-medium">{order.customer.name}</p>
             <a
@@ -178,7 +178,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
             </a>
 
             {order.customerNote ? (
-              <p className="bg-surface-muted p-gutter text-text mt-xs rounded-lg text-sm">
+              <p className="bg-surface-muted p-gutter text-text mt-tight rounded-lg text-sm">
                 “{order.customerNote}”
               </p>
             ) : null}
@@ -186,7 +186,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
 
           {order.deliveryAddress ? (
             <Section title="Delivering to">
-              <p className="text-text gap-2 flex items-start text-sm">
+              <p className="text-text flex items-start gap-2 text-sm">
                 <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>{order.deliveryAddress.formatted}</span>
               </p>
@@ -196,7 +196,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
               ) : null}
 
               {order.delivery ? (
-                <p className="text-text-muted mt-xs text-sm tabular-nums">
+                <p className="text-text-muted mt-tight text-sm tabular-nums">
                   {(order.delivery.distanceMeters / 1000).toFixed(1)} km ·{' '}
                   {formatPkr(order.delivery.fee)} charged
                 </p>
@@ -206,7 +206,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
 
           {order.pickup ? (
             <Section title="Collecting from">
-              <p className="text-text gap-2 flex items-start text-sm">
+              <p className="text-text flex items-start gap-2 text-sm">
                 <Store className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>
                   {order.pickup.storeName}
@@ -218,7 +218,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
           ) : null}
 
           <Section title="Payment">
-            <div className="gap-xs flex flex-wrap items-center">
+            <div className="gap-tight flex flex-wrap items-center">
               <span className="text-text text-sm">
                 {order.payment.method === 'CASH_ON_DELIVERY'
                   ? 'Cash on delivery'
@@ -274,7 +274,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="border-outline-variant bg-surface p-gutter rounded-lg border">
       <h2 className="text-text mb-gutter text-base font-semibold">{title}</h2>
-      <div className="gap-xs flex flex-col">{children}</div>
+      <div className="gap-tight flex flex-col">{children}</div>
     </section>
   );
 }
@@ -293,9 +293,12 @@ function Row({ label, value, emphasis }: { label: string; value: string; emphasi
 /** Internal role enums, in words a person reads (section 46). */
 function roleLabel(role: string): string {
   return (
-    { CUSTOMER: 'the customer', STORE_MANAGER: 'store staff', ADMIN: 'an administrator', SYSTEM: 'FreshCarts' }[
-      role
-    ] ?? role.toLowerCase()
+    {
+      CUSTOMER: 'the customer',
+      STORE_MANAGER: 'store staff',
+      ADMIN: 'an administrator',
+      SYSTEM: 'FreshCarts',
+    }[role] ?? role.toLowerCase()
   );
 }
 

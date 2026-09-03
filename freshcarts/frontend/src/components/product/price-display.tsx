@@ -8,10 +8,24 @@ export interface PriceDisplayProps {
   className?: string;
 }
 
+/**
+ * The price sizes come from the type scale, not from body text.
+ *
+ * A price is the second thing a shopper reads after the product name, and on
+ * the old card it was set at the same size and weight as the pack label — so
+ * nothing on the card had emphasis (§27, §81). Here it is heavier and tighter
+ * than everything around it at every size.
+ */
 const PRICE_SIZES = {
-  sm: 'text-sm',
-  md: 'text-base',
-  lg: 'text-2xl',
+  sm: 'text-[0.9375rem]',
+  md: 'text-price',
+  lg: 'text-price-lg',
+} as const;
+
+const WAS_SIZES = {
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-base',
 } as const;
 
 /**
@@ -31,9 +45,12 @@ export function PriceDisplay({
   const hasDiscount = Boolean(compareAtPrice && compareAtPrice > sellingPrice);
 
   return (
-    <p className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-0.5', className)}>
+    <p className={cn('flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5', className)}>
       <span
-        className={cn('text-text font-bold tracking-tight tabular-nums', PRICE_SIZES[size])}
+        className={cn(
+          'text-text font-extrabold tracking-[-0.02em] tabular-nums',
+          PRICE_SIZES[size],
+        )}
         aria-label={(hasDiscount ? 'Now ' : '') + formatPkrLabel(sellingPrice)}
       >
         {formatPkr(sellingPrice)}
@@ -41,7 +58,7 @@ export function PriceDisplay({
 
       {hasDiscount && compareAtPrice ? (
         <s
-          className="text-text-muted text-sm tabular-nums"
+          className={cn('text-text-muted font-medium tabular-nums', WAS_SIZES[size])}
           aria-label={'Was ' + formatPkrLabel(compareAtPrice)}
         >
           {formatPkr(compareAtPrice)}

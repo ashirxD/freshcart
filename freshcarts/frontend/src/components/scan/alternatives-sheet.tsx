@@ -51,7 +51,7 @@ export function AlternativesSheet({
         </p>
 
         {candidates.length === 0 ? (
-          <div className="gap-xs flex flex-col">
+          <div className="gap-tight flex flex-col">
             <p className="text-text text-sm">
               We don&rsquo;t have anything matching this in the shop.
             </p>

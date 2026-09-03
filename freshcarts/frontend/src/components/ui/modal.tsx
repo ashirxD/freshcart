@@ -76,7 +76,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex" role="presentation">
       <div
-        className="absolute inset-0 bg-text/40 backdrop-blur-[1px]"
+        className="animate-fade-in bg-text/45 absolute inset-0 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -88,32 +88,45 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'relative z-10 m-auto flex w-full flex-col bg-surface shadow-overlay outline-none',
+          'bg-surface shadow-overlay animate-sheet-up relative z-10 m-auto flex w-full flex-col outline-none',
+          // A sheet rises from the bottom edge on a phone and becomes a centred
+          // panel from `sm` up, where there is no bottom edge to rise from.
           variant === 'sheet'
-            ? 'mt-auto mb-0 max-h-[90dvh] rounded-t-lg sm:m-auto sm:max-w-md sm:rounded-lg'
-            : 'max-h-[90dvh] max-w-md rounded-lg',
+            ? 'mt-auto mb-0 max-h-[90dvh] rounded-t-3xl sm:m-auto sm:max-w-md sm:rounded-2xl'
+            : 'max-h-[90dvh] max-w-md rounded-2xl',
         )}
       >
-        <header className="flex items-start justify-between gap-gutter px-page pt-lg pb-gutter">
+        {/* The grab handle a phone sheet is expected to have. Decorative: the
+            sheet is dismissed by the close button, Escape or the backdrop. */}
+        {variant === 'sheet' ? (
+          <span
+            aria-hidden="true"
+            className="bg-outline-variant mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full sm:hidden"
+          />
+        ) : null}
+
+        <header className="gap-gutter px-page pt-loose pb-gutter flex items-start justify-between">
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold text-text">{title}</h2>
-            {description ? <p className="text-sm text-text-muted">{description}</p> : null}
+            <h2 className="text-text text-lg font-bold tracking-[-0.015em]">{title}</h2>
+            {description ? <p className="text-text-muted text-sm">{description}</p> : null}
           </div>
 
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mt-1 -mr-2 flex size-touch shrink-0 items-center justify-center rounded-full text-outline hover:bg-surface-muted"
+            className="size-touch text-outline hover:bg-surface-muted -me-2 -mt-1 flex shrink-0 items-center justify-center rounded-full transition-colors"
           >
             <X className="size-5" aria-hidden="true" />
           </button>
         </header>
 
-        {children ? <div className="overflow-y-auto px-page pb-lg">{children}</div> : null}
+        {children ? <div className="px-page pb-loose overflow-y-auto">{children}</div> : null}
 
         {footer ? (
-          <footer className="border-t border-outline-variant px-page py-gutter">{footer}</footer>
+          <footer className="border-outline-variant px-page py-gutter bg-surface-muted/60 border-t">
+            {footer}
+          </footer>
         ) : null}
       </div>
     </div>,

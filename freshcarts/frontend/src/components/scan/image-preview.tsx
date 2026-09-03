@@ -33,7 +33,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
   }, [file]);
 
   return (
-    <section aria-labelledby="preview-heading" className="gap-lg flex flex-col">
+    <section aria-labelledby="preview-heading" className="gap-loose flex flex-col">
       <header className="flex flex-col gap-1">
         <h1 id="preview-heading" className="text-text text-xl font-bold">
           Does this look right?
@@ -43,7 +43,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
         </p>
       </header>
 
-      <div className="bg-surface-sunken border-outline-variant overflow-hidden rounded-lg border">
+      <div className="bg-surface-sunken ring-outline-variant overflow-hidden rounded-2xl ring-1">
         {objectUrl ? (
           // A plain <img>: this is a local blob, so there is nothing for the
           // Next image optimiser to do and its remote-host allowlist does not
@@ -59,12 +59,12 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
         ) : null}
       </div>
 
-      <div className="gap-xs flex flex-col">
+      <div className="gap-tight flex flex-col">
         <Button size="lg" fullWidth onClick={onContinue}>
           Read my list
         </Button>
 
-        <div className="gap-xs flex">
+        <div className="gap-tight flex">
           <Button
             variant="outline"
             fullWidth

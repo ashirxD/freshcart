@@ -6,7 +6,9 @@ export interface ButtonLinkProps extends Omit<ComponentProps<typeof Link>, 'clas
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
+  pill?: boolean;
   leadingIcon?: ReactNode;
+  trailingIcon?: ReactNode;
   className?: string;
   children: ReactNode;
 }
@@ -23,15 +25,18 @@ export function ButtonLink({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  pill = false,
   leadingIcon,
+  trailingIcon,
   className,
   children,
   ...props
 }: ButtonLinkProps) {
   return (
-    <Link {...props} className={buttonClasses({ variant, size, fullWidth, className })}>
+    <Link {...props} className={buttonClasses({ variant, size, fullWidth, pill, className })}>
       {leadingIcon}
       {children}
+      {trailingIcon}
     </Link>
   );
 }

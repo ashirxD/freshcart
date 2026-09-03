@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShoppingCart, UserRound } from 'lucide-react';
+import { ArrowLeft, ShoppingBasket, UserRound } from 'lucide-react';
 import { AddressPicker } from '@/components/address/address-picker';
 import { CheckoutProblem } from '@/components/checkout/checkout-problem';
 import { CheckoutSteps } from '@/components/checkout/checkout-steps';
@@ -99,7 +99,7 @@ export function CheckoutScreen() {
 
   if (sessionStatus === 'loading' || isCartPending) {
     return (
-      <Container className="flex flex-col gap-gutter py-lg">
+      <Container className="gap-gutter py-loose flex flex-col">
         <Skeleton className="h-8 w-40" label="Opening checkout" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-48 w-full" />
@@ -109,12 +109,10 @@ export function CheckoutScreen() {
 
   if (sessionStatus !== 'authenticated') {
     return (
-      <Container className="py-lg">
-        <h1 id="main-content" className="text-xl font-semibold text-text">
-          Checkout
-        </h1>
+      <Container className="py-loose">
+        <h1 className="text-display text-primary">Checkout</h1>
         <EmptyState
-          icon={<UserRound className="size-7" aria-hidden="true" />}
+          icon={<UserRound aria-hidden="true" />}
           title="Sign in to place your order"
           description="Your cart is saved to your account and will be waiting for you."
           action={
@@ -122,7 +120,7 @@ export function CheckoutScreen() {
               Sign in
             </ButtonLink>
           }
-          className="mt-lg rounded-lg bg-surface-muted"
+          className="mt-loose bg-surface-muted rounded-2xl"
         />
       </Container>
     );
@@ -130,12 +128,10 @@ export function CheckoutScreen() {
 
   if (!cart || cart.itemCount === 0) {
     return (
-      <Container className="py-lg">
-        <h1 id="main-content" className="text-xl font-semibold text-text">
-          Checkout
-        </h1>
+      <Container className="py-loose">
+        <h1 className="text-display text-primary">Checkout</h1>
         <EmptyState
-          icon={<ShoppingCart className="size-7" aria-hidden="true" />}
+          icon={<ShoppingBasket aria-hidden="true" />}
           title="Your cart is empty"
           description="Add a few things to your cart, then come back to check out."
           action={
@@ -143,7 +139,7 @@ export function CheckoutScreen() {
               Start shopping
             </ButtonLink>
           }
-          className="mt-lg rounded-lg bg-surface-muted"
+          className="mt-loose bg-surface-muted rounded-2xl"
         />
       </Container>
     );
@@ -220,38 +216,49 @@ export function CheckoutScreen() {
   const canPlaceOrder = Boolean(preview.data) && Boolean(paymentMethod) && !isPlacing;
 
   return (
-    <Container className="flex flex-col gap-lg py-lg">
-      <header className="flex flex-col gap-gutter">
-        <div className="flex items-center gap-xs">
-          {stepIndex > 0 ? (
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label="Go back to the previous step"
-              className="-ms-2 flex size-11 shrink-0 items-center justify-center rounded-full text-text hover:bg-surface-muted"
-            >
-              <ArrowLeft className="size-5" aria-hidden="true" />
-            </button>
-          ) : null}
+    <div className="flex flex-col">
+      {/*
+        Checkout gets a calm cream band with nothing in it but where you are
+        and how far through you are (§35). The tab bar is hidden on this route
+        by the app shell, so the only navigation here is backwards through the
+        flow — which is the point.
+      */}
+      <div className="bg-cream py-loose">
+        <Container className="gap-gutter flex flex-col">
+          <div className="gap-tight flex items-center">
+            {stepIndex > 0 ? (
+              <button
+                type="button"
+                onClick={goBack}
+                aria-label="Go back to the previous step"
+                className="text-text hover:bg-surface/70 -ms-2 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors"
+              >
+                <ArrowLeft className="size-5 rtl:rotate-180" aria-hidden="true" />
+              </button>
+            ) : null}
 
-          <h1 id="main-content" className="text-xl font-semibold text-text">
-            Checkout
-          </h1>
-        </div>
+            <div className="flex flex-col">
+              <p className="text-eyebrow text-leaf uppercase">
+                Step {stepIndex + 1} of {steps.length}
+              </p>
+              <h1 className="text-display text-primary">Checkout</h1>
+            </div>
+          </div>
 
-        <CheckoutSteps steps={steps.map((value) => STEP_LABEL[value])} current={stepIndex} />
-      </header>
+          <CheckoutSteps steps={steps.map((value) => STEP_LABEL[value])} current={stepIndex} />
+        </Container>
+      </div>
 
-      <div className="flex flex-col gap-lg lg:flex-row lg:items-start lg:gap-8">
+      <Container className="gap-loose py-wide flex flex-col lg:flex-row lg:items-start lg:gap-8">
         {/* --- Left: the current step ------------------------------------ */}
-        <div className="flex flex-1 flex-col gap-lg">
+        <div className="gap-loose flex flex-1 flex-col">
           {step === 'fulfillment' ? (
             <FulfillmentSelector value={fulfillmentMethod} onChange={changeFulfillment} />
           ) : null}
 
           {step === 'address' ? (
-            <section aria-labelledby="address-step-heading" className="flex flex-col gap-gutter">
-              <h2 id="address-step-heading" className="text-base font-semibold text-text">
+            <section aria-labelledby="address-step-heading" className="gap-gutter flex flex-col">
+              <h2 id="address-step-heading" className="text-text text-base font-semibold">
                 Where should we deliver this order?
               </h2>
 
@@ -313,14 +320,14 @@ export function CheckoutScreen() {
         </div>
 
         {/* --- Right: the running total ---------------------------------- */}
-        <aside className="flex w-full flex-col gap-gutter lg:sticky lg:top-24 lg:w-80 lg:shrink-0">
+        <aside className="gap-gutter flex w-full flex-col lg:sticky lg:top-24 lg:w-80 lg:shrink-0">
           {previewInput ? (
             <OrderSummaryPanel
               preview={preview.data ?? null}
               isLoading={preview.isFetching && !preview.data}
             />
           ) : (
-            <div className="rounded-lg border border-outline-variant bg-surface-muted p-gutter text-sm text-text-muted">
+            <div className="ring-outline-variant bg-surface-muted p-gutter text-text-muted rounded-2xl text-sm ring-1">
               Choose a delivery address and we will work out your total, including the delivery
               charge, before you place the order.
             </div>
@@ -334,7 +341,13 @@ export function CheckoutScreen() {
           */}
           <div className="hidden lg:block">
             {step === 'review' ? (
-              <Button fullWidth size="lg" onClick={submit} disabled={!canPlaceOrder} isLoading={isPlacing}>
+              <Button
+                fullWidth
+                size="lg"
+                onClick={submit}
+                disabled={!canPlaceOrder}
+                isLoading={isPlacing}
+              >
                 Place order
                 {preview.data ? ' · ' + formatPkr(preview.data.total) : ''}
               </Button>
@@ -345,20 +358,21 @@ export function CheckoutScreen() {
             )}
           </div>
         </aside>
-      </div>
+      </Container>
 
       {/*
         Mobile sticky action bar. The total travels with the button, so the
         shopper never has to scroll up to remember what they are agreeing to.
-        `pb-[env(safe-area-inset-bottom)]` keeps it clear of the home indicator.
+        The app shell hides the tab bar on this route, so this bar owns the
+        bottom of the screen outright rather than stacking on top of it.
       */}
-      <div className="sticky bottom-0 -mx-page mt-auto border-t border-outline-variant bg-surface px-page py-gutter pb-[max(var(--spacing-gutter),env(safe-area-inset-bottom))] shadow-raised lg:hidden">
+      <div className="border-outline-variant bg-surface px-page py-gutter shadow-raised sticky bottom-0 z-30 mt-auto border-t pb-[max(var(--spacing-gutter),env(safe-area-inset-bottom))] lg:hidden">
         {step === 'review' ? (
-          <div className="flex items-center gap-gutter">
+          <div className="gap-gutter flex items-center">
             {preview.data ? (
               <div className="flex flex-col">
-                <span className="text-xs text-text-muted">Total</span>
-                <span className="text-lg font-bold tabular-nums text-primary">
+                <span className="text-text-muted text-xs font-medium">Total</span>
+                <span className="text-primary text-price tabular-nums">
                   {formatPkr(preview.data.total)}
                 </span>
               </div>
@@ -380,6 +394,6 @@ export function CheckoutScreen() {
           </Button>
         )}
       </div>
-    </Container>
+    </div>
   );
 }

@@ -27,23 +27,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const hasError = Boolean(error);
 
   return (
-    <div className="flex w-full flex-col gap-xs">
+    <div className="gap-tight flex w-full flex-col">
       <label
         htmlFor={inputId}
-        className={cn(
-          'text-sm font-medium text-text',
-          hideLabel && 'sr-only',
-        )}
+        className={cn('text-text text-sm font-semibold', hideLabel && 'sr-only')}
       >
         {label}
       </label>
 
       <div
         className={cn(
-          'flex items-center gap-2 rounded-md border bg-surface px-gutter',
-          'min-h-touch transition-colors',
-          'focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20',
-          hasError ? 'border-danger' : 'border-outline-variant',
+          'px-gutter flex items-center gap-2 rounded-lg border',
+          'min-h-touch ease-standard transition-[border-color,box-shadow,background-color] duration-150',
+          // The focused field lifts off the page rather than only changing its
+          // border colour, which is the state most easily missed at a glance.
+          'focus-within:border-primary focus-within:ring-primary/15 focus-within:bg-surface focus-within:ring-4',
+          hasError
+            ? 'border-danger bg-danger/4'
+            : 'border-outline-variant bg-surface hover:border-outline/50',
         )}
       >
         {leadingIcon ? (
@@ -58,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           aria-invalid={hasError || undefined}
           aria-describedby={error || hint ? messageId : undefined}
           className={cn(
-            'w-full bg-transparent py-3 text-base text-text outline-none',
+            'text-text w-full bg-transparent py-3 text-base outline-none',
             'placeholder:text-outline',
             className,
           )}
@@ -69,11 +70,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       </div>
 
       {error ? (
-        <p id={messageId} role="alert" className="text-sm text-danger">
+        <p id={messageId} role="alert" className="text-danger text-sm font-medium">
           {error}
         </p>
       ) : hint ? (
-        <p id={messageId} className="text-sm text-text-muted">
+        <p id={messageId} className="text-text-muted text-sm">
           {hint}
         </p>
       ) : null}

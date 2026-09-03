@@ -30,6 +30,11 @@ export interface ProductBrowserProps {
  *
  * Filter state comes from the URL, and paging is server-side — the browser only
  * ever holds the pages a shopper has actually asked for.
+ *
+ * The desktop filter rail is now a card that sticks as the results scroll past
+ * it: a long grid used to leave the filters far above the viewport, so changing
+ * one meant scrolling all the way back up. The results toolbar sticks too, for
+ * the same reason.
  */
 export function ProductBrowser({
   baseQuery = {},
@@ -68,18 +73,25 @@ export function ProductBrowser({
   );
 
   return (
-    <div className={cn('gap-gutter lg:gap-lg flex flex-col lg:flex-row lg:items-start', className)}>
+    <div className={cn('gap-loose flex flex-col lg:flex-row lg:items-start', className)}>
       {/* Desktop keeps filters permanently visible; there is room for them. */}
       <aside className="hidden w-64 shrink-0 lg:block">
-        <h2 className="mb-gutter text-text text-base font-semibold">Filters</h2>
-        {filterPanel}
+        <div className="ring-outline-variant bg-surface p-gutter shadow-card sticky top-24 rounded-2xl ring-1">
+          <h2 className="mb-gutter text-text text-base font-bold tracking-[-0.015em]">Filters</h2>
+          {filterPanel}
+        </div>
       </aside>
 
       <div className="gap-gutter flex min-w-0 flex-1 flex-col">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className={cn(
+            'bg-background/90 -mx-2 flex flex-wrap items-center justify-between gap-2 px-2 py-1',
+            'sticky top-14 z-20 backdrop-blur-sm md:top-[4.25rem]',
+          )}
+        >
           {/* Announced politely so a screen-reader user hears the result count
               change after applying a filter, without losing their place. */}
-          <p aria-live="polite" className="text-text-muted text-sm">
+          <p aria-live="polite" className="text-text-muted text-sm font-medium">
             {isPending ? 'Loading products…' : total === 1 ? '1 product' : total + ' products'}
           </p>
 
@@ -93,7 +105,7 @@ export function ProductBrowser({
             >
               Filters
               {activeFilterCount > 0 ? (
-                <span className="bg-primary text-on-primary ms-1 rounded-full px-1.5 text-xs">
+                <span className="bg-primary text-on-primary ms-1 rounded-full px-1.5 text-xs font-bold">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -114,7 +126,7 @@ export function ProductBrowser({
             <ProductGrid products={products} />
 
             {hasNextPage ? (
-              <div className="pt-gutter flex justify-center">
+              <div className="pt-loose flex justify-center">
                 <Button
                   variant="outline"
                   onClick={() => void fetchNextPage()}
@@ -124,8 +136,10 @@ export function ProductBrowser({
                 </Button>
               </div>
             ) : (
-              <p className="pt-gutter text-text-muted text-center text-sm">
-                You have seen all {total} products.
+              <p className="pt-loose text-text-muted flex items-center justify-center gap-2 text-center text-sm">
+                <span aria-hidden="true" className="shelf-rule h-px w-12" />
+                That is all {total === 1 ? '1 product' : total + ' products'}
+                <span aria-hidden="true" className="shelf-rule h-px w-12" />
               </p>
             )}
           </>

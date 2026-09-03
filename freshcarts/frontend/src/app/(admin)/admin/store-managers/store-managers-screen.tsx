@@ -109,14 +109,24 @@ export function AdminStoreManagersScreen() {
       >
         <TableScroller>
           <table className="w-full min-w-[44rem] text-sm">
-            <caption className="sr-only">Store manager accounts and the store each one runs.</caption>
+            <caption className="sr-only">
+              Store manager accounts and the store each one runs.
+            </caption>
 
             <thead className="border-outline-variant text-text-muted border-b text-left">
               <tr>
-                <th scope="col" className="p-gutter font-semibold">Name</th>
-                <th scope="col" className="p-gutter font-semibold">Phone</th>
-                <th scope="col" className="p-gutter font-semibold">Store</th>
-                <th scope="col" className="p-gutter font-semibold">Account</th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Name
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Phone
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Store
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Account
+                </th>
                 <th scope="col" className="p-gutter text-right font-semibold">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -153,7 +163,7 @@ export function AdminStoreManagersScreen() {
                   </td>
 
                   <td className="p-gutter">
-                    <div className="gap-xs flex justify-end">
+                    <div className="gap-tight flex justify-end">
                       <Button variant="outline" size="sm" onClick={() => setEditing(manager)}>
                         Edit
                       </Button>

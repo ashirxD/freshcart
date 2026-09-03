@@ -26,7 +26,7 @@ export function OrdersScreen() {
 
   if (sessionStatus === 'loading') {
     return (
-      <Container className="flex flex-col gap-gutter py-lg">
+      <Container className="gap-gutter py-loose flex flex-col">
         <Skeleton className="h-8 w-40" label="Loading your orders" />
         <Skeleton className="h-28 w-full" />
         <Skeleton className="h-28 w-full" />
@@ -36,12 +36,10 @@ export function OrdersScreen() {
 
   if (sessionStatus !== 'authenticated') {
     return (
-      <Container className="py-lg">
-        <h1 id="main-content" className="text-xl font-semibold text-text">
-          Your orders
-        </h1>
+      <Container className="py-wide">
+        <h1 className="text-display text-primary">Your orders</h1>
         <EmptyState
-          icon={<UserRound className="size-7" aria-hidden="true" />}
+          icon={<UserRound aria-hidden="true" />}
           title="Sign in to see your orders"
           description="Your order history is saved to your account."
           action={
@@ -49,77 +47,82 @@ export function OrdersScreen() {
               Sign in
             </ButtonLink>
           }
-          className="mt-lg rounded-lg bg-surface-muted"
+          className="mt-loose bg-surface-muted rounded-2xl"
         />
       </Container>
     );
   }
 
   return (
-    <Container className="flex flex-col gap-lg py-lg">
-      <h1 id="main-content" className="text-xl font-semibold text-text">
-        Your orders
-      </h1>
+    <div className="flex flex-col">
+      <div className="bg-cream py-loose">
+        <Container className="flex flex-col gap-1">
+          <p className="text-eyebrow text-leaf uppercase">Your shopping history</p>
+          <h1 className="text-display text-primary">Your orders</h1>
+        </Container>
+      </div>
 
-      {isPending ? (
-        <div className="flex flex-col gap-gutter">
-          <Skeleton className="h-28 w-full" label="Loading your orders" />
-          <Skeleton className="h-28 w-full" />
-        </div>
-      ) : null}
+      <Container className="gap-loose py-wide flex flex-col">
+        {isPending ? (
+          <div className="gap-gutter flex flex-col">
+            <Skeleton className="h-28 w-full" label="Loading your orders" />
+            <Skeleton className="h-28 w-full" />
+          </div>
+        ) : null}
 
-      {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
+        {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
 
-      {data && data.items.length === 0 ? (
-        <EmptyState
-          icon={<Receipt className="size-7" aria-hidden="true" />}
-          title="No orders yet"
-          description="When you place your first order it will appear here, with its status and receipt."
-          action={
-            <ButtonLink href="/categories" variant="primary">
-              Start shopping
-            </ButtonLink>
-          }
-          className="rounded-lg bg-surface-muted"
-        />
-      ) : null}
+        {data && data.items.length === 0 ? (
+          <EmptyState
+            icon={<Receipt aria-hidden="true" />}
+            title="No orders yet"
+            description="Your first order will appear here, with its progress and its receipt."
+            action={
+              <ButtonLink href="/categories" variant="primary" size="lg">
+                Start shopping
+              </ButtonLink>
+            }
+            className="bg-surface-muted rounded-2xl"
+          />
+        ) : null}
 
-      {data && data.items.length > 0 ? (
-        <>
-          <ul className="flex flex-col gap-gutter">
-            {data.items.map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </ul>
+        {data && data.items.length > 0 ? (
+          <>
+            <ul className="gap-gutter flex flex-col">
+              {data.items.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </ul>
 
-          {data.pagination.totalPages > 1 ? (
-            <nav
-              aria-label="Order history pages"
-              className="flex items-center justify-between gap-gutter"
-            >
-              <Button
-                variant="outline"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page === 1 || isFetching}
+            {data.pagination.totalPages > 1 ? (
+              <nav
+                aria-label="Order history pages"
+                className="gap-gutter flex items-center justify-between"
               >
-                Newer
-              </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={page === 1 || isFetching}
+                >
+                  Newer
+                </Button>
 
-              <span aria-live="polite" className="text-sm text-text-muted">
-                Page {data.pagination.page} of {data.pagination.totalPages}
-              </span>
+                <span aria-live="polite" className="text-text-muted text-sm">
+                  Page {data.pagination.page} of {data.pagination.totalPages}
+                </span>
 
-              <Button
-                variant="outline"
-                onClick={() => setPage((current) => current + 1)}
-                disabled={page >= data.pagination.totalPages || isFetching}
-              >
-                Older
-              </Button>
-            </nav>
-          ) : null}
-        </>
-      ) : null}
-    </Container>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage((current) => current + 1)}
+                  disabled={page >= data.pagination.totalPages || isFetching}
+                >
+                  Older
+                </Button>
+              </nav>
+            ) : null}
+          </>
+        ) : null}
+      </Container>
+    </div>
   );
 }

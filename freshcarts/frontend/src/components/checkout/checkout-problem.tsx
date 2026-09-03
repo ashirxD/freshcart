@@ -75,7 +75,7 @@ export function CheckoutProblem({
             title="Some prices changed"
             message={error.message}
             action={
-              <div className="flex flex-col gap-xs sm:flex-row">
+              <div className="gap-tight flex flex-col sm:flex-row">
                 <Button onClick={onAcceptPrices} isLoading={isAcceptingPrices}>
                   Continue at the new prices
                 </Button>
@@ -85,7 +85,7 @@ export function CheckoutProblem({
               </div>
             }
           >
-            <ul className="flex list-none flex-col gap-xs">
+            <ul className="gap-tight flex list-none flex-col">
               {issues.map((issue) => {
                 const isCheaper =
                   issue.currentPrice !== undefined &&
@@ -95,9 +95,9 @@ export function CheckoutProblem({
                 return (
                   <li
                     key={issue.productId}
-                    className="flex items-center justify-between gap-gutter rounded-md bg-surface px-gutter py-2 text-sm"
+                    className="gap-gutter bg-surface px-gutter flex items-center justify-between rounded-md py-2 text-sm"
                   >
-                    <span className="min-w-0 truncate font-medium text-text">
+                    <span className="text-text min-w-0 truncate font-medium">
                       {issue.productName}
                     </span>
 
@@ -138,12 +138,10 @@ export function CheckoutProblem({
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
           title="Your cart needs a change"
           message={error.message}
-          action={
-            <ButtonLink href="/cart">Go to my cart</ButtonLink>
-          }
+          action={<ButtonLink href="/cart">Go to my cart</ButtonLink>}
         >
           {issues.length > 1 ? (
-            <ul className="flex list-none flex-col gap-1 text-sm text-text">
+            <ul className="text-text flex list-none flex-col gap-1 text-sm">
               {issues.map((issue) => (
                 <li key={issue.productId}>• {issue.message}</li>
               ))}
@@ -164,7 +162,7 @@ export function CheckoutProblem({
           message={error.message}
         >
           {details ? (
-            <p className="text-sm text-text-muted">
+            <p className="text-text-muted text-sm">
               That address is {formatDistance(details.distanceMeters)} from the store. We deliver up
               to {formatDistance(details.maxDistanceMeters)}.
             </p>
@@ -210,9 +208,7 @@ export function CheckoutProblem({
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
           title="Your cart is empty"
           message={error.message}
-          action={
-            <ButtonLink href="/categories">Start shopping</ButtonLink>
-          }
+          action={<ButtonLink href="/categories">Start shopping</ButtonLink>}
         />
       );
 
@@ -282,15 +278,17 @@ function ProblemShell({
       // using a screen reader must not have to go hunting for what changed.
       role="alert"
       className={cn(
-        'flex flex-col gap-gutter rounded-lg border border-danger/30 bg-surface-muted p-gutter',
+        'gap-gutter ring-danger/25 bg-danger/5 p-gutter flex flex-col rounded-2xl ring-1',
         className,
       )}
     >
-      <div className="flex items-start gap-xs">
-        <span className="mt-0.5 shrink-0 text-danger">{icon}</span>
+      <div className="gap-snug flex items-start">
+        <span className="bg-surface text-danger flex size-10 shrink-0 items-center justify-center rounded-xl">
+          {icon}
+        </span>
         <div className="flex flex-col gap-1">
-          <h3 className="text-base font-semibold text-text">{title}</h3>
-          <p className="text-sm text-text-muted">{message}</p>
+          <h3 className="text-text text-base font-bold tracking-[-0.015em]">{title}</h3>
+          <p className="text-text-muted text-sm">{message}</p>
         </div>
       </div>
 

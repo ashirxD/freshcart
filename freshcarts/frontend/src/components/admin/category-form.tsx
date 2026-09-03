@@ -80,7 +80,7 @@ export function CategoryForm({
         />
 
         {hasChildren ? (
-          <p className="bg-surface-muted p-xs text-text-muted rounded-md text-sm">
+          <p className="bg-surface-muted p-tight text-text-muted rounded-md text-sm">
             This category has {category?.children.length} subcategories, so it stays at the top
             level.
           </p>

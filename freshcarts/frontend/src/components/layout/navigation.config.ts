@@ -6,7 +6,7 @@ import {
   Receipt,
   ScanLine,
   Search,
-  ShoppingCart,
+  ShoppingBasket,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -19,33 +19,57 @@ export interface NavItem {
 }
 
 /**
- * One list drives both the mobile tab bar and the desktop header, so the two
- * navigations can never drift apart.
+ * NAVIGATION MODEL
  *
- * Five tabs is the mobile ceiling — beyond that the targets stop being
- * comfortably thumb-sized. Saved items therefore lives in the desktop header
- * and is reached from the heart on any product on a phone.
+ * Mobile and desktop are two different compositions of the same destinations,
+ * rather than one list squeezed into two shapes — which is what made the old
+ * header read as an admin tool and the old tab bar spend a slot on search.
+ *
+ * MOBILE (§51): five tabs, the ceiling for comfortably thumb-sized targets.
+ * Search is not one of them: it lives in the sticky header on every screen, so
+ * it is always one tap away and the freed slot goes to Saved items, which had
+ * no route on a phone at all before.
  */
-export const PRIMARY_NAV: NavItem[] = [
+export const MOBILE_NAV: NavItem[] = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/search', label: 'Search', icon: Search },
+  { href: '/categories', label: 'Aisles', icon: Grid3x3 },
+  { href: '/cart', label: 'Basket', icon: ShoppingBasket, showsCartCount: true },
+  { href: '/orders', label: 'Orders', icon: Receipt },
+  { href: '/favorites', label: 'Saved', icon: Heart },
+];
+
+/**
+ * DESKTOP (§12): three shopping destinations in the centre, because search,
+ * cart, saved items and the account all have their own dedicated affordance in
+ * the header and should not compete for link space.
+ */
+export const DESKTOP_NAV: NavItem[] = [
+  { href: '/', label: 'Home', icon: Home },
   { href: '/categories', label: 'Categories', icon: Grid3x3 },
-  { href: '/cart', label: 'Cart', icon: ShoppingCart, showsCartCount: true },
   { href: '/orders', label: 'Orders', icon: Receipt },
 ];
 
 /**
- * Shown on desktop, where there is room beyond the five primary tabs.
+ * The account menu's contents.
  *
- * Addresses live here rather than in the tab bar: a shopper manages them
- * occasionally, and checkout already offers "add a new address" at the moment
- * they actually need one.
+ * Everything a shopper manages occasionally rather than while shopping. This
+ * replaced a header link to `/account` — a route that does not exist — so the
+ * menu is also the fix for a dead end in the old navigation.
  */
-export const SECONDARY_NAV: NavItem[] = [
-  { href: '/scan', label: 'Scan list', icon: ScanLine },
-  { href: '/favorites', label: 'Saved', icon: Heart },
-  { href: '/addresses', label: 'Addresses', icon: MapPin },
+export const ACCOUNT_NAV: NavItem[] = [
+  { href: '/orders', label: 'Your orders', icon: Receipt },
+  { href: '/favorites', label: 'Saved items', icon: Heart },
+  { href: '/addresses', label: 'Delivery addresses', icon: MapPin },
+  { href: '/scan', label: 'Scan a grocery list', icon: ScanLine },
 ];
+
+/** Header affordances that are icons rather than links with labels. */
+export const HEADER_ACTIONS: NavItem[] = [
+  { href: '/scan', label: 'Scan a grocery list', icon: ScanLine },
+  { href: '/favorites', label: 'Saved items', icon: Heart },
+];
+
+export const SEARCH_NAV: NavItem = { href: '/search', label: 'Search', icon: Search };
 
 /** Treats nested routes as "inside" their section without matching everything on "/". */
 export function isActiveRoute(pathname: string, href: string): boolean {

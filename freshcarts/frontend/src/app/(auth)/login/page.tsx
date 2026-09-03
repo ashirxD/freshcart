@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Lock, Phone } from 'lucide-react';
+import { AuthLink, AuthPanel } from '@/components/layout/auth-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLogin } from '@/features/auth/auth.hooks';
@@ -22,17 +22,18 @@ export default function LoginPage() {
   });
 
   return (
-    <main id="main-content" className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-page py-lg">
-      <header className="flex flex-col gap-xs pt-lg pb-lg">
-        <h1 className="text-2xl font-bold text-primary">Welcome back</h1>
-        <p className="text-base text-text-muted">
-          Sign in with the mobile number you shop with.
-        </p>
-      </header>
-
+    <AuthPanel
+      title="Welcome back"
+      subtitle="Sign in with the mobile number you shop with."
+      footer={
+        <>
+          New to FreshCarts? <AuthLink href="/register">Create an account</AuthLink>
+        </>
+      }
+    >
       <form
         onSubmit={handleSubmit((values) => login.mutate(values))}
-        className="flex flex-col gap-gutter"
+        className="gap-gutter flex flex-col"
         noValidate
       >
         <Input
@@ -56,17 +57,10 @@ export default function LoginPage() {
           {...register('password')}
         />
 
-        <Button type="submit" size="lg" fullWidth isLoading={login.isPending} className="mt-xs">
+        <Button type="submit" size="lg" fullWidth isLoading={login.isPending} className="mt-tight">
           Sign in
         </Button>
       </form>
-
-      <p className="mt-lg text-center text-base text-text-muted">
-        New to FreshCarts?{' '}
-        <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">
-          Create an account
-        </Link>
-      </p>
-    </main>
+    </AuthPanel>
   );
 }

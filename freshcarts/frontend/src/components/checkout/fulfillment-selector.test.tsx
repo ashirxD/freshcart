@@ -8,9 +8,9 @@ import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 /**
  * Selects by `value` rather than by accessible name.
  *
- * Both options legitimately mention "delivery" — the pickup card's description
- * is "No delivery charge" — so a name match would be ambiguous. The value is
- * what the component actually reports back, which is the thing under test.
+ * Both options legitimately mention "delivery" — the pickup card says there is
+ * no delivery charge — so a name match would be ambiguous. The value is what
+ * the component actually reports back, which is the thing under test.
  */
 function radioFor(value: string): HTMLInputElement {
   const radio = screen
@@ -51,8 +51,9 @@ describe('FulfillmentSelector', () => {
   it('explains each option in plain language, not jargon', () => {
     renderWithProviders(<FulfillmentSelector value="DELIVERY" onChange={vi.fn()} />);
 
-    expect(screen.getByText(/we bring it to your address/i)).toBeInTheDocument();
-    expect(screen.getByText(/collect it from the store yourself/i)).toBeInTheDocument();
+    // Each option is described by what happens to the shopper's groceries.
+    expect(screen.getByText(/a rider brings it to your address/i)).toBeInTheDocument();
+    expect(screen.getByText(/we pack it and hold it for you/i)).toBeInTheDocument();
     // "Fulfilment method" is a developer's word, not a shopper's.
     expect(screen.queryByText(/fulfilment method/i)).not.toBeInTheDocument();
   });
@@ -61,7 +62,7 @@ describe('FulfillmentSelector', () => {
     renderWithProviders(<FulfillmentSelector value="DELIVERY" onChange={vi.fn()} />);
 
     expect(
-      screen.getByRole('group', { name: /how would you like to receive your order/i }),
+      screen.getByRole('group', { name: /how would you like to get your order/i }),
     ).toBeInTheDocument();
   });
 });

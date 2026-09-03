@@ -166,7 +166,7 @@ export function ImageUploader({
       ) : null}
 
       {images.length === 0 ? (
-        <p className="border-outline-variant text-text-muted p-gutter rounded-lg border border-dashed text-center text-sm">
+        <p className="border-sand text-text-muted p-gutter rounded-xl border-2 border-dashed text-center text-sm">
           No photos yet. A product without one still sells — it shows a tile with its initials
           instead.
         </p>
@@ -175,7 +175,7 @@ export function ImageUploader({
           {images.map((image, index) => (
             <li
               key={image.url}
-              className="border-outline-variant bg-surface p-gutter gap-gutter flex flex-wrap items-start rounded-lg border"
+              className="ring-outline-variant bg-surface p-gutter gap-gutter flex flex-wrap items-start rounded-xl ring-1"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- the API
                   host is not in next.config remotePatterns by default, and this
@@ -208,7 +208,7 @@ export function ImageUploader({
                 ) : null}
               </div>
 
-              <div className="gap-xs flex">
+              <div className="gap-tight flex">
                 <Button
                   type="button"
                   variant="outline"

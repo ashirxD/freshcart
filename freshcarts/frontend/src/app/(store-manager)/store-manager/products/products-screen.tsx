@@ -40,7 +40,7 @@ export function ProductsScreen() {
   });
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
         <h1 className="text-text text-xl font-semibold">Products</h1>
         <p aria-live="polite" className="text-text-muted text-sm">
@@ -122,13 +122,7 @@ export function ProductsScreen() {
   );
 }
 
-function ProductRow({
-  product,
-  onTakeOffSale,
-}: {
-  product: Product;
-  onTakeOffSale: () => void;
-}) {
+function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSale: () => void }) {
   const setAvailability = useSetProductAvailability();
 
   return (
@@ -190,9 +184,7 @@ function ProductRow({
             variant="outline"
             size="sm"
             isLoading={setAvailability.isPending}
-            onClick={() =>
-              setAvailability.mutate({ id: product.id, availability: 'AVAILABLE' })
-            }
+            onClick={() => setAvailability.mutate({ id: product.id, availability: 'AVAILABLE' })}
           >
             Put on sale
           </Button>
@@ -202,13 +194,7 @@ function ProductRow({
   );
 }
 
-function TakeOffSaleDialog({
-  product,
-  onClose,
-}: {
-  product: Product | null;
-  onClose: () => void;
-}) {
+function TakeOffSaleDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
   const setAvailability = useSetProductAvailability();
 
   if (!product) return null;

@@ -125,6 +125,15 @@ export interface StoreAddress {
   country: string;
 }
 
+/** One weekday's trading hours. `day` is 0 (Sunday) through 6, as the API sends it. */
+export interface OpeningHours {
+  day: number;
+  /** 24-hour "HH:mm". */
+  opensAt: string;
+  closesAt: string;
+  isClosed: boolean;
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -134,6 +143,8 @@ export interface Store {
   address: StoreAddress;
   phone: string;
   email?: string;
+  /** The trading week, used by the footer and the service panel. */
+  openingHours?: OpeningHours[];
   isActive: boolean;
 }
 

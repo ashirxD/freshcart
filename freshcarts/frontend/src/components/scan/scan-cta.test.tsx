@@ -30,17 +30,20 @@ describe('ScanCta', () => {
     stubAvailability(true);
     renderWithProviders(<ScanCta />);
 
-    const link = await screen.findByRole('link', { name: /scan grocery list/i });
+    const link = await screen.findByRole('link', { name: /grocery list/i });
     expect(link).toHaveAttribute('href', '/scan');
   });
 
   it('says what the feature does in the shopper’s terms', async () => {
-    // §79: "take a picture and we'll do the boring work", not "upload an image
-    // to our OCR pipeline".
+    // §79: "take a photo and we will build the basket for you", not "upload an
+    // image to our OCR pipeline". The wording changed with the redesign; what
+    // is being asserted has not — the promise is stated as an outcome for the
+    // shopper, with no implementation detail in it.
     stubAvailability(true);
     renderWithProviders(<ScanCta />);
 
-    expect(await screen.findByText(/do the boring work/i)).toBeInTheDocument();
+    expect(await screen.findByText(/build the basket for you/i)).toBeInTheDocument();
+    expect(screen.queryByText(/ocr|scan.?line|tesseract/i)).not.toBeInTheDocument();
   });
 
   it('hides itself when the AI service is unavailable', async () => {

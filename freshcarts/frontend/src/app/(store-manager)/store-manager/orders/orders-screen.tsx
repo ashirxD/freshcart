@@ -101,7 +101,7 @@ export function OrdersScreen() {
   const pagination = data?.pagination;
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-end justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-text text-xl font-semibold">Orders</h1>
@@ -122,7 +122,7 @@ export function OrdersScreen() {
             event.preventDefault();
             setParam({ orderNumber: orderNumberInput.trim() || undefined });
           }}
-          className="gap-xs flex items-end"
+          className="gap-tight flex items-end"
         >
           <Input
             label="Order number"
@@ -240,8 +240,8 @@ function FilterRow({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="gap-xs flex flex-col">
-      <span className="text-text-muted text-xs font-semibold uppercase tracking-wide">
+    <div className="gap-tight flex flex-col">
+      <span className="text-text-muted text-xs font-semibold tracking-wide uppercase">
         {legend}
       </span>
 

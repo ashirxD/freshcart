@@ -9,13 +9,17 @@ export interface SkeletonProps {
 /**
  * Loading placeholder. Shaped by the caller via className so a skeleton always
  * matches the real content it replaces and the layout does not jump.
+ *
+ * The fill is a warm tonal sheen rather than a pulsing grey block: a grey
+ * rectangle on a cream page announces "this is a template", and a slow sweep
+ * reads as work in progress without the flashing of an opacity pulse.
  */
 export function Skeleton({ className, label }: SkeletonProps) {
   return (
     <div
       role="status"
       aria-label={label ?? 'Loading'}
-      className={cn('animate-pulse rounded-md bg-surface-sunken', className)}
+      className={cn('skeleton-sheen rounded-md', className)}
     />
   );
 }
@@ -23,12 +27,9 @@ export function Skeleton({ className, label }: SkeletonProps) {
 /** Convenience for multi-line text placeholders. */
 export function SkeletonText({ lines = 3, className }: { lines?: number; className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-xs', className)}>
+    <div className={cn('gap-tight flex flex-col', className)}>
       {Array.from({ length: lines }).map((_, index) => (
-        <Skeleton
-          key={index}
-          className={cn('h-4', index === lines - 1 ? 'w-2/3' : 'w-full')}
-        />
+        <Skeleton key={index} className={cn('h-4', index === lines - 1 ? 'w-2/3' : 'w-full')} />
       ))}
     </div>
   );

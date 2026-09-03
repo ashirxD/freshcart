@@ -71,20 +71,20 @@ export function AdminDeliveryPricingScreen() {
       {data && data.problems.length > 0 ? (
         <div
           role="alert"
-          className="border-secondary/40 bg-secondary-container/20 p-gutter mb-lg rounded-lg border"
+          className="border-secondary/40 bg-secondary-container/20 p-gutter mb-loose rounded-lg border"
         >
-          <p className="text-secondary gap-2 mb-xs flex items-center text-sm font-semibold">
+          <p className="text-secondary mb-tight flex items-center gap-2 text-sm font-semibold">
             <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
             This pricing set has problems
           </p>
 
-          <ul className="text-secondary gap-0.5 flex list-inside list-disc flex-col text-sm">
+          <ul className="text-secondary flex list-inside list-disc flex-col gap-0.5 text-sm">
             {data.problems.map((problem, index) => (
               <li key={index}>{problem.message}</li>
             ))}
           </ul>
 
-          <p className="text-text-muted mt-xs text-xs">
+          <p className="text-text-muted mt-tight text-xs">
             A distance no band covers cannot be priced, and checkout refuses the order rather than
             inventing a fee.
           </p>
@@ -108,16 +108,24 @@ export function AdminDeliveryPricingScreen() {
         <TableScroller>
           <table className="w-full min-w-[40rem] text-sm">
             <caption className="sr-only">
-              Delivery pricing bands. Each band covers distances from its lower bound up to, but
-              not including, its upper bound.
+              Delivery pricing bands. Each band covers distances from its lower bound up to, but not
+              including, its upper bound.
             </caption>
 
             <thead className="border-outline-variant text-text-muted border-b text-left">
               <tr>
-                <th scope="col" className="p-gutter font-semibold">Band</th>
-                <th scope="col" className="p-gutter font-semibold">Distance</th>
-                <th scope="col" className="p-gutter text-right font-semibold">Fee</th>
-                <th scope="col" className="p-gutter font-semibold">Status</th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Band
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Distance
+                </th>
+                <th scope="col" className="p-gutter text-right font-semibold">
+                  Fee
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  Status
+                </th>
                 <th scope="col" className="p-gutter text-right font-semibold">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -135,7 +143,8 @@ export function AdminDeliveryPricingScreen() {
                   <td className="p-gutter text-text-muted tabular-nums">
                     {km(rule.minDistanceMeters)}–{km(rule.maxDistanceMeters)} km
                     <span className="block text-xs">
-                      includes {km(rule.minDistanceMeters)} km, excludes {km(rule.maxDistanceMeters)} km
+                      includes {km(rule.minDistanceMeters)} km, excludes{' '}
+                      {km(rule.maxDistanceMeters)} km
                     </span>
                   </td>
 
@@ -157,7 +166,7 @@ export function AdminDeliveryPricingScreen() {
                   </td>
 
                   <td className="p-gutter">
-                    <div className="gap-xs flex justify-end">
+                    <div className="gap-tight flex justify-end">
                       <Button variant="outline" size="sm" onClick={() => setEditing(rule)}>
                         Edit
                       </Button>
@@ -166,9 +175,7 @@ export function AdminDeliveryPricingScreen() {
                         variant="outline"
                         size="sm"
                         isLoading={updateRule.isPending}
-                        onClick={() =>
-                          updateRule.mutate({ id: rule.id, isActive: !rule.isActive })
-                        }
+                        onClick={() => updateRule.mutate({ id: rule.id, isActive: !rule.isActive })}
                       >
                         {rule.isActive ? 'Turn off' : 'Turn on'}
                       </Button>

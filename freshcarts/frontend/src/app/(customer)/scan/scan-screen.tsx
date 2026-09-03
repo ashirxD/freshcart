@@ -106,7 +106,7 @@ export function ScanScreen() {
 
   if (status === 'loading') {
     return (
-      <Container className="py-lg">
+      <Container className="py-loose">
         <p className="text-text-muted text-sm">Loading…</p>
       </Container>
     );
@@ -114,7 +114,7 @@ export function ScanScreen() {
 
   if (status !== 'authenticated' || role !== 'CUSTOMER') {
     return (
-      <Container className="gap-lg py-lg flex flex-col items-center text-center">
+      <Container className="gap-loose py-loose flex flex-col items-center text-center">
         <h1 className="text-text text-xl font-bold">Sign in to scan your grocery list</h1>
         <p className="text-text-muted text-sm">
           We add the items straight to your cart, so we need to know whose cart it is.
@@ -125,8 +125,8 @@ export function ScanScreen() {
   }
 
   return (
-    <div id="main-content">
-      <Container className="py-lg max-w-2xl">
+    <div>
+      <Container className="py-loose max-w-2xl">
         {stage.name === 'idle' ? (
           <ImagePicker
             maxBytes={MAX_IMAGE_BYTES}

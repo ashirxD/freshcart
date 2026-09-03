@@ -44,7 +44,7 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
 
   if (isPending) {
     return (
-      <div className="flex flex-col gap-xs">
+      <div className="gap-tight flex flex-col">
         <Skeleton className="h-24 w-full" label="Loading your addresses" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -58,18 +58,21 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
   const openAddForm = () => setIsAdding(true);
 
   return (
-    <div className="flex flex-col gap-gutter">
+    <div className="gap-gutter flex flex-col">
       {addresses.length === 0 ? (
         <EmptyState
           icon={<MapPin className="size-7" aria-hidden="true" />}
           title="No saved addresses yet"
           description="Add where you would like this order delivered."
           action={
-            <Button onClick={openAddForm} leadingIcon={<Plus className="size-4" aria-hidden="true" />}>
+            <Button
+              onClick={openAddForm}
+              leadingIcon={<Plus className="size-4" aria-hidden="true" />}
+            >
               Add an address
             </Button>
           }
-          className="rounded-lg bg-surface-muted"
+          className="bg-surface-muted rounded-lg"
         />
       ) : (
         <>
@@ -80,7 +83,7 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
             onChange={onSelect}
             error={error}
           >
-            <div className="flex flex-col gap-xs">
+            <div className="gap-tight flex flex-col">
               {addresses.map((address) => {
                 const Icon = LABEL_ICON[address.label];
 
@@ -94,13 +97,13 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
                     disabledReason="This address has no map location, so we cannot work out a delivery charge. Edit it to add one."
                     trailing={
                       address.isDefault ? (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
                           Default
                         </span>
                       ) : null
                     }
                   >
-                    <span className="mt-0.5 flex flex-col gap-0.5 text-sm text-text-muted">
+                    <span className="text-text-muted mt-0.5 flex flex-col gap-0.5 text-sm">
                       <span>{address.formatted}</span>
                       <span>
                         {address.recipientName} · {address.phone}

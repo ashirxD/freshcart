@@ -41,9 +41,10 @@ export function SortSelector({ value, onChange, className }: SortSelectorProps) 
 
       <div
         className={cn(
-          'min-h-touch border-outline-variant flex items-center gap-2 rounded-full border',
-          'bg-surface ps-4 pe-2',
-          'focus-within:border-primary focus-within:ring-primary/20 focus-within:ring-2',
+          'border-outline-variant flex h-10 items-center gap-2 rounded-md border',
+          'bg-surface ps-3 pe-1',
+          'ease-standard transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-primary focus-within:ring-primary/15 focus-within:ring-4',
         )}
       >
         <ArrowUpDown className="text-outline size-4 shrink-0" aria-hidden="true" />
@@ -52,7 +53,9 @@ export function SortSelector({ value, onChange, className }: SortSelectorProps) 
           id={id}
           value={value ?? 'relevance'}
           onChange={(event) => onChange(event.target.value as ProductSort)}
-          className="min-h-touch text-text bg-transparent pe-2 text-sm font-medium outline-none"
+          // The row itself is 40px, but the control keeps a 48px hit area:
+          // a taller invisible box inside a shorter visual chip.
+          className="text-text h-12 bg-transparent pe-1 text-sm font-semibold outline-none"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

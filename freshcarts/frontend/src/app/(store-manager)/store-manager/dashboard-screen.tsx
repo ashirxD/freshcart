@@ -27,7 +27,7 @@ export function DashboardScreen() {
 
   if (dashboard.isPending) {
     return (
-      <Container className="gap-lg flex flex-col">
+      <Container className="gap-loose flex flex-col">
         <Skeleton className="h-7 w-48" label="Loading the dashboard" />
         <div className="gap-gutter grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -54,7 +54,7 @@ export function DashboardScreen() {
   const { orders, inventory, substitutions } = dashboard.data;
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
         <h1 className="text-text text-xl font-semibold">Today at {dashboard.data.store.name}</h1>
         <p className="text-text-muted text-sm">
@@ -202,7 +202,7 @@ export function DashboardScreen() {
             icon={<ClipboardCheck className="size-7" aria-hidden="true" />}
             title="No orders need your attention"
             description="New orders will appear here as soon as they are placed."
-            className="bg-surface-muted rounded-lg"
+            className="bg-surface-muted rounded-2xl"
           />
         ) : null}
 

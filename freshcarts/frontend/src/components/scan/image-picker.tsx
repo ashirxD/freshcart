@@ -68,21 +68,22 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
   }
 
   return (
-    <section aria-labelledby="scan-intro-heading" className="gap-lg flex flex-col">
-      <header className="gap-xs flex flex-col text-center">
+    <section aria-labelledby="scan-intro-heading" className="gap-loose flex flex-col">
+      <header className="gap-snug flex flex-col text-center">
         <span
-          className="bg-primary/10 mx-auto flex size-16 items-center justify-center rounded-full"
+          className="bg-peach/50 text-attention ring-apricot/40 mx-auto flex size-16 items-center justify-center rounded-2xl ring-1"
           aria-hidden="true"
         >
-          <ScanLine className="text-primary size-8" />
+          <ScanLine className="size-8" />
         </span>
 
-        <h1 id="scan-intro-heading" className="text-text text-xl font-bold">
-          Turn your grocery list into a cart
+        <h1 id="scan-intro-heading" className="text-display text-primary">
+          Turn your grocery list into a basket
         </h1>
 
-        <p className="text-text-muted text-base">
-          Take a photo of your list, or upload one. We&rsquo;ll find the items for you.
+        <p className="text-text-muted mx-auto max-w-md text-base leading-relaxed">
+          Take a photo of your list, or upload one. We will find each item in the shop and show you
+          what we found before anything is added.
         </p>
       </header>
 
@@ -98,8 +99,8 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           handleFile(event.dataTransfer.files?.[0]);
         }}
         className={
-          'gap-gutter p-lg flex flex-col items-center rounded-lg border-2 border-dashed transition-colors ' +
-          (isDraggingOver ? 'border-primary bg-primary/5' : 'border-outline-variant bg-surface')
+          'gap-gutter p-wide flex flex-col items-center rounded-2xl border-2 border-dashed transition-colors duration-200 ' +
+          (isDraggingOver ? 'border-primary bg-primary/6' : 'border-sand bg-surface')
         }
       >
         {/*
@@ -144,12 +145,15 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           Upload Image
         </Button>
 
-        <p className="text-text-muted text-center text-xs">
+        <p className="text-text-muted text-center text-xs font-medium">
           Handwritten or printed, in English or Urdu. JPG, PNG or WEBP.
         </p>
 
         {rejection ? (
-          <p role="alert" className="text-danger text-center text-sm">
+          <p
+            role="alert"
+            className="text-danger bg-danger/8 rounded-lg px-3 py-2 text-center text-sm font-medium"
+          >
             {rejection}
           </p>
         ) : null}

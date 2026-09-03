@@ -40,7 +40,7 @@ export function ProductsAdminScreen() {
   const remove = useDeleteProduct();
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-text text-xl font-semibold">Products</h1>
@@ -78,7 +78,7 @@ export function ProductsAdminScreen() {
       {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
 
       {data?.items.length === 0 ? (
-        <p className="bg-surface-muted p-lg text-text-muted rounded-lg text-center text-sm">
+        <p className="bg-surface-muted p-loose text-text-muted rounded-lg text-center text-sm">
           {search
             ? 'No products match “' + search + '”.'
             : 'No products yet. Create the first one to start selling.'}

@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SelectField, TextareaField } from '@/components/admin/form-field';
-import {
-  useRejectOrder,
-  useUpdateOrderStatus,
-} from '@/features/store-manager/store-manager.hooks';
+import { useRejectOrder, useUpdateOrderStatus } from '@/features/store-manager/store-manager.hooks';
 import { REJECTION_REASONS, type RejectionReason } from '@/types/store-manager';
 import type { StoreOrderAction, StoreOrderDetail } from '@/types/store-manager';
 
@@ -37,7 +34,7 @@ export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
 
   if (order.availableActions.length === 0) {
     return (
-      <p className="text-text-muted bg-surface-muted p-gutter rounded-lg text-sm">
+      <p className="text-text-muted bg-surface-muted p-gutter rounded-xl text-sm">
         This order is {order.statusLabel.toLowerCase()}. There is nothing left to do.
       </p>
     );
@@ -67,7 +64,9 @@ export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
             disabled={isPending}
             // Destructive actions always confirm first, and never sit flush
             // against the primary button (§42, §43).
-            onClick={() => (action.action === 'REJECT' ? setRejecting(true) : setConfirming(action))}
+            onClick={() =>
+              action.action === 'REJECT' ? setRejecting(true) : setConfirming(action)
+            }
           >
             {action.label}
           </Button>

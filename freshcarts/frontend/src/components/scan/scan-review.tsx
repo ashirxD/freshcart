@@ -32,8 +32,8 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
   const readyCount = selection.readyLines.length;
 
   return (
-    <section aria-labelledby="scan-review-heading" className="gap-lg flex flex-col">
-      <header className="gap-xs flex flex-col">
+    <section aria-labelledby="scan-review-heading" className="gap-loose flex flex-col">
+      <header className="gap-tight flex flex-col">
         <h1 id="scan-review-heading" className="text-text text-xl font-bold">
           We found your groceries
         </h1>
@@ -46,9 +46,9 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
       </header>
 
       {result.warnings.length > 0 ? (
-        <ul className="border-secondary-container/60 bg-secondary-container/15 p-gutter flex flex-col gap-1 rounded-lg border text-sm">
+        <ul className="ring-apricot/40 bg-apricot/12 p-gutter flex flex-col gap-1 rounded-xl text-sm ring-1">
           {result.warnings.map((warning) => (
-            <li key={warning} className="text-text gap-xs flex items-start">
+            <li key={warning} className="text-text gap-tight flex items-start">
               <AlertTriangle className="text-secondary mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {warning}
             </li>
@@ -56,7 +56,7 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
         </ul>
       ) : null}
 
-      <ul className="gap-xs flex flex-col">
+      <ul className="gap-tight flex flex-col">
         {selection.lines.map((line) => (
           <OcrItemCard
             key={line.lineId}
@@ -75,7 +75,7 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
         all times.
       */}
       <div className="bg-background border-outline-variant py-gutter -mx-page px-page sticky bottom-16 z-10 border-t lg:static lg:mx-0 lg:border-0 lg:px-0">
-        <div className="gap-xs flex flex-col">
+        <div className="gap-tight flex flex-col">
           <div className="flex items-baseline justify-between text-sm">
             <span className="text-text-muted">Estimated total</span>
             <span className="text-text text-lg font-bold">
@@ -107,7 +107,7 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
             </p>
           ) : null}
 
-          <div className="gap-xs flex">
+          <div className="gap-tight flex">
             <Button variant="ghost" fullWidth onClick={onRescan}>
               Scan another list
             </Button>

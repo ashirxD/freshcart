@@ -133,7 +133,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
         }
       />
 
-      <div className="gap-lg flex flex-col">
+      <div className="gap-loose flex flex-col">
         <FormSection
           title="Trading"
           description="Whether FreshCarts is taking orders at all, and how far it will deliver."
@@ -237,7 +237,7 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
           </dl>
 
           {settings.environment.routingProvider !== 'osrm' ? (
-            <p className="text-text-muted gap-2 flex items-start text-sm">
+            <p className="text-text-muted flex items-start gap-2 text-sm">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               Distances are approximated from a straight line. The API refuses to start in
               production with this provider, because an approximate distance becomes a real charge.

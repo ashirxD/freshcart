@@ -43,13 +43,13 @@ export function RouteError({
   return (
     <div
       role="alert"
-      className="gap-gutter px-page py-lg mx-auto flex max-w-md flex-col items-center text-center"
+      className="gap-gutter px-page py-loose mx-auto flex max-w-md flex-col items-center text-center"
     >
       <span className="bg-surface-muted text-danger flex size-16 items-center justify-center rounded-full">
         <AlertTriangle className="size-7" aria-hidden="true" />
       </span>
 
-      <div className="gap-xs flex flex-col">
+      <div className="gap-tight flex flex-col">
         <h1 className="text-text text-lg font-semibold">{title}</h1>
         <p className="text-text-muted text-sm">{description}</p>
       </div>

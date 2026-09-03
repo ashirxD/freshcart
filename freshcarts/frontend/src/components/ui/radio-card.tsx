@@ -51,18 +51,23 @@ export function RadioCardGroup({
 
   return (
     <fieldset
-      className={cn('flex w-full flex-col gap-xs', className)}
+      className={cn('gap-tight flex w-full flex-col', className)}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? errorId : undefined}
     >
-      <legend className={cn('mb-xs text-base font-semibold text-text', hideLabel && 'sr-only')}>
+      <legend
+        className={cn(
+          'mb-tight text-text text-base font-bold tracking-[-0.015em]',
+          hideLabel && 'sr-only',
+        )}
+      >
         {label}
       </legend>
 
       <GroupContext.Provider value={{ name, value, onChange }}>{children}</GroupContext.Provider>
 
       {error ? (
-        <p id={errorId} role="alert" className="text-sm text-danger">
+        <p id={errorId} role="alert" className="text-danger text-sm">
           {error}
         </p>
       ) : null}
@@ -107,15 +112,15 @@ export function RadioCard({
   return (
     <label
       className={cn(
-        'relative flex w-full cursor-pointer items-start gap-gutter rounded-lg border p-gutter',
+        'gap-gutter p-gutter relative flex w-full cursor-pointer items-start rounded-xl border',
         // Comfortably above the 48px minimum, since the whole card is the target.
-        'min-h-touch transition-colors',
-        'has-[:focus-visible]:outline has-[:focus-visible]:outline-2',
-        'has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary',
+        'min-h-touch ease-standard transition-[border-color,background-color,box-shadow] duration-150',
+        'has-[:focus-visible]:outline-primary has-[:focus-visible]:outline has-[:focus-visible]:outline-2',
+        'has-[:focus-visible]:outline-offset-2',
         isSelected
-          ? 'border-primary bg-primary/5'
-          : 'border-outline-variant bg-surface hover:border-outline',
-        disabled && 'cursor-not-allowed opacity-60 hover:border-outline-variant',
+          ? 'border-primary bg-cream shadow-card'
+          : 'border-outline-variant bg-surface hover:border-primary/30 hover:bg-cream/50',
+        disabled && 'hover:border-outline-variant hover:bg-surface cursor-not-allowed opacity-60',
         className,
       )}
     >
@@ -135,7 +140,7 @@ export function RadioCard({
         <span
           aria-hidden="true"
           className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-full',
+            'flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors duration-150',
             isSelected ? 'bg-primary text-on-primary' : 'bg-surface-muted text-primary',
           )}
         >
@@ -145,14 +150,14 @@ export function RadioCard({
 
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex items-start justify-between gap-2">
-          <span className="text-base font-semibold text-text">{title}</span>
+          <span className="text-text text-base font-semibold">{title}</span>
           {trailing ? <span className="shrink-0 text-sm">{trailing}</span> : null}
         </span>
 
         {disabled && disabledReason ? (
-          <span className="text-sm text-danger">{disabledReason}</span>
+          <span className="text-danger text-sm">{disabledReason}</span>
         ) : description ? (
-          <span className="text-sm text-text-muted">{description}</span>
+          <span className="text-text-muted text-sm">{description}</span>
         ) : null}
 
         {children}

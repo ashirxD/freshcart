@@ -110,7 +110,7 @@ describe('CheckoutScreen', () => {
     renderWithProviders(<CheckoutScreen />);
 
     expect(
-      await screen.findByRole('group', { name: /how would you like to receive your order/i }),
+      await screen.findByRole('group', { name: /how would you like to get your order/i }),
     ).toBeInTheDocument();
   });
 
@@ -149,7 +149,7 @@ describe('CheckoutScreen', () => {
       const { requests } = stubApi({});
       renderWithProviders(<CheckoutScreen />);
 
-      await screen.findByRole('group', { name: /how would you like to receive/i });
+      await screen.findByRole('group', { name: /how would you like to get your order/i });
       await clickContinue();
       await screen.findByRole('radio', { name: /42-B/ });
 
@@ -175,9 +175,7 @@ describe('CheckoutScreen', () => {
       stubApi({ preview: makePickupPreview() });
       renderWithProviders(<CheckoutScreen />);
 
-      await userEvent.click(
-        await screen.findByRole('radio', { name: /collect it from the store/i }),
-      );
+      await userEvent.click(await screen.findByRole('radio', { name: /collect in store/i }));
       await clickContinue();
 
       // Straight to payment — no address step in the pickup flow.

@@ -135,23 +135,28 @@ export function AddressForm({
   return (
     <form
       onSubmit={handleSubmit((values) => onSubmit(toAddressInput(values)))}
-      className="flex flex-col gap-lg"
+      className="gap-loose flex flex-col"
       noValidate
     >
       <RadioCardGroup
         label="What kind of address is this?"
         value={label}
         onChange={(value) => setValue('label', value as AddressFormValues['label'])}
-        className="gap-xs"
+        className="gap-tight"
       >
-        <div className="grid grid-cols-3 gap-xs">
+        <div className="gap-tight grid grid-cols-3">
           {LABEL_OPTIONS.map((option) => (
-            <RadioCard key={option.value} value={option.value} title={option.title} icon={option.icon} />
+            <RadioCard
+              key={option.value}
+              value={option.value}
+              title={option.title}
+              icon={option.icon}
+            />
           ))}
         </div>
       </RadioCardGroup>
 
-      <div className="flex flex-col gap-gutter">
+      <div className="gap-gutter flex flex-col">
         <Input
           label="Who is receiving this order?"
           autoComplete="name"
@@ -184,7 +189,7 @@ export function AddressForm({
           {...register('street')}
         />
 
-        <div className="grid gap-gutter sm:grid-cols-2">
+        <div className="gap-gutter grid sm:grid-cols-2">
           <Input
             label="Area"
             autoComplete="address-level2"
@@ -225,13 +230,13 @@ export function AddressForm({
       {/* --- Map location ------------------------------------------------- */}
       <section
         aria-labelledby="address-location-heading"
-        className="flex flex-col gap-gutter rounded-lg border border-outline-variant bg-surface-muted p-gutter"
+        className="gap-gutter border-outline-variant bg-surface-muted p-gutter flex flex-col rounded-lg border"
       >
         <div className="flex flex-col gap-1">
-          <h3 id="address-location-heading" className="text-base font-semibold text-text">
+          <h3 id="address-location-heading" className="text-text text-base font-semibold">
             Map location
           </h3>
-          <p className="text-sm text-text-muted">
+          <p className="text-text-muted text-sm">
             We use this to work out the distance and your delivery charge. Without it you can still
             save the address and collect your order from the store.
           </p>
@@ -266,7 +271,7 @@ export function AddressForm({
           {location.kind === 'failed' ? location.message : null}
         </p>
 
-        <div className="grid gap-gutter sm:grid-cols-2">
+        <div className="gap-gutter grid sm:grid-cols-2">
           <Input
             label="Latitude"
             inputMode="decimal"
@@ -284,7 +289,7 @@ export function AddressForm({
         </div>
 
         {hasCoordinates ? (
-          <p className="flex items-center gap-1.5 text-sm text-success">
+          <p className="text-success flex items-center gap-1.5 text-sm">
             <MapPin className="size-4" aria-hidden="true" />
             Delivery to this address can be calculated.
           </p>
@@ -292,21 +297,27 @@ export function AddressForm({
       </section>
 
       {showDefaultToggle ? (
-        <label className="flex min-h-touch cursor-pointer items-center gap-gutter rounded-lg border border-outline-variant bg-surface px-gutter">
+        <label className="min-h-touch gap-gutter border-outline-variant bg-surface px-gutter flex cursor-pointer items-center rounded-lg border">
           <input
             type="checkbox"
             className="size-5 accent-[var(--color-primary)]"
             {...register('isDefault')}
           />
-          <span className="text-sm font-medium text-text">
+          <span className="text-text text-sm font-medium">
             Use this as my default delivery address
           </span>
         </label>
       ) : null}
 
-      <div className="flex flex-col-reverse gap-xs sm:flex-row sm:justify-end">
+      <div className="gap-tight flex flex-col-reverse sm:flex-row sm:justify-end">
         {onCancel ? (
-          <Button type="button" variant="outline" onClick={onCancel} fullWidth className="sm:w-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            fullWidth
+            className="sm:w-auto"
+          >
             Cancel
           </Button>
         ) : null}

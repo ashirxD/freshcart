@@ -65,7 +65,7 @@ export function AdminDashboardScreen() {
         // noticed on the settings page.
         <p
           role="status"
-          className="gap-gutter border-secondary/40 bg-secondary-container/20 text-secondary p-gutter mb-lg flex items-center rounded-lg border text-sm font-semibold"
+          className="gap-gutter ring-apricot/50 bg-apricot/15 text-attention p-gutter mb-loose flex items-center rounded-2xl text-sm font-semibold ring-1"
         >
           <PauseCircle className="size-5 shrink-0" aria-hidden="true" />
           <span>
@@ -77,7 +77,7 @@ export function AdminDashboardScreen() {
         </p>
       ) : null}
 
-      <section aria-labelledby="today-heading" className="mb-lg">
+      <section aria-labelledby="today-heading" className="mb-loose">
         <h2 id="today-heading" className="text-text mb-gutter text-base font-semibold">
           Today
         </h2>
@@ -105,7 +105,7 @@ export function AdminDashboardScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="week-heading" className="mb-lg">
+      <section aria-labelledby="week-heading" className="mb-loose">
         <h2 id="week-heading" className="text-text mb-gutter text-base font-semibold">
           Last seven days
         </h2>
@@ -125,13 +125,13 @@ export function AdminDashboardScreen() {
           />
         </div>
 
-        <p className="text-text-muted mt-xs text-xs">
+        <p className="text-text-muted mt-tight text-xs">
           Revenue counts orders that were placed and not cancelled, rejected or failed, at the
           totals they were charged.
         </p>
       </section>
 
-      <section aria-labelledby="catalogue-heading" className="mb-lg">
+      <section aria-labelledby="catalogue-heading" className="mb-loose">
         <h2 id="catalogue-heading" className="text-text mb-gutter text-base font-semibold">
           Catalogue and stock
         </h2>
@@ -202,7 +202,7 @@ export function AdminDashboardScreen() {
  */
 function MoneyTile({ label, amount }: { label: string; amount: number }) {
   return (
-    <div className="gap-xs border-outline-variant bg-surface p-gutter flex min-h-24 flex-col rounded-lg border">
+    <div className="gap-tight ring-outline-variant bg-surface p-gutter shadow-card flex min-h-24 flex-col rounded-2xl ring-1">
       <span className="text-text text-2xl leading-none font-bold tabular-nums">
         {formatPkr(amount)}
       </span>

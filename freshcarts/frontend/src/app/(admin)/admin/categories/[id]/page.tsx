@@ -21,7 +21,7 @@ export default function Page() {
   const update = useUpdateCategory(id, () => router.push('/admin/categories'));
 
   return (
-    <Container className="gap-lg flex max-w-2xl flex-col">
+    <Container className="gap-loose flex max-w-2xl flex-col">
       <h1 className="text-text text-xl font-semibold">
         {category.data ? 'Edit ' + category.data.name : 'Edit category'}
       </h1>

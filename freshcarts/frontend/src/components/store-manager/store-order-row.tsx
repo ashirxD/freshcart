@@ -18,9 +18,7 @@ export function formatPlacedAt(iso: string, now: Date = new Date()): string {
 
   if (sameDay) return time;
 
-  return (
-    placed.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) + ' ' + time
-  );
+  return placed.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) + ' ' + time;
 }
 
 export function FulfillmentBadge({ method }: { method: StoreOrderSummary['fulfillmentMethod'] }) {
@@ -53,11 +51,16 @@ export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
       <Link
         href={'/store-manager/orders/' + order.id}
         className={cn(
-          'gap-gutter flex items-center rounded-lg border p-gutter transition-shadow',
+          'gap-gutter p-gutter flex items-center rounded-xl ring-1',
+          'ease-standard transition-[box-shadow,background-color] duration-200',
           'hover:shadow-card focus-visible:shadow-card',
+          // An order waiting on the store gets the apricot ground the whole app
+          // uses for "someone is waiting on you", plus a leading marker — so a
+          // manager can pick the actionable rows out of a long list at a glance
+          // without relying on hue (§73).
           order.needsAction
-            ? 'border-primary/30 bg-primary/[0.03]'
-            : 'border-outline-variant bg-surface',
+            ? 'ring-apricot/45 bg-apricot/12 border-attention border-s-4'
+            : 'ring-outline-variant bg-surface',
         )}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -68,9 +71,8 @@ export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
           </div>
 
           <p className="text-text-muted truncate text-sm">
-            {order.customer.name} ·{' '}
-            {order.itemCount === 1 ? '1 item' : order.itemCount + ' items'} ·{' '}
-            <time dateTime={order.placedAt}>{formatPlacedAt(order.placedAt)}</time>
+            {order.customer.name} · {order.itemCount === 1 ? '1 item' : order.itemCount + ' items'}{' '}
+            · <time dateTime={order.placedAt}>{formatPlacedAt(order.placedAt)}</time>
           </p>
 
           {/*
@@ -83,7 +85,7 @@ export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
           ) : null}
         </div>
 
-        <div className="gap-xs flex shrink-0 flex-col items-end">
+        <div className="gap-tight flex shrink-0 flex-col items-end">
           <span className="text-text font-semibold tabular-nums">{formatPkr(order.total)}</span>
           <PaymentStatusBadge status={order.paymentStatus} />
         </div>

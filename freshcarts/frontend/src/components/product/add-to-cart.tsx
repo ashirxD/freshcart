@@ -28,7 +28,13 @@ export interface AddToCartProps {
  *
  * Keeping both states in one control means a shopper adjusts the quantity where
  * they added it, without a trip to the cart — the single biggest saving in taps
- * on a grocery run.
+ * on a grocery run. The swap is animated by the stepper itself, so "+ Add"
+ * appears to become "− 1 +" rather than being replaced by it (§25).
+ *
+ * There is deliberately no toast on a successful add. The control changing
+ * shape under the thumb, plus the cart badge counting up, is the confirmation;
+ * a notification on top of that would fire on every second tap of a shopping
+ * run and cover the next product down (§76).
  *
  * The stock ceiling shown here is a convenience so "+" disables at the right
  * point; the server re-checks availability on every mutation regardless.
@@ -65,7 +71,7 @@ export function AddToCart({
     return (
       <Button
         variant="outline"
-        size={size === 'sm' ? 'sm' : 'md'}
+        size={size}
         disabled
         fullWidth={variant === 'full'}
         className={className}
@@ -85,7 +91,9 @@ export function AddToCart({
         disabled={isPending}
         label={'quantity of ' + product.name}
         itemName={product.name}
-        className={cn(variant === 'full' && 'w-full justify-between', className)}
+        // Full width in both variants: the stepper occupies exactly the space
+        // the "Add" button did, so the card does not reflow when it swaps.
+        className={cn('w-full justify-between', className)}
         onChange={(quantity) => {
           if (quantity <= 0) {
             removeItem.mutate(product.id);
@@ -100,7 +108,7 @@ export function AddToCart({
   return (
     <Button
       variant="primary"
-      size={size === 'sm' ? 'sm' : 'md'}
+      size={variant === 'full' ? 'lg' : size}
       isLoading={isPending}
       fullWidth={variant === 'full'}
       leadingIcon={

@@ -30,7 +30,7 @@ function FieldShell({ label, hint, error, children, className }: FieldShellProps
   const invalid = Boolean(error);
 
   return (
-    <div className={cn('gap-xs flex w-full flex-col', className)}>
+    <div className={cn('gap-tight flex w-full flex-col', className)}>
       <label htmlFor={id} className="text-text text-sm font-medium">
         {label}
       </label>
@@ -173,7 +173,7 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="gap-gutter border-outline-variant bg-surface p-gutter flex flex-col rounded-lg border">
+    <section className="gap-gutter ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-2xl ring-1">
       <div className="flex flex-col gap-0.5">
         <h2 className="text-text text-base font-semibold">{title}</h2>
         {description ? <p className="text-text-muted text-sm">{description}</p> : null}

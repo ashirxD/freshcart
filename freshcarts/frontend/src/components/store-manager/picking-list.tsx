@@ -58,13 +58,16 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
         </h2>
 
         {isPicking ? (
-          <p aria-live="polite" className={cn('text-sm', allPicked ? 'text-success' : 'text-text-muted')}>
+          <p
+            aria-live="polite"
+            className={cn('text-sm', allPicked ? 'text-success' : 'text-text-muted')}
+          >
             {picked.size} of {order.items.length} picked
           </p>
         ) : null}
       </div>
 
-      <ul className="border-outline-variant divide-outline-variant bg-surface divide-y rounded-lg border">
+      <ul className="ring-outline-variant divide-outline-variant bg-surface divide-y overflow-hidden rounded-2xl ring-1">
         {order.items.map((item) => {
           const substitution = openSubstitution(item.productId);
 
@@ -78,9 +81,7 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
                     onChange={() => toggle(item.productId)}
                     className="size-5 accent-[var(--color-primary)]"
                   />
-                  <span className="sr-only">
-                    Mark {item.productName} as picked
-                  </span>
+                  <span className="sr-only">Mark {item.productName} as picked</span>
                 </label>
               ) : null}
 
@@ -99,12 +100,10 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
                   {item.brand ? ' · ' + item.brand : ''}
                 </p>
 
-                {substitution ? (
-                  <SubstitutionNotice substitution={substitution} />
-                ) : null}
+                {substitution ? <SubstitutionNotice substitution={substitution} /> : null}
               </div>
 
-              <div className="gap-xs flex shrink-0 flex-col items-end">
+              <div className="gap-tight flex shrink-0 flex-col items-end">
                 <span className="text-text text-lg font-bold tabular-nums">× {item.quantity}</span>
                 <span className="text-text-muted text-sm tabular-nums">
                   {formatPkr(item.lineTotal)}
@@ -128,7 +127,7 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
       </ul>
 
       {order.customerNote ? (
-        <p className="bg-secondary-container/20 text-text p-gutter rounded-lg text-sm">
+        <p className="bg-apricot/15 text-text p-gutter rounded-xl text-sm">
           <span className="font-semibold">Customer note: </span>
           {order.customerNote}
         </p>

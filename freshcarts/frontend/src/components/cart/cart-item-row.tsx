@@ -6,7 +6,8 @@ import { QuantitySelector } from '@/components/common/quantity-selector';
 import { PriceDisplay } from '@/components/product/price-display';
 import { ProductImage } from '@/components/product/product-image';
 import { useRemoveCartItem, useUpdateCartItem } from '@/features/cart/cart.hooks';
-import { formatPkr } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { formatPkr, productTint } from '@/lib/format';
 import type { CartItem, CartItemIssue } from '@/types/cart';
 
 /** Plain-language explanation for each thing that can go wrong with a line. */
@@ -16,21 +17,37 @@ const ISSUE_MESSAGES: Record<CartItemIssue, string> = {
   QUANTITY_REDUCED: 'Not enough left in stock — lower the quantity to continue.',
 };
 
+/**
+ * One line in the basket.
+ *
+ * A row with a problem gets a tomato-tinted ground and a hairline, so a shopper
+ * scanning a long basket can see which line is holding up checkout without
+ * reading every one of them. That is a colour AND a message AND an icon — the
+ * message is what carries the meaning.
+ */
 export function CartItemRow({ item }: { item: CartItem }) {
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
 
   const isPending = updateItem.isPending || removeItem.isPending;
   const name = item.product?.name ?? 'This product';
+  const hasIssue = Boolean(item.issue);
 
   return (
-    <li className="gap-gutter py-gutter flex">
-      <div className="bg-surface-muted relative size-20 shrink-0 overflow-hidden rounded-md">
+    <li
+      className={cn(
+        'gap-gutter p-gutter flex transition-colors duration-200',
+        hasIssue && 'bg-danger/4',
+      )}
+    >
+      <div
+        className={cn('relative size-20 shrink-0 overflow-hidden rounded-xl', productTint(name))}
+      >
         <ProductImage
           image={item.product?.primaryImage ?? null}
           name={name}
           sizes="80px"
-          className="size-full"
+          className="size-full p-1.5"
         />
       </div>
 
@@ -38,12 +55,17 @@ export function CartItemRow({ item }: { item: CartItem }) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col">
             {item.product?.brand ? (
-              <span className="text-text-muted truncate text-xs">{item.product.brand}</span>
+              <span className="text-text-muted truncate text-[0.6875rem] font-bold tracking-[0.04em] uppercase">
+                {item.product.brand}
+              </span>
             ) : null}
 
-            <h3 className="text-text text-sm font-semibold">
+            <h3 className="text-text text-card">
               {item.product ? (
-                <Link href={'/products/' + item.product.slug} className="hover:text-primary">
+                <Link
+                  href={'/products/' + item.product.slug}
+                  className="hover:text-primary transition-colors"
+                >
                   {item.product.name}
                 </Link>
               ) : (
@@ -52,7 +74,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
             </h3>
 
             {item.product ? (
-              <span className="text-text-muted text-xs">{item.product.unitLabel}</span>
+              <span className="text-text-muted text-xs font-medium">{item.product.unitLabel}</span>
             ) : null}
           </div>
 
@@ -60,21 +82,21 @@ export function CartItemRow({ item }: { item: CartItem }) {
             type="button"
             onClick={() => removeItem.mutate(item.productId)}
             disabled={isPending}
-            aria-label={'Remove ' + name + ' from your cart'}
-            className="text-outline hover:bg-surface-muted hover:text-danger -me-1 -mt-1 flex size-11 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
+            aria-label={'Remove ' + name + ' from your basket'}
+            className="text-outline hover:bg-danger/8 hover:text-danger -me-1 -mt-1 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50"
           >
             <Trash2 className="size-4" aria-hidden="true" />
           </button>
         </div>
 
         {item.issue ? (
-          <p className="text-danger flex items-start gap-1.5 text-xs font-medium">
+          <p className="text-danger flex items-start gap-1.5 text-xs font-semibold">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
             {ISSUE_MESSAGES[item.issue]}
           </p>
         ) : null}
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1.5">
           <QuantitySelector
             value={item.quantity}
             max={item.maxQuantity || undefined}
@@ -95,17 +117,20 @@ export function CartItemRow({ item }: { item: CartItem }) {
           <div className="text-end">
             {item.product ? (
               <>
-                <PriceDisplay
-                  sellingPrice={item.product.sellingPrice}
-                  compareAtPrice={item.product.compareAtPrice}
-                  size="sm"
-                  className="justify-end"
-                />
                 {/* The line total is the server's figure, never a local
-                    multiplication, so it always matches the subtotal. */}
-                <p className="text-text text-sm font-semibold tabular-nums">
-                  {formatPkr(item.lineTotal)}
-                </p>
+                    multiplication, so it always matches the subtotal. It is
+                    also the biggest number on the row: it is what this line
+                    costs, and the unit price is the supporting detail. */}
+                <p className="text-text text-price tabular-nums">{formatPkr(item.lineTotal)}</p>
+
+                {item.quantity > 1 ? (
+                  <PriceDisplay
+                    sellingPrice={item.product.sellingPrice}
+                    compareAtPrice={item.product.compareAtPrice}
+                    size="sm"
+                    className="justify-end opacity-70"
+                  />
+                ) : null}
               </>
             ) : null}
           </div>

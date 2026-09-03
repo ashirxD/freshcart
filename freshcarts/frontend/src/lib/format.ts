@@ -29,23 +29,32 @@ export function formatBadgeCount(count: number): string {
 }
 
 /**
- * A stable colour per product, so the placeholder tile for a product without
- * imagery still looks deliberate and is recognisable between visits.
+ * The wash behind a product image.
+ *
+ * Every product gets one, photographed or not (§24). A packshot on flat white
+ * floats; the same packshot on a warm tint sits on a surface, and the tile
+ * reads as an object rather than a hole in the card.
+ *
+ * The tints are palette tokens at low opacity — never an arbitrary hex, and
+ * never saturated enough to compete with the product itself. Each is stable per
+ * product name, so the same item looks the same on every screen and every
+ * visit, and a rail of cards comes out varied rather than striped.
  */
-const PLACEHOLDER_TINTS = [
-  'bg-[#e8efe6]',
-  'bg-[#f3ecdd]',
-  'bg-[#e6edf1]',
-  'bg-[#f1e8e8]',
-  'bg-[#eae9f1]',
+const PRODUCT_TINTS = [
+  'bg-leaf/8',
+  'bg-cream',
+  'bg-peach/30',
+  'bg-sand/45',
+  'bg-teal/8',
+  'bg-berry/8',
 ] as const;
 
-export function placeholderTint(seed: string): string {
+export function productTint(seed: string): string {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
     hash = (hash * 31 + seed.charCodeAt(index)) | 0;
   }
-  return PLACEHOLDER_TINTS[Math.abs(hash) % PLACEHOLDER_TINTS.length];
+  return PRODUCT_TINTS[Math.abs(hash) % PRODUCT_TINTS.length];
 }
 
 /**

@@ -6,7 +6,10 @@ import { SelectField, TextareaField } from '@/components/admin/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { useProposeSubstitution, useStoreProducts } from '@/features/store-manager/store-manager.hooks';
+import {
+  useProposeSubstitution,
+  useStoreProducts,
+} from '@/features/store-manager/store-manager.hooks';
 import { formatPkr } from '@/lib/format';
 import { SUBSTITUTION_REASONS } from '@/types/store-manager';
 import type { StoreOrderItem, SubstitutionReason } from '@/types/store-manager';
@@ -36,7 +39,10 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
   const [note, setNote] = useState('');
 
   const propose = useProposeSubstitution(onClose);
-  const { data: products, isPending } = useStoreProducts({ search: search || undefined, limit: 30 });
+  const { data: products, isPending } = useStoreProducts({
+    search: search || undefined,
+    limit: 30,
+  });
 
   if (!item) return null;
 
@@ -90,7 +96,7 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
       }
     >
       <div className="gap-gutter flex flex-col">
-        <p className="bg-surface-muted text-text-muted p-xs rounded-md text-sm">
+        <p className="bg-surface-muted text-text-muted p-tight rounded-md text-sm">
           The customer keeps paying{' '}
           <span className="text-text font-semibold">{formatPkr(chargedLineTotal)}</span> for this
           line. A replacement may cost the same or less — never more.
@@ -153,7 +159,7 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
           authority — this only saves a round trip and a confusing error.
         */}
         {selected ? (
-          <div className="gap-xs flex flex-col text-sm">
+          <div className="gap-tight flex flex-col text-sm">
             <p className="text-text-muted">
               Catalogue price for {replacementQuantity} ×{' '}
               <span className="text-text font-medium">{formatPkr(catalogueLineTotal)}</span>

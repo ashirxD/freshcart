@@ -4,68 +4,325 @@
    FreshCarts design tokens
 
    This block is the ONLY place design values are declared. Every token below
-   becomes a Tailwind utility (`bg-primary`, `p-page`, `rounded-lg`, `shadow-card`),
-   so components describe intent instead of repeating hex codes and pixel values.
+   becomes a Tailwind utility (`bg-cream`, `p-page`, `rounded-lg`, `shadow-card`,
+   `text-hero`, `ease-soft`), so components describe intent instead of repeating
+   hex codes, pixel values and easing curves.
 
-   Brand values come from the Stitch design system and must not be altered.
-   Values marked "derived" are neutral steps computed from the given palette so
-   that borders, dividers and skeletons stay within the same visual language.
+   THE IDEA
+   A neighbourhood grocery, not a dashboard. The palette is drawn from the shop
+   itself — leaves, paper bags, apricots, tomatoes, warm sand — and the surfaces
+   are warm rather than clinical white. Colour is rationed: roughly three
+   quarters of any screen is calm neutral, and the accents are reserved for the
+   things that genuinely need attention (a saving, a warning, a primary action).
+
+   The green identity is unchanged: Deep Leaf #00450D is still the brand.
    ========================================================================== */
 @theme {
-  /* --- Brand palette (source of truth) --- */
-  --color-primary: #00450d;
-  --color-primary-container: #1b5e20;
-  --color-secondary: #835400;
-  --color-secondary-container: #fcab28;
-  --color-background: #fcf9f8;
-  --color-surface: #fcf9f8;
-  --color-text: #1b1c1c;
-  --color-outline: #717a6d;
+  /* --- Brand: the leaf greens ------------------------------------------- */
+  --color-primary: #00450d; /* Deep Leaf — brand, primary actions */
+  --color-primary-container: #0a5c19; /* the pressed/hover step above it */
+  --color-leaf: #2f7d32; /* Fresh Leaf — freshness, success, accents */
+  --color-herbal: #6e8b3d; /* Herbal — quiet supporting green */
 
-  /* --- Foreground pairings (contrast-checked against the pairs above) --- */
-  --color-on-primary: #ffffff;
-  --color-on-primary-container: #ffffff;
-  --color-on-secondary: #ffffff;
-  --color-on-secondary-container: #1b1c1c;
-  --color-on-surface: #1b1c1c;
+  /* --- Warm neutrals: the paper-bag range ------------------------------- */
+  --color-background: #fdfaf3; /* the page: warm paper, never grey-white */
+  --color-surface: #ffffff; /* cards and bars sit ON the page, as objects */
+  --color-cream: #fff8e8; /* Warm Cream — hero and feature zones */
+  --color-sand: #e9d8bd; /* Warm Sand — supporting surfaces, rules */
+  --color-surface-muted: #f6f0e3; /* tonal panel on the page */
+  --color-surface-sunken: #ece4d3; /* inset areas: search fields, skeletons */
 
-  /* --- Derived neutrals --- */
-  --color-surface-muted: #f2efed; /* cards/skeletons on background */
-  --color-surface-sunken: #ebe7e4; /* inset areas, search fields */
-  --color-outline-variant: #dcdfd8; /* hairline borders — outline at low emphasis */
-  --color-text-muted: #5c6159; /* secondary copy, still AA on background */
+  /* --- Food accents ----------------------------------------------------- */
+  --color-peach: #f6c7a8; /* Soft Peach — promotions, featured */
+  --color-apricot: #f2a65a; /* Apricot — attention, offers */
+  --color-tomato: #d95c4a; /* Tomato — sale, urgency, limited stock */
+  --color-berry: #9b4a5a; /* Berry — secondary accent */
+  --color-teal: #2a6f6b; /* information, "on the way" */
 
-  /* --- Status colours (functional, not brand) --- */
-  --color-success: #1b5e20;
-  --color-danger: #b3261e;
+  /* --- Ink -------------------------------------------------------------- */
+  --color-text: #1b1c1c; /* Charcoal */
+  --color-text-muted: #5a5750; /* secondary copy — warm, AA on background */
+  --color-outline: #6f6a5e; /* icons, placeholders — AA as text on surface */
+  --color-outline-variant: #e6ddca; /* hairlines, at low emphasis */
+
+  /* --- Secondary (amber) ------------------------------------------------
+     Kept under the original token names because the whole app already speaks
+     them; the values move from a flat yellow to the apricot range. */
+  --color-secondary: #8a4b12; /* deep amber — legible as text */
+  --color-secondary-container: #f2a65a; /* apricot — badge and chip fills */
+
+  /* --- Foreground pairings ---------------------------------------------
+     One token per ground that something is actually SET on, each checked for
+     contrast against it. Grounds used only as tints (cream, peach, sand, the
+     /10 washes) are deliberately absent: text on those is ordinary `text-text`
+     or `text-attention`, and a token nothing references is a contrast claim
+     nobody is checking. */
+  --color-on-primary: #ffffff; /* 12.6:1 on Deep Leaf */
+  --color-on-secondary: #ffffff; /* 6.4:1 on the deep amber */
+  --color-on-secondary-container: #3a2408; /* 7.4:1 on Apricot */
+  --color-on-apricot: #3a2408;
+  --color-on-tomato: #ffffff; /* 4.6:1 on Tomato */
+
+  /* --- Status: functional, and part of the same palette ----------------- */
+  --color-success: #256b28;
+  --color-attention: #97551a; /* amber, as TEXT — pairs with apricot fills */
+  --color-danger: #b4392c; /* restrained tomato */
+  --color-info: #2a6f6b;
   --color-on-danger: #ffffff;
 
-  /* --- Typography --- */
+  /* --- Typography ------------------------------------------------------- */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-urdu: var(--font-noto-nastaliq), serif;
 
-  /* --- Spacing (design system scale) --- */
-  --spacing-page: 20px; /* mobile horizontal margin */
-  --spacing-gutter: 16px; /* standard gutter / medium vertical rhythm */
-  --spacing-xs: 8px; /* small vertical spacing */
-  --spacing-lg: 24px; /* large vertical spacing */
+  /* A real scale, so hierarchy comes from type before it comes from colour.
+     Each step carries its own line height, tracking and weight — a heading
+     cannot accidentally be set at body weight. */
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.09em;
+  --text-eyebrow--font-weight: 700;
+
+  --text-hero: clamp(2rem, 5.2vw, 3.25rem);
+  --text-hero--line-height: 1.06;
+  --text-hero--letter-spacing: -0.032em;
+  --text-hero--font-weight: 800;
+
+  --text-display: clamp(1.5rem, 3.2vw, 2rem);
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.022em;
+  --text-display--font-weight: 700;
+
+  --text-section: clamp(1.25rem, 2.4vw, 1.625rem);
+  --text-section--line-height: 1.2;
+  --text-section--letter-spacing: -0.018em;
+  --text-section--font-weight: 700;
+
+  --text-card: 0.9375rem;
+  --text-card--line-height: 1.35;
+  --text-card--font-weight: 600;
+
+  --text-price: 1.0625rem;
+  --text-price--line-height: 1.2;
+  --text-price--letter-spacing: -0.012em;
+  --text-price--font-weight: 800;
+
+  --text-price-lg: 1.75rem;
+  --text-price-lg--line-height: 1.1;
+  --text-price-lg--letter-spacing: -0.022em;
+  --text-price-lg--font-weight: 800;
+
+  /* --- Spacing ----------------------------------------------------------
+     NAMING, AND WHY IT MATTERS
+     Tailwind resolves `max-w-lg` (and `w-*`, `h-*`, `basis-*`…) against the
+     spacing namespace BEFORE the container namespace, so a token called
+     `--spacing-lg` silently redefines `max-w-lg` from 32rem to 24px across the
+     whole app. That had already happened here: `max-w-xs` in the empty state
+     was resolving to 8px, and every heading with `max-w-xl` on it was 32px
+     wide and wrapping one word per line.
+
+     So the ramp is named for its role — tight, snug, gutter, loose, wide,
+     section — and deliberately avoids every t-shirt size Tailwind's own sizing
+     scales use. Adding a step is safe as long as that rule is kept. */
+  --spacing-tight: 8px; /* inside a control, between an icon and its label */
+  --spacing-snug: 12px; /* between cards in a dense grid */
+  --spacing-gutter: 16px; /* the standard gutter and medium vertical rhythm */
+  --spacing-page: 20px; /* mobile horizontal page margin */
+  --spacing-loose: 24px; /* between blocks within a section */
+  --spacing-wide: 32px; /* around a section's content */
   --spacing-touch: 48px; /* minimum interactive target */
+  --spacing-section: 56px; /* between major page sections */
 
-  /* --- Radius --- */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* --- Radius: a shape system, not one rounded rectangle ---------------- */
+  --radius-sm: 6px; /* chips, thumbnails, inline marks */
+  --radius-md: 10px; /* inputs, small controls */
+  --radius-lg: 16px; /* the standard card */
+  --radius-xl: 20px; /* product cards, panels */
+  --radius-2xl: 26px; /* feature blocks, hero cards */
+  --radius-3xl: 34px; /* hero and full-bleed zones */
 
-  /* --- Elevation: subtle, never heavy --- */
-  --shadow-card: 0 1px 2px rgb(27 28 28 / 0.04), 0 1px 3px rgb(27 28 28 / 0.06);
-  --shadow-raised: 0 2px 6px rgb(27 28 28 / 0.08);
-  --shadow-overlay: 0 8px 24px rgb(27 28 28 / 0.12);
+  /* --- Elevation: warm, subtle, never heavy ----------------------------- */
+  --shadow-card: 0 1px 2px rgb(58 36 8 / 0.04), 0 2px 8px rgb(58 36 8 / 0.05);
+  --shadow-raised: 0 2px 4px rgb(58 36 8 / 0.05), 0 10px 24px rgb(58 36 8 / 0.09);
+  --shadow-overlay: 0 18px 48px rgb(27 28 28 / 0.18);
+  --shadow-inset-tile: inset 0 1px 0 rgb(255 255 255 / 0.5);
+
+  /* --- Motion ----------------------------------------------------------- */
+  --ease-soft: cubic-bezier(0.16, 1, 0.3, 1); /* settles, for entrances */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.28, 1); /* everyday transitions */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* one small overshoot */
+
+  --animate-fade-up: fade-up 420ms var(--ease-soft) both;
+  --animate-fade-in: fade-in 200ms var(--ease-standard) both;
+  --animate-pop: pop 260ms var(--ease-spring) both;
+  --animate-heart: heart 380ms var(--ease-spring) both;
+  --animate-nudge: nudge 420ms var(--ease-spring) both;
+  --animate-sheet-up: sheet-up 260ms var(--ease-soft) both;
+  --animate-toast-in: toast-in 240ms var(--ease-soft) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-sweep: sweep 2.4s var(--ease-standard) infinite;
+  --animate-tick: tick 320ms var(--ease-spring) both;
+  --animate-ripple: ripple 900ms var(--ease-soft) both;
+}
+
+/* --------------------------------------------------------------------------
+   Keyframes
+
+   Declared outside `@theme` so they are always emitted, and kept few on
+   purpose: each one below is wired to a specific piece of feedback (something
+   arrived, something was added, something is being read). Nothing here loops
+   except the two indicators that genuinely represent ongoing work.
+   -------------------------------------------------------------------------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes heart {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.32);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nudge {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* The scanner line on the grocery-list feature: it travels down a list the way
+   a reader's finger does, which is the whole point being communicated. */
+@keyframes sweep {
+  0% {
+    transform: translateY(-8%);
+    opacity: 0;
+  }
+  12%,
+  70% {
+    opacity: 1;
+  }
+  85%,
+  100% {
+    transform: translateY(108%);
+    opacity: 0;
+  }
+}
+
+@keyframes tick {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* One ring, once, when an order is placed. This is the whole of the app's
+   celebration budget: §38 asks for something satisfying and explicitly rules
+   out confetti, and a single expanding ring reads as confirmation rather than
+   as a party. */
+@keyframes ripple {
+  from {
+    transform: scale(0.65);
+    opacity: 0.45;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
 }
 
 @layer base {
+  /**
+   * The heights of the two fixed mobile bars.
+   *
+   * Declared once because four separate things have to agree on them: the tab
+   * bar's own height, the basket bar that sits on top of it, the spacer that
+   * stops the page ending underneath both, and the toast viewport that must
+   * clear the lot. When these were inline values they drifted, and a toast
+   * ended up covering the tab a shopper was reaching for.
+   */
+  :root {
+    --nav-height: 3.75rem;
+    --cart-bar-height: 4rem;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   html {
-    /* Never hide content behind the fixed bottom navigation. */
-    scroll-padding-bottom: 5rem;
+    /* Never hide content behind the fixed bottom bars. */
+    scroll-padding-bottom: calc(var(--nav-height) + var(--cart-bar-height) + 1rem);
+    /* Anchored jumps land below the sticky header rather than under it. */
+    scroll-padding-top: 5rem;
   }
 
   body {
@@ -89,7 +346,25 @@
     border-radius: var(--radius-sm);
   }
 
-  /* Respect users who ask for reduced motion. */
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-apricot) 55%, transparent);
+    color: var(--color-text);
+  }
+
+  /* Headings never inherit body weight by accident. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Respect users who ask for reduced motion. Accessibility outranks polish:
+     everything decorative is switched off, and the scroll reveals below are
+     gated on the same query so content simply appears. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -97,11 +372,49 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
 
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
 @utility page-x {
   /* Mobile page margin that relaxes into a centred column on desktop. */
   padding-inline: var(--spacing-page);
+}
+
+@utility no-scrollbar {
+  /* Horizontal rails scroll by drag/swipe; the bar itself is visual noise. */
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility shelf-rule {
+  /* A market-shelf hairline: a warm rule that fades out at both ends. */
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--color-outline-variant) 12%,
+    var(--color-outline-variant) 88%,
+    transparent
+  );
+}
+
+@utility skeleton-sheen {
+  /* Warm tonal skeleton rather than a grey block. */
+  background-color: var(--color-surface-sunken);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-cream) 85%, transparent) 45%,
+    transparent 90%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: var(--animate-shimmer);
 }

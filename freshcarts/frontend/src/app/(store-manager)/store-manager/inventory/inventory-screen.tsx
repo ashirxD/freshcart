@@ -7,10 +7,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { SearchBar } from '@/components/common/search-bar';
 import { Container } from '@/components/layout/container';
-import {
-  SetStockDialog,
-  StockHistoryDialog,
-} from '@/components/store-manager/stock-dialogs';
+import { SetStockDialog, StockHistoryDialog } from '@/components/store-manager/stock-dialogs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreInventory, useUpdateStock } from '@/features/store-manager/store-manager.hooks';
@@ -81,7 +78,7 @@ export function InventoryScreen() {
   });
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
         <h1 className="text-text text-xl font-semibold">Inventory</h1>
         <p aria-live="polite" className="text-text-muted text-sm">
@@ -200,13 +197,7 @@ export function InventoryScreen() {
  * an absolute set for a stock take. The server applies the relative form with the
  * guard in the query, so two people adjusting at once cannot both win.
  */
-function StockRow({
-  row,
-  onShowHistory,
-}: {
-  row: StoreInventoryRow;
-  onShowHistory: () => void;
-}) {
+function StockRow({ row, onShowHistory }: { row: StoreInventoryRow; onShowHistory: () => void }) {
   const [isEditing, setEditing] = useState(false);
   const update = useUpdateStock(() => setEditing(false));
 

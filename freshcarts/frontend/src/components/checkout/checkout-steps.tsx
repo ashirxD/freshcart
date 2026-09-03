@@ -17,11 +17,15 @@ export interface CheckoutStepsProps {
  * relationship between the steps survives without the visual line. The
  * decorative connector is a separate, aria-hidden element rather than a border
  * on the list item, so it never becomes part of the announced content.
+ *
+ * Three states, told three ways (§46): a tick on a filled disc for done, a
+ * ringed disc and bold label for the current step, a hollow outline for what is
+ * still to come. Never colour alone.
  */
 export function CheckoutSteps({ steps, current, className }: CheckoutStepsProps) {
   return (
     <nav aria-label="Checkout progress" className={className}>
-      <ol className="flex list-none items-center gap-1">
+      <ol className="flex list-none items-start gap-1">
         {steps.map((label, index) => {
           const isComplete = index < current;
           const isCurrent = index === current;
@@ -30,14 +34,17 @@ export function CheckoutSteps({ steps, current, className }: CheckoutStepsProps)
             <li key={label} className="flex flex-1 items-center gap-1">
               <span
                 aria-current={isCurrent ? 'step' : undefined}
-                className="flex min-w-0 flex-1 flex-col items-center gap-1"
+                className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
               >
                 <span
                   className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-                    isComplete && 'bg-primary text-on-primary',
-                    isCurrent && 'bg-primary text-on-primary ring-4 ring-primary/15',
-                    !isComplete && !isCurrent && 'bg-surface-sunken text-text-muted',
+                    'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                    'ease-standard transition-[background-color,box-shadow,color] duration-200',
+                    isComplete && 'bg-leaf text-on-primary',
+                    isCurrent && 'bg-primary text-on-primary ring-primary/18 ring-4',
+                    !isComplete &&
+                      !isCurrent &&
+                      'bg-surface text-text-muted ring-outline-variant ring-2',
                   )}
                 >
                   {isComplete ? (
@@ -53,7 +60,7 @@ export function CheckoutSteps({ steps, current, className }: CheckoutStepsProps)
                 <span
                   className={cn(
                     'w-full truncate text-center text-xs',
-                    isCurrent ? 'font-semibold text-text' : 'text-text-muted',
+                    isCurrent ? 'text-text font-bold' : 'text-text-muted font-medium',
                   )}
                 >
                   {label}
@@ -64,8 +71,8 @@ export function CheckoutSteps({ steps, current, className }: CheckoutStepsProps)
                 <span
                   aria-hidden="true"
                   className={cn(
-                    '-mt-5 h-0.5 w-full flex-1 rounded-full',
-                    isComplete ? 'bg-primary' : 'bg-surface-sunken',
+                    'mt-4 h-0.5 w-full flex-1 rounded-full transition-colors duration-300',
+                    isComplete ? 'bg-leaf' : 'bg-outline-variant',
                   )}
                 />
               ) : null}

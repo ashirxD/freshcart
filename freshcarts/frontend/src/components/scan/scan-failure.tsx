@@ -113,13 +113,13 @@ export function ScanFailure({ error, onRetry }: ScanFailureProps) {
       // Announced immediately: a failure a shopper cannot see is a shopper
       // waiting forever.
       role="alert"
-      className="gap-lg py-lg flex flex-col items-center text-center"
+      className="gap-loose py-loose flex flex-col items-center text-center"
     >
       <span className="bg-surface-sunken text-text-muted flex size-16 items-center justify-center rounded-full">
         {copy.icon}
       </span>
 
-      <div className="gap-xs flex flex-col">
+      <div className="gap-tight flex flex-col">
         <h2 className="text-text text-lg font-semibold">{copy.title}</h2>
         <p className="text-text-muted text-sm">{copy.message}</p>
       </div>
@@ -130,7 +130,7 @@ export function ScanFailure({ error, onRetry }: ScanFailureProps) {
         ))}
       </ul>
 
-      <div className="gap-xs flex w-full max-w-xs flex-col">
+      <div className="gap-tight flex w-full max-w-xs flex-col">
         <Button fullWidth onClick={onRetry}>
           {copy.retryLabel}
         </Button>
@@ -154,12 +154,12 @@ export function ScanFailure({ error, onRetry }: ScanFailureProps) {
  */
 export function ScanEmptyResult({ onRetry }: { onRetry: () => void }) {
   return (
-    <section role="status" className="gap-lg py-lg flex flex-col items-center text-center">
+    <section role="status" className="gap-loose py-loose flex flex-col items-center text-center">
       <span className="bg-surface-sunken text-text-muted flex size-16 items-center justify-center rounded-full">
         <Search className="size-7" aria-hidden="true" />
       </span>
 
-      <div className="gap-xs flex flex-col">
+      <div className="gap-tight flex flex-col">
         <h2 className="text-text text-lg font-semibold">
           We couldn&rsquo;t find any grocery items in this image
         </h2>
@@ -174,7 +174,7 @@ export function ScanEmptyResult({ onRetry }: { onRetry: () => void }) {
         <li>One item per line reads best</li>
       </ul>
 
-      <div className="gap-xs flex w-full max-w-xs flex-col">
+      <div className="gap-tight flex w-full max-w-xs flex-col">
         <Button fullWidth onClick={onRetry}>
           Try another photo
         </Button>

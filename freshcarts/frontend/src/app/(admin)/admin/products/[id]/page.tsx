@@ -24,7 +24,7 @@ export default function Page() {
   });
 
   return (
-    <Container className="gap-lg flex max-w-2xl flex-col">
+    <Container className="gap-loose flex max-w-2xl flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <h1 className="text-text text-xl font-semibold">
           {product.data ? 'Edit ' + product.data.name : 'Edit product'}

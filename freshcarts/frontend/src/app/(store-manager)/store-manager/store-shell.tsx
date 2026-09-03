@@ -51,7 +51,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <Container className="gap-gutter py-lg flex flex-col">
+      <Container className="gap-gutter py-loose flex flex-col">
         <Skeleton className="h-8 w-56" label="Checking your access" />
         <Skeleton className="h-64 w-full" />
       </Container>
@@ -60,9 +60,9 @@ export function StoreShell({ children }: { children: ReactNode }) {
 
   if (!user || user.role !== 'STORE_MANAGER') {
     return (
-      <Container className="py-lg">
+      <Container className="py-loose">
         <EmptyState
-          icon={<ShieldAlert className="size-7" aria-hidden="true" />}
+          icon={<ShieldAlert aria-hidden="true" />}
           title="Store staff only"
           description="This is the store operations console. Sign in with a store manager account to continue."
           action={
@@ -74,7 +74,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
               </Button>
             )
           }
-          className="bg-surface-muted rounded-lg"
+          className="bg-surface-muted rounded-2xl"
         />
       </Container>
     );
@@ -89,7 +89,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
           onClick={() => setDrawerOpen(true)}
           aria-label="Open navigation"
           aria-expanded={isDrawerOpen}
-          className="hover:bg-surface-muted text-text flex size-touch items-center justify-center rounded-full"
+          className="hover:bg-primary/8 text-text size-touch flex items-center justify-center rounded-full transition-colors"
         >
           <Menu className="size-5" aria-hidden="true" />
         </button>
@@ -115,7 +115,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
           />
           <nav
             aria-label="Store navigation"
-            className="bg-surface relative z-10 flex w-64 flex-col shadow-overlay"
+            className="bg-surface shadow-overlay relative z-10 flex w-64 flex-col"
           >
             <div className="border-outline-variant flex items-center justify-between gap-2 border-b p-4">
               <StoreBadge className="min-w-0" />
@@ -123,7 +123,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close navigation"
-                className="hover:bg-surface-muted text-outline flex size-touch shrink-0 items-center justify-center rounded-full"
+                className="hover:bg-surface-muted text-outline size-touch flex shrink-0 items-center justify-center rounded-full"
               >
                 <X className="size-5" aria-hidden="true" />
               </button>
@@ -133,20 +133,14 @@ export function StoreShell({ children }: { children: ReactNode }) {
         </div>
       ) : null}
 
-      <main id="main-content" className="min-w-0 flex-1 py-lg">
+      <main id="main-content" className="py-loose min-w-0 flex-1">
         {children}
       </main>
     </div>
   );
 }
 
-function SidebarNav({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) {
+function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   return (
     <nav aria-label="Store operations" className="flex flex-1 flex-col gap-1 p-3">
       {NAV.map((item) => {
@@ -160,12 +154,19 @@ function SidebarNav({
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'min-h-touch flex items-center gap-3 rounded-md px-3 text-sm font-medium',
+              'relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm',
+              'ease-standard transition-colors duration-150',
               active
-                ? 'bg-surface-muted text-primary'
-                : 'text-text-muted hover:bg-surface-muted hover:text-text',
+                ? 'bg-primary/10 text-primary font-bold'
+                : 'text-text-muted hover:bg-surface-muted hover:text-text font-medium',
             )}
           >
+            {active ? (
+              <span
+                aria-hidden="true"
+                className="bg-leaf absolute inset-y-1.5 start-0 w-0.5 rounded-full"
+              />
+            ) : null}
             <Icon className="size-5 shrink-0" aria-hidden="true" />
             {item.label}
           </Link>
@@ -196,7 +197,7 @@ function StoreBadge({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex flex-col gap-0.5', className)}>
-      <span className="text-primary truncate text-sm font-bold tracking-tight">
+      <span className="text-primary truncate text-sm font-extrabold tracking-[-0.02em]">
         {data?.store.name ?? 'FreshCarts'}
       </span>
 
@@ -204,8 +205,10 @@ function StoreBadge({ className }: { className?: string }) {
         <span className="flex items-center gap-1.5 text-xs">
           <span
             className={cn(
-              'size-1.5 shrink-0 rounded-full',
-              data.store.isOpen ? 'bg-success' : 'bg-outline',
+              'size-2 shrink-0 rounded-full',
+              // Open is the state that matters operationally, so it gets the
+              // ring as well as the fill — visible in a high-contrast mode.
+              data.store.isOpen ? 'bg-leaf ring-leaf/30 ring-2' : 'bg-outline',
             )}
             aria-hidden="true"
           />

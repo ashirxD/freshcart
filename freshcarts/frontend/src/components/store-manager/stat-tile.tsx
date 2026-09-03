@@ -19,11 +19,19 @@ export interface StatTileProps {
  * it legible in a high-contrast mode and to anyone with a colour-vision
  * deficiency — the same rule the order status badge follows.
  */
+/**
+ * The store console's status palette (§73, §74).
+ *
+ * ATTENTION is the tile a manager should look at first — orders waiting to be
+ * accepted — so it takes the apricot that means "someone is waiting on you"
+ * everywhere else in the app. WARNING is stock running down, DANGER is
+ * something out of stock, and DEFAULT is a number that is merely true.
+ */
 const TONES = {
-  DEFAULT: 'border-outline-variant bg-surface text-text',
-  ATTENTION: 'border-primary/40 bg-primary/5 text-primary',
-  WARNING: 'border-secondary/40 bg-secondary-container/20 text-secondary',
-  DANGER: 'border-danger/40 bg-danger/5 text-danger',
+  DEFAULT: 'ring-outline-variant bg-surface text-text',
+  ATTENTION: 'ring-apricot/50 bg-apricot/15 text-attention',
+  WARNING: 'ring-berry/30 bg-berry/8 text-berry',
+  DANGER: 'ring-danger/35 bg-danger/6 text-danger',
 } as const;
 
 /**
@@ -36,8 +44,10 @@ const TONES = {
 export function StatTile({ label, value, href, tone = 'DEFAULT', className }: StatTileProps) {
   const body = (
     <>
-      <span className="text-2xl leading-none font-bold tabular-nums">{value}</span>
-      <span className="text-sm leading-snug font-medium">{label}</span>
+      <span className="text-3xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">
+        {value}
+      </span>
+      <span className="text-sm leading-snug font-semibold">{label}</span>
       {href ? (
         <span className="text-text-muted mt-auto flex items-center gap-0.5 text-xs">
           View
@@ -48,9 +58,8 @@ export function StatTile({ label, value, href, tone = 'DEFAULT', className }: St
   );
 
   const shell = cn(
-    'gap-xs flex min-h-24 flex-col rounded-lg border p-gutter',
+    'gap-tight p-gutter flex min-h-24 flex-col rounded-2xl ring-1',
     TONES[tone],
-    tone !== 'DEFAULT' && 'font-semibold',
     className,
   );
 
@@ -59,7 +68,14 @@ export function StatTile({ label, value, href, tone = 'DEFAULT', className }: St
   }
 
   return (
-    <Link href={href} className={cn(shell, 'hover:shadow-card transition-shadow')}>
+    <Link
+      href={href}
+      className={cn(
+        shell,
+        'ease-standard transition-[box-shadow,transform] duration-200',
+        'hover:shadow-card hover:-translate-y-0.5',
+      )}
+    >
       {body}
     </Link>
   );

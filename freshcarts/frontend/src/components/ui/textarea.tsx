@@ -23,8 +23,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const hasError = Boolean(error);
 
   return (
-    <div className="flex w-full flex-col gap-xs">
-      <label htmlFor={fieldId} className={cn('text-sm font-medium text-text', hideLabel && 'sr-only')}>
+    <div className="gap-tight flex w-full flex-col">
+      <label
+        htmlFor={fieldId}
+        className={cn('text-text text-sm font-semibold', hideLabel && 'sr-only')}
+      >
         {label}
       </label>
 
@@ -35,21 +38,22 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         aria-invalid={hasError || undefined}
         aria-describedby={error || hint ? messageId : undefined}
         className={cn(
-          'w-full rounded-md border bg-surface px-gutter py-3 text-base text-text',
-          'placeholder:text-outline outline-none transition-colors',
-          'focus:border-primary focus:ring-2 focus:ring-primary/20',
-          hasError ? 'border-danger' : 'border-outline-variant',
+          'px-gutter text-text w-full rounded-lg border py-3 text-base',
+          'placeholder:text-outline outline-none',
+          'ease-standard transition-[border-color,box-shadow] duration-150',
+          'focus:border-primary focus:ring-primary/15 focus:ring-4',
+          hasError ? 'border-danger bg-danger/4' : 'border-outline-variant bg-surface',
           className,
         )}
         {...props}
       />
 
       {error ? (
-        <p id={messageId} role="alert" className="text-sm text-danger">
+        <p id={messageId} role="alert" className="text-danger text-sm font-medium">
           {error}
         </p>
       ) : hint ? (
-        <p id={messageId} className="text-sm text-text-muted">
+        <p id={messageId} className="text-text-muted text-sm">
           {hint}
         </p>
       ) : null}

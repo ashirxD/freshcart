@@ -1,17 +1,26 @@
 import { Container } from '@/components/layout/container';
+import { ProductGridSkeleton } from '@/components/product/product-grid';
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Keeps the shell in place while a customer page resolves. */
+/**
+ * Keeps the shell in place while a customer page resolves.
+ *
+ * Shaped like the pages it stands in for — a tinted header band, then a grid —
+ * so navigation reads as the next page arriving rather than as the app blinking.
+ */
 export default function CustomerLoading() {
   return (
-    <Container className="gap-gutter py-lg flex flex-col">
-      <Skeleton className="h-7 w-48" label="Loading" />
-      <Skeleton className="h-12 w-full" />
-      <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <Skeleton key={index} className="h-52 w-full" />
-        ))}
+    <div className="flex flex-col">
+      <div className="bg-cream py-loose">
+        <Container className="gap-snug flex flex-col">
+          <Skeleton className="h-3 w-28" label="Loading" />
+          <Skeleton className="h-9 w-64" />
+        </Container>
       </div>
-    </Container>
+
+      <Container className="gap-loose py-wide flex flex-col">
+        <ProductGridSkeleton count={10} />
+      </Container>
+    </div>
   );
 }

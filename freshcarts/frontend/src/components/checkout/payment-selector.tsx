@@ -52,15 +52,20 @@ export function PaymentSelector({
 
   if (!methods || methods.length === 0) {
     return (
-      <p role="alert" className="rounded-lg bg-surface-muted p-gutter text-sm text-danger">
+      <p role="alert" className="bg-surface-muted p-gutter text-danger rounded-lg text-sm">
         No payment methods are available right now. Please try again shortly.
       </p>
     );
   }
 
   return (
-    <RadioCardGroup label="How would you like to pay?" value={value} onChange={(next) => onChange(next as PaymentMethod)} error={error}>
-      <div className="flex flex-col gap-xs">
+    <RadioCardGroup
+      label="How would you like to pay?"
+      value={value}
+      onChange={(next) => onChange(next as PaymentMethod)}
+      error={error}
+    >
+      <div className="gap-tight flex flex-col">
         {methods.map((option) => {
           const Icon = METHOD_ICON[option.method];
 

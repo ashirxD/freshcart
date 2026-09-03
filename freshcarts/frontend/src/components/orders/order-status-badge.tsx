@@ -9,36 +9,38 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/cn';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 import type { OrderStatus, PaymentStatus } from '@/types/order';
 
 /**
- * Status appearance.
+ * THE SEMANTIC STATUS SYSTEM (§73, §74)
+ *
+ * One mapping, used by the shopper's order history, the store console and the
+ * admin back office — so a PACKED order is the same colour and the same word in
+ * all three, and a manager and a customer never describe the same order
+ * differently.
+ *
+ * The progression is deliberate rather than decorative: amber while the order
+ * is waiting on somebody, berry while it is being worked on, teal while it is
+ * moving, leaf-green when it is done, and a restrained red only for the two
+ * outcomes that actually failed. Cancelled is neutral, not red — a shopper
+ * changing their mind is not an error.
  *
  * Every entry pairs a colour with an ICON and a WORD. Colour alone would fail
- * anyone with a colour-vision deficiency and anyone in a high-contrast mode —
- * §39 and §56 both require the label, and the label is what actually carries
- * the meaning here.
- *
- * The palette is the design system's functional set (success / danger / the
- * secondary container for "in progress"), never an invented colour.
+ * anyone with a colour-vision deficiency and anyone in a high-contrast mode,
+ * and the label is what carries the meaning here.
  */
-interface StatusStyle {
-  icon: LucideIcon;
-  tone: string;
-}
-
-const STATUS_STYLE: Record<OrderStatus, StatusStyle> = {
-  PENDING: { icon: Clock, tone: 'bg-surface-sunken text-text-muted' },
-  CONFIRMED: { icon: CheckCircle2, tone: 'bg-primary/10 text-primary' },
-  PREPARING: { icon: ChefHat, tone: 'bg-secondary-container/40 text-secondary' },
-  PACKED: { icon: PackageCheck, tone: 'bg-secondary-container/40 text-secondary' },
-  OUT_FOR_DELIVERY: { icon: Truck, tone: 'bg-primary/10 text-primary' },
-  READY_FOR_PICKUP: { icon: Store, tone: 'bg-primary/10 text-primary' },
-  DELIVERED: { icon: CheckCircle2, tone: 'bg-success/10 text-success' },
-  CANCELLED: { icon: Ban, tone: 'bg-surface-sunken text-text-muted' },
-  REJECTED: { icon: XCircle, tone: 'bg-danger/10 text-danger' },
-  FAILED: { icon: XCircle, tone: 'bg-danger/10 text-danger' },
+const STATUS_STYLE: Record<OrderStatus, { icon: LucideIcon; tone: BadgeTone }> = {
+  PENDING: { icon: Clock, tone: 'attention' },
+  CONFIRMED: { icon: CheckCircle2, tone: 'brand' },
+  PREPARING: { icon: ChefHat, tone: 'berry' },
+  PACKED: { icon: PackageCheck, tone: 'fresh' },
+  OUT_FOR_DELIVERY: { icon: Truck, tone: 'info' },
+  READY_FOR_PICKUP: { icon: Store, tone: 'info' },
+  DELIVERED: { icon: CheckCircle2, tone: 'fresh' },
+  CANCELLED: { icon: Ban, tone: 'neutral' },
+  REJECTED: { icon: XCircle, tone: 'danger' },
+  FAILED: { icon: XCircle, tone: 'danger' },
 };
 
 export interface OrderStatusBadgeProps {
@@ -54,32 +56,22 @@ export function OrderStatusBadge({ status, label, size = 'md', className }: Orde
   const Icon = style.icon;
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full font-medium',
-        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm',
-        style.tone,
-        className,
-      )}
+    <Badge
+      tone={style.tone}
+      size={size}
+      className={className}
+      icon={<Icon className={size === 'sm' ? 'size-3.5' : 'size-4'} aria-hidden="true" />}
     >
-      <Icon className={size === 'sm' ? 'size-3.5' : 'size-4'} aria-hidden="true" />
       {label}
-    </span>
+    </Badge>
   );
 }
 
-const PAYMENT_LABEL: Record<PaymentStatus, string> = {
-  PENDING: 'Payment due',
-  PAID: 'Paid',
-  FAILED: 'Not collected',
-  REFUNDED: 'Refunded',
-};
-
-const PAYMENT_TONE: Record<PaymentStatus, string> = {
-  PENDING: 'bg-secondary-container/40 text-secondary',
-  PAID: 'bg-success/10 text-success',
-  FAILED: 'bg-surface-sunken text-text-muted',
-  REFUNDED: 'bg-surface-sunken text-text-muted',
+const PAYMENT_STYLE: Record<PaymentStatus, { label: string; tone: BadgeTone }> = {
+  PENDING: { label: 'Payment due', tone: 'attention' },
+  PAID: { label: 'Paid', tone: 'fresh' },
+  FAILED: { label: 'Not collected', tone: 'neutral' },
+  REFUNDED: { label: 'Refunded', tone: 'neutral' },
 };
 
 export function PaymentStatusBadge({
@@ -89,15 +81,10 @@ export function PaymentStatusBadge({
   status: PaymentStatus;
   className?: string;
 }) {
+  const style = PAYMENT_STYLE[status];
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        PAYMENT_TONE[status],
-        className,
-      )}
-    >
-      {PAYMENT_LABEL[status]}
-    </span>
+    <Badge tone={style.tone} className={className}>
+      {style.label}
+    </Badge>
   );
 }

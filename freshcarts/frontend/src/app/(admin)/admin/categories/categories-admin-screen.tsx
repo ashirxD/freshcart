@@ -27,7 +27,7 @@ export function CategoriesAdminScreen() {
   const { data: categories, isPending, isError, error, refetch } = useAdminCategories();
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-text text-xl font-semibold">Categories</h1>
@@ -53,7 +53,7 @@ export function CategoriesAdminScreen() {
       {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
 
       {categories?.length === 0 ? (
-        <p className="bg-surface-muted p-lg text-text-muted rounded-lg text-center text-sm">
+        <p className="bg-surface-muted p-loose text-text-muted rounded-lg text-center text-sm">
           No categories yet. Create the first one to start building the catalogue.
         </p>
       ) : null}

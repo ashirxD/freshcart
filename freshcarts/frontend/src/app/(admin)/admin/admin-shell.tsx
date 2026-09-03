@@ -18,6 +18,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { Logo } from '@/components/brand/logo';
 import { EmptyState } from '@/components/common/empty-state';
 import { Container } from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <Container className="gap-gutter py-lg flex flex-col">
+      <Container className="gap-gutter py-loose flex flex-col">
         <Skeleton className="h-8 w-48" label="Checking your access" />
         <Skeleton className="h-64 w-full" />
       </Container>
@@ -100,9 +101,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   if (!user || user.role !== 'ADMIN') {
     return (
-      <Container className="py-lg">
+      <Container className="py-loose">
         <EmptyState
-          icon={<ShieldAlert className="size-7" aria-hidden="true" />}
+          icon={<ShieldAlert aria-hidden="true" />}
           title="Admin access only"
           description="This area is for store administrators. Sign in with an admin account to continue."
           action={
@@ -115,19 +116,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
               {user ? 'Back to the store' : 'Sign in'}
             </Button>
           }
-          className="bg-surface-muted rounded-lg"
+          className="bg-surface-muted rounded-2xl"
         />
       </Container>
     );
   }
 
   const navigation = (
-    <nav aria-label="Back office" className="gap-lg flex flex-col">
+    <nav aria-label="Back office" className="gap-loose flex flex-col">
       {ADMIN_NAV.map((group) => (
-        <div key={group.heading} className="gap-xs flex flex-col">
-          <h2 className="text-text-muted px-3 text-xs font-semibold tracking-wide uppercase">
-            {group.heading}
-          </h2>
+        <div key={group.heading} className="gap-tight flex flex-col">
+          <h2 className="text-eyebrow text-text-muted px-3 uppercase">{group.heading}</h2>
 
           <ul className="flex flex-col gap-0.5">
             {group.items.map((item) => {
@@ -141,14 +140,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
                     onClick={() => setMenuOpen(false)}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'min-h-touch flex items-center gap-3 rounded-lg px-3 text-sm',
-                      // Weight as well as colour: the current page must be
-                      // identifiable without relying on hue alone.
+                      'relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm',
+                      'ease-standard transition-colors duration-150',
+                      // Weight and a leading marker as well as colour: the
+                      // current page must be identifiable without relying on
+                      // hue alone (§46).
                       active
-                        ? 'bg-surface-muted text-primary font-semibold'
+                        ? 'bg-primary/10 text-primary font-bold'
                         : 'text-text-muted hover:bg-surface-muted hover:text-text font-medium',
                     )}
                   >
+                    {active ? (
+                      <span
+                        aria-hidden="true"
+                        className="bg-leaf absolute inset-y-1.5 start-0 w-0.5 rounded-full"
+                      />
+                    ) : null}
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
                     {item.label}
                   </Link>
@@ -163,8 +170,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col">
+      {/*
+        Deliberately NOT the storefront header (§72). The back office is a tool:
+        one dense bar, a persistent rail, no basket and no search for products
+        the admin is not buying. It shares the palette and the type scale so it
+        is recognisably the same product, and nothing else.
+      */}
       <header className="border-outline-variant bg-surface sticky top-0 z-40 border-b">
-        <div className="px-page gap-gutter mx-auto flex w-full max-w-[1400px] flex-wrap items-center py-3">
+        <div className="px-page gap-gutter mx-auto flex w-full max-w-[1400px] flex-wrap items-center py-2.5">
           <Button
             variant="ghost"
             size="sm"
@@ -183,40 +196,52 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
           </Button>
 
-          <Link href="/admin" className="text-primary flex items-center gap-2">
-            <Store className="size-5" aria-hidden="true" />
-            <span className="text-lg font-bold tracking-tight">FreshCarts admin</span>
+          <Link
+            href="/admin"
+            aria-label="FreshCarts admin, dashboard"
+            className="flex items-center gap-2.5"
+          >
+            <Logo size="sm" markOnly />
+            <span className="flex flex-col leading-tight">
+              <span className="text-primary text-base font-extrabold tracking-[-0.02em]">
+                FreshCarts
+              </span>
+              <span className="text-eyebrow text-text-muted uppercase">Admin</span>
+            </span>
           </Link>
 
           <div className="gap-gutter ms-auto flex items-center">
-            <span className="text-text-muted hidden text-sm sm:inline">{user.fullName}</span>
+            <span className="text-text-muted hidden text-sm font-medium sm:inline">
+              {user.fullName}
+            </span>
             <Link
               href="/"
-              className="text-primary min-h-touch flex items-center text-sm font-medium"
+              className="text-primary hover:bg-primary/8 flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition-colors"
             >
+              <Store className="size-4" aria-hidden="true" />
               View store
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="px-page gap-lg mx-auto flex w-full max-w-[1400px] flex-1">
+      <div className="px-page gap-loose mx-auto flex w-full max-w-[1400px] flex-1">
         {/* Persistent on desktop, where an admin works. */}
-        <aside className="py-lg hidden w-56 shrink-0 lg:block">
-          <div className="sticky top-20">{navigation}</div>
+        <aside className="py-loose hidden w-56 shrink-0 lg:block">
+          <div className="sticky top-[4.25rem]">{navigation}</div>
         </aside>
 
         <div className="min-w-0 flex-1">
           {isMenuOpen ? (
             <div
               id="admin-navigation"
-              className="border-outline-variant bg-surface p-gutter mt-gutter rounded-lg border lg:hidden"
+              className="ring-outline-variant bg-surface p-gutter mt-gutter shadow-card rounded-2xl ring-1 lg:hidden"
             >
               {navigation}
             </div>
           ) : null}
 
-          <main id="main-content" className="py-lg">
+          <main id="main-content" className="py-loose">
             {children}
           </main>
         </div>

@@ -32,7 +32,7 @@ export function InventoryScreen() {
   });
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
         <h1 className="text-text text-xl font-semibold">Inventory</h1>
         <p className="text-text-muted text-sm">
@@ -73,7 +73,7 @@ export function InventoryScreen() {
       {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
 
       {data?.items.length === 0 ? (
-        <p className="bg-surface-muted p-lg text-text-muted rounded-lg text-center text-sm">
+        <p className="bg-surface-muted p-loose text-text-muted rounded-lg text-center text-sm">
           {lowStockOnly
             ? 'Nothing is running low right now.'
             : 'No stock records match that search.'}

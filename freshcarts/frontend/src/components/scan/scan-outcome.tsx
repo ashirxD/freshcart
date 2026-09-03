@@ -35,14 +35,14 @@ export function ScanOutcome({
     <section
       aria-labelledby="scan-outcome-heading"
       role="status"
-      className="gap-lg py-lg flex flex-col"
+      className="gap-loose py-loose flex flex-col"
     >
-      <header className="gap-xs flex flex-col items-center text-center">
+      <header className="gap-tight flex flex-col items-center text-center">
         <span
           className={
-            'flex size-16 items-center justify-center rounded-full ' +
+            'motion-safe:animate-pop flex size-16 items-center justify-center rounded-2xl ' +
             (outcome.added.length > 0
-              ? 'bg-primary/10 text-primary'
+              ? 'bg-leaf text-on-primary'
               : 'bg-surface-sunken text-text-muted')
           }
         >
@@ -53,8 +53,8 @@ export function ScanOutcome({
           )}
         </span>
 
-        <h1 id="scan-outcome-heading" className="text-text text-xl font-bold">
-          {outcome.added.length > 0 ? 'Added to your cart' : 'Nothing could be added'}
+        <h1 id="scan-outcome-heading" className="text-display text-primary">
+          {outcome.added.length > 0 ? 'Added to your basket' : 'Nothing could be added'}
         </h1>
 
         {outcome.added.length > 0 ? (
@@ -90,9 +90,9 @@ export function ScanOutcome({
         />
       ) : null}
 
-      <div className="gap-xs flex flex-col">
+      <div className="gap-tight flex flex-col">
         <ButtonLink href="/cart" size="lg" fullWidth>
-          Go to cart
+          Go to your basket
         </ButtonLink>
 
         {remainingCount > 0 ? (
@@ -120,10 +120,10 @@ function OutcomeList({
   entries: Array<{ key: string; name: string; detail: string }>;
 }) {
   return (
-    <div className="gap-xs flex flex-col">
-      <h2 className="text-text-muted text-xs font-semibold tracking-wide uppercase">{title}</h2>
+    <div className="gap-tight flex flex-col">
+      <h2 className="text-eyebrow text-text-muted uppercase">{title}</h2>
 
-      <ul className="border-outline-variant bg-surface divide-outline-variant divide-y rounded-lg border">
+      <ul className="ring-outline-variant bg-surface divide-outline-variant divide-y overflow-hidden rounded-xl ring-1">
         {entries.map((entry) => (
           <li key={entry.key} className="gap-gutter p-gutter flex items-center justify-between">
             <span className="text-text min-w-0 truncate text-sm font-medium">{entry.name}</span>

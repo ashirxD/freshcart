@@ -7,7 +7,10 @@
  * It must render its own <html> and <body>, because the layout that normally
  * provides them is the thing that failed. For the same reason it uses inline
  * styles rather than the design tokens — the stylesheet is loaded by that
- * layout, so a token would resolve to nothing here.
+ * layout, so a token would resolve to nothing here. The literals below are
+ * the design tokens' values, copied deliberately: background, ink and the
+ * brand green, kept in step with globals.css by hand because there is no
+ * stylesheet at this point to read them from.
  */
 export default function GlobalError({
   error,
@@ -21,7 +24,7 @@ export default function GlobalError({
       <body
         style={{
           fontFamily: 'system-ui, sans-serif',
-          background: '#FCF9F8',
+          background: '#FDFAF3',
           color: '#1B1C1C',
           display: 'flex',
           minHeight: '100vh',
@@ -35,7 +38,7 @@ export default function GlobalError({
       >
         <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>FreshCarts is unavailable</h1>
 
-        <p style={{ color: '#717A6D', fontSize: '14px', maxWidth: '28rem', marginTop: '8px' }}>
+        <p style={{ color: '#5A5750', fontSize: '14px', maxWidth: '28rem', marginTop: '8px' }}>
           Something went wrong while loading the application. Please try again in a moment.
         </p>
 
@@ -46,12 +49,12 @@ export default function GlobalError({
             marginTop: '24px',
             minHeight: '48px',
             padding: '0 24px',
-            borderRadius: '999px',
+            borderRadius: '16px',
             border: 'none',
             background: '#00450D',
             color: '#FFFFFF',
             fontSize: '16px',
-            fontWeight: 500,
+            fontWeight: 600,
             cursor: 'pointer',
           }}
         >
@@ -59,7 +62,7 @@ export default function GlobalError({
         </button>
 
         {error.digest ? (
-          <p style={{ color: '#717A6D', fontSize: '12px', marginTop: '16px' }}>
+          <p style={{ color: '#5A5750', fontSize: '12px', marginTop: '16px' }}>
             Reference: {error.digest}
           </p>
         ) : null}

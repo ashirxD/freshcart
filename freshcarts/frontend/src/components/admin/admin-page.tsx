@@ -27,13 +27,13 @@ export function AdminPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="gap-gutter mb-lg flex flex-wrap items-end justify-between">
+    <header className="gap-gutter mb-loose flex flex-wrap items-end justify-between">
       <div className="flex flex-col gap-0.5">
-        <h1 className="text-text text-xl font-semibold">{title}</h1>
+        <h1 className="text-text text-xl font-bold tracking-[-0.02em]">{title}</h1>
         {description ? <p className="text-text-muted text-sm">{description}</p> : null}
       </div>
 
-      {actions ? <div className="gap-xs flex items-center">{actions}</div> : null}
+      {actions ? <div className="gap-tight flex items-center">{actions}</div> : null}
     </header>
   );
 }
@@ -95,11 +95,11 @@ export function AdminListState({
   if (isEmpty) {
     return (
       <EmptyState
-        icon={<Inbox className="size-7" aria-hidden="true" />}
+        icon={<Inbox aria-hidden="true" />}
         title={emptyTitle}
         description={emptyDescription}
         action={emptyAction}
-        className="bg-surface-muted rounded-lg"
+        className="bg-surface-muted rounded-2xl"
       />
     );
   }
@@ -120,7 +120,7 @@ export function Pagination({ page, totalPages, onPageChange, label }: Pagination
   if (totalPages <= 1) return null;
 
   return (
-    <nav aria-label={label} className="gap-gutter mt-lg flex items-center justify-center">
+    <nav aria-label={label} className="gap-gutter mt-loose flex items-center justify-center">
       <Button
         variant="outline"
         size="sm"
@@ -162,7 +162,7 @@ export function TableScroller({
   return (
     <div
       className={cn(
-        'border-outline-variant bg-surface overflow-x-auto rounded-lg border',
+        'ring-outline-variant bg-surface shadow-card overflow-x-auto rounded-2xl ring-1',
         className,
       )}
     >
@@ -195,10 +195,11 @@ export function FilterChips<T extends string>({
             aria-pressed={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'min-h-touch rounded-full border px-4 text-sm',
+              'min-h-11 rounded-full border px-4 text-sm',
+              'ease-standard transition-[background-color,border-color,color] duration-150',
               active
-                ? 'border-primary bg-primary text-on-primary font-semibold'
-                : 'border-outline-variant text-text-muted hover:bg-surface-muted font-medium',
+                ? 'border-primary bg-primary text-on-primary font-bold'
+                : 'border-outline-variant bg-surface text-text-muted hover:border-primary/35 hover:bg-cream font-medium',
             )}
           >
             {option.label}

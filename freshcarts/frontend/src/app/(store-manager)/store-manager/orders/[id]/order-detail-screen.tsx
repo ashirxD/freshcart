@@ -35,7 +35,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
 
   if (isPending) {
     return (
-      <Container className="gap-lg flex flex-col">
+      <Container className="gap-loose flex flex-col">
         <Skeleton className="h-7 w-56" label="Loading the order" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-56 w-full" />
@@ -67,7 +67,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
   const canSubstitute = EDITABLE_STATUSES.includes(order.status);
 
   return (
-    <Container className="gap-lg flex flex-col">
+    <Container className="gap-loose flex flex-col">
       <Link
         href="/store-manager/orders"
         className="text-text-muted hover:text-text inline-flex w-fit items-center gap-1.5 text-sm"
@@ -77,7 +77,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
       </Link>
 
       <header className="gap-gutter flex flex-wrap items-start justify-between">
-        <div className="gap-xs flex flex-col">
+        <div className="gap-tight flex flex-col">
           <h1 className="text-text text-xl font-semibold tabular-nums">{order.orderNumber}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <OrderStatusBadge status={order.status} label={order.statusLabel} />
@@ -110,17 +110,14 @@ export function OrderDetailScreen({ id }: { id: string }) {
         </p>
       ) : null}
 
-      <div className="gap-lg flex flex-col lg:flex-row lg:items-start">
-        <div className="gap-lg flex min-w-0 flex-1 flex-col">
-          <PickingList
-            order={order}
-            onSubstitute={canSubstitute ? setSubstituting : undefined}
-          />
+      <div className="gap-loose flex flex-col lg:flex-row lg:items-start">
+        <div className="gap-loose flex min-w-0 flex-1 flex-col">
+          <PickingList order={order} onSubstitute={canSubstitute ? setSubstituting : undefined} />
 
           <SubstitutionHistory order={order} />
         </div>
 
-        <aside className="gap-lg flex w-full flex-col lg:w-80 lg:shrink-0">
+        <aside className="gap-loose flex w-full flex-col lg:w-80 lg:shrink-0">
           <FulfillmentPanel order={order} />
           <PricingPanel order={order} />
           <HistoryPanel order={order} />
@@ -155,13 +152,13 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
         {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}
       </h2>
 
-      <div className="gap-xs flex flex-col text-sm">
+      <div className="gap-tight flex flex-col text-sm">
         <p className="text-text font-medium">{order.customer.name}</p>
 
         {order.customer.phone ? (
           <a
             href={'tel:' + order.customer.phone}
-            className="text-primary inline-flex min-h-touch items-center gap-1.5 font-medium"
+            className="text-primary min-h-touch inline-flex items-center gap-1.5 font-medium"
           >
             <Phone className="size-4" aria-hidden="true" />
             {order.customer.phone}
@@ -170,7 +167,7 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
       </div>
 
       {address ? (
-        <div className="gap-xs flex flex-col text-sm">
+        <div className="gap-tight flex flex-col text-sm">
           <p className="text-text">{address.formatted}</p>
           {address.landmark ? (
             <p className="text-text-muted">Landmark: {address.landmark}</p>
@@ -197,14 +194,14 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
             }
             target="_blank"
             rel="noreferrer noopener"
-            className="text-primary inline-flex min-h-touch items-center gap-1.5 text-sm font-medium"
+            className="text-primary min-h-touch inline-flex items-center gap-1.5 text-sm font-medium"
           >
             <MapPin className="size-4" aria-hidden="true" />
             Open in maps
           </a>
         </div>
       ) : order.pickup ? (
-        <div className="gap-xs flex flex-col text-sm">
+        <div className="gap-tight flex flex-col text-sm">
           <p className="text-text font-medium">{order.pickup.storeName}</p>
           <p className="text-text-muted">{order.pickup.storeAddress}</p>
           {order.pickup.instructions ? (
@@ -226,7 +223,7 @@ function PricingPanel({ order }: { order: StoreOrderDetail }) {
         Payment
       </h2>
 
-      <dl className="gap-xs flex flex-col text-sm">
+      <dl className="gap-tight flex flex-col text-sm">
         <Row label="Subtotal" value={formatPkr(order.pricing.subtotal)} />
         {order.pricing.deliveryFee > 0 ? (
           <Row label="Delivery" value={formatPkr(order.pricing.deliveryFee)} />
@@ -234,22 +231,16 @@ function PricingPanel({ order }: { order: StoreOrderDetail }) {
         <Row label="Total" value={formatPkr(order.pricing.total)} emphasis />
         <Row
           label="Method"
-          value={order.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on delivery' : order.paymentMethod}
+          value={
+            order.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on delivery' : order.paymentMethod
+          }
         />
       </dl>
     </section>
   );
 }
 
-function Row({
-  label,
-  value,
-  emphasis,
-}: {
-  label: string;
-  value: string;
-  emphasis?: boolean;
-}) {
+function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <dt className="text-text-muted">{label}</dt>
@@ -273,7 +264,7 @@ function HistoryPanel({ order }: { order: StoreOrderDetail }) {
 
       <ol className="gap-gutter flex list-none flex-col">
         {order.statusHistory.map((entry, index) => (
-          <li key={index} className="gap-0.5 flex flex-col text-sm">
+          <li key={index} className="flex flex-col gap-0.5 text-sm">
             <span className="text-text font-medium">{entry.statusLabel}</span>
             <span className="text-text-muted text-xs">
               <time dateTime={entry.changedAt}>
@@ -331,7 +322,7 @@ function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
               ) : null}
             </div>
 
-            <div className="gap-xs flex shrink-0 flex-col items-end">
+            <div className="gap-tight flex shrink-0 flex-col items-end">
               <span
                 className={
                   substitution.status === 'ACCEPTED'

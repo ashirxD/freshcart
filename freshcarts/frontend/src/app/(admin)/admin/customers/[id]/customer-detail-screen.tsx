@@ -60,7 +60,7 @@ export function AdminCustomerDetailScreen({ id }: { id: string }) {
     <>
       <Link
         href="/admin/customers"
-        className="text-text-muted hover:text-text min-h-touch mb-xs inline-flex items-center gap-2 text-sm"
+        className="text-text-muted hover:text-text min-h-touch mb-tight inline-flex items-center gap-2 text-sm"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         All customers
@@ -69,7 +69,7 @@ export function AdminCustomerDetailScreen({ id }: { id: string }) {
       <AdminPageHeader
         title={customer.fullName}
         description={
-          <span className="gap-xs flex flex-wrap items-center">
+          <span className="gap-tight flex flex-wrap items-center">
             <AccountPill isActive={customer.isActive} />
             <span>·</span>
             <span>
@@ -93,11 +93,11 @@ export function AdminCustomerDetailScreen({ id }: { id: string }) {
         }
       />
 
-      <div className="gap-lg grid md:grid-cols-2">
+      <div className="gap-loose grid md:grid-cols-2">
         <section className="border-outline-variant bg-surface p-gutter rounded-lg border">
           <h2 className="text-text mb-gutter text-base font-semibold">Contact</h2>
 
-          <div className="gap-xs flex flex-col">
+          <div className="gap-tight flex flex-col">
             <a
               href={'tel:' + customer.phone}
               className="text-primary min-h-touch inline-flex items-center gap-2 text-sm tabular-nums"
@@ -118,7 +118,7 @@ export function AdminCustomerDetailScreen({ id }: { id: string }) {
               <p className="text-text-muted text-sm">No email on this account</p>
             )}
 
-            <p className="text-text-muted mt-xs text-sm">
+            <p className="text-text-muted mt-tight text-sm">
               Last signed in{' '}
               {customer.lastLoginAt
                 ? new Date(customer.lastLoginAt).toLocaleDateString('en-PK', {
@@ -149,14 +149,14 @@ export function AdminCustomerDetailScreen({ id }: { id: string }) {
           </dl>
 
           <p className="text-text-muted mt-gutter text-xs">
-            Counts orders that were placed and not cancelled, rejected or failed, at the totals
-            they were charged.
+            Counts orders that were placed and not cancelled, rejected or failed, at the totals they
+            were charged.
           </p>
 
           {customer.lastOrderAt ? (
             <Link
               href={'/admin/orders?customer=' + encodeURIComponent(customer.phone)}
-              className="text-primary min-h-touch mt-xs inline-flex items-center text-sm font-medium"
+              className="text-primary min-h-touch mt-tight inline-flex items-center text-sm font-medium"
             >
               View their orders
             </Link>

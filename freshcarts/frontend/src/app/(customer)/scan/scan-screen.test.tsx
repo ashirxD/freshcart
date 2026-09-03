@@ -87,7 +87,7 @@ describe('ScanScreen', () => {
       expect(screen.getByRole('button', { name: /take photo/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /upload image/i })).toBeInTheDocument();
       expect(
-        screen.getByRole('heading', { name: /turn your grocery list into a cart/i }),
+        screen.getByRole('heading', { name: /turn your grocery list into a basket/i }),
       ).toBeInTheDocument();
     });
 
@@ -122,7 +122,7 @@ describe('ScanScreen', () => {
       await user.click(await screen.findByRole('button', { name: /remove/i }));
 
       expect(
-        await screen.findByRole('heading', { name: /turn your grocery list into a cart/i }),
+        await screen.findByRole('heading', { name: /turn your grocery list into a basket/i }),
       ).toBeInTheDocument();
     });
 
@@ -362,7 +362,7 @@ describe('ScanScreen', () => {
       await scanAList(user);
       await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
 
-      await screen.findByRole('heading', { name: /added to your cart/i });
+      await screen.findByRole('heading', { name: /added to your basket/i });
 
       const confirmCall = calls.find((call) => call.url.includes('/confirm'));
       expect(confirmCall?.body).toEqual({
@@ -404,11 +404,11 @@ describe('ScanScreen', () => {
       await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
 
       expect(
-        await screen.findByRole('heading', { name: /added to your cart/i }),
+        await screen.findByRole('heading', { name: /added to your basket/i }),
       ).toBeInTheDocument();
       expect(screen.getByText('Could not be added')).toBeInTheDocument();
       expect(screen.getByText('Only 4 are available')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /go to cart/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /go to your basket/i })).toBeInTheDocument();
     });
 
     it('leaves the unresolved items to come back to', async () => {
@@ -498,7 +498,7 @@ describe('ScanScreen', () => {
 
       await user.click(screen.getByRole('button', { name: /try another photo/i }));
       expect(
-        await screen.findByRole('heading', { name: /turn your grocery list into a cart/i }),
+        await screen.findByRole('heading', { name: /turn your grocery list into a basket/i }),
       ).toBeInTheDocument();
     });
 

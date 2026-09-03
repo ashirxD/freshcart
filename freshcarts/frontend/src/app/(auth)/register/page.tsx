@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Lock, Mail, Phone, User } from 'lucide-react';
+import { AuthLink, AuthPanel } from '@/components/layout/auth-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRegister } from '@/features/auth/auth.hooks';
@@ -26,17 +26,18 @@ export default function RegisterPage() {
   });
 
   return (
-    <main id="main-content" className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-page py-lg">
-      <header className="flex flex-col gap-xs pt-lg pb-lg">
-        <h1 className="text-2xl font-bold text-primary">Create your account</h1>
-        <p className="text-base text-text-muted">
-          It takes a minute. You only need a mobile number.
-        </p>
-      </header>
-
+    <AuthPanel
+      title="Create your account"
+      subtitle="It takes a minute. You only need a mobile number."
+      footer={
+        <>
+          Already have an account? <AuthLink href="/login">Sign in</AuthLink>
+        </>
+      }
+    >
       <form
         onSubmit={handleSubmit((values) => createAccount.mutate(values))}
-        className="flex flex-col gap-gutter"
+        className="gap-gutter flex flex-col"
         noValidate
       >
         <Input
@@ -86,18 +87,11 @@ export default function RegisterPage() {
           size="lg"
           fullWidth
           isLoading={createAccount.isPending}
-          className="mt-xs"
+          className="mt-tight"
         >
           Create account
         </Button>
       </form>
-
-      <p className="mt-lg text-center text-base text-text-muted">
-        Already have an account?{' '}
-        <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
-          Sign in
-        </Link>
-      </p>
-    </main>
+    </AuthPanel>
   );
 }

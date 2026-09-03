@@ -44,7 +44,7 @@ export function OcrItemCard({
 
   if (addedToCart) {
     return (
-      <li className="border-primary/30 bg-primary/5 gap-gutter p-gutter flex items-center justify-between rounded-lg border">
+      <li className="ring-leaf/30 bg-leaf/8 gap-gutter p-gutter flex items-center justify-between rounded-xl ring-1">
         <p className="text-text-muted text-sm">
           <Check className="text-primary mr-1 inline size-4" aria-hidden="true" />
           Added <span className="text-text font-medium">{chosen?.name}</span> ×{quantity}
@@ -55,7 +55,7 @@ export function OcrItemCard({
 
   if (removed) {
     return (
-      <li className="border-outline-variant bg-surface-muted gap-gutter p-gutter flex items-center justify-between rounded-lg border border-dashed">
+      <li className="border-outline-variant bg-surface-muted gap-gutter p-gutter flex items-center justify-between rounded-xl border border-dashed">
         <p className="text-text-muted text-sm">
           Removed <RawText text={item.source.rawText} className="font-medium" />
         </p>
@@ -75,11 +75,11 @@ export function OcrItemCard({
   return (
     <li
       className={cn(
-        'border-outline-variant bg-surface p-gutter gap-gutter flex flex-col rounded-lg border',
+        'ring-outline-variant bg-surface p-gutter gap-gutter shadow-card flex flex-col rounded-xl ring-1',
         soldOut && 'border-danger/40',
       )}
     >
-      <div className="gap-xs flex items-start justify-between">
+      <div className="gap-tight flex items-start justify-between">
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className="text-text-muted text-xs">You wrote</p>
           <RawText text={item.source.rawText} className="text-text truncate text-sm font-medium" />
@@ -120,7 +120,7 @@ export function OcrItemCard({
 
       <Notices line={line} soldOut={soldOut} />
 
-      <div className="gap-xs flex flex-wrap items-center justify-between">
+      <div className="gap-tight flex flex-wrap items-center justify-between">
         {chosen && !soldOut ? (
           <QuantitySelector
             value={quantity}
@@ -133,7 +133,7 @@ export function OcrItemCard({
           <span />
         )}
 
-        <div className="gap-xs flex items-center">
+        <div className="gap-tight flex items-center">
           {/* §49: a word, never only a pencil icon. */}
           {chosen || item.alternatives.length > 0 ? (
             <Button variant="outline" size="sm" onClick={onChangeProduct}>
@@ -210,7 +210,7 @@ function UndecidedBody({ status, rawText }: { status: string; rawText: string })
   }
 
   return (
-    <div className="gap-xs flex flex-col">
+    <div className="gap-tight flex flex-col">
       <p className="text-text text-sm">We couldn&rsquo;t find this item.</p>
       {/* §28: give them somewhere to go rather than a dead end. */}
       <Link

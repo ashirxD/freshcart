@@ -18,7 +18,7 @@ export default function Page() {
   });
 
   return (
-    <Container className="gap-lg flex max-w-2xl flex-col">
+    <Container className="gap-loose flex max-w-2xl flex-col">
       <h1 className="text-text text-xl font-semibold">New product</h1>
 
       {isPending ? (

@@ -98,7 +98,7 @@ export function CategoryCombobox({
   };
 
   return (
-    <div className="gap-xs flex w-full flex-col">
+    <div className="gap-tight flex w-full flex-col">
       <label htmlFor={id} className="text-text text-sm font-medium">
         {label}
       </label>

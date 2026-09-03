@@ -14,7 +14,8 @@ import { Modal } from '@/components/ui/modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useCancelOrder, useOrder } from '@/features/orders/orders.hooks';
-import { formatPkr, formatPkrLabel } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { formatPkr, formatPkrLabel, productTint } from '@/lib/format';
 import type { OrderDetail } from '@/types/order';
 
 function formatDateTime(iso: string): string {
@@ -41,17 +42,17 @@ export function OrderDetailScreen({ orderId }: { orderId: string }) {
 
   if (isPending) {
     return (
-      <Container className="flex flex-col gap-gutter py-lg">
-        <Skeleton className="h-8 w-48" label="Loading your order" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <Container className="gap-gutter py-wide flex flex-col">
+        <Skeleton className="h-9 w-48" label="Loading your order" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </Container>
     );
   }
 
   if (isError) {
     return (
-      <Container className="py-lg">
+      <Container className="py-loose">
         <ErrorState
           error={error}
           onRetry={() => void refetch()}
@@ -62,42 +63,44 @@ export function OrderDetailScreen({ orderId }: { orderId: string }) {
   }
 
   return (
-    <Container className="flex flex-col gap-lg py-lg">
-      <header className="flex flex-col gap-gutter">
-        <Link
-          href="/orders"
-          className="-ms-1 inline-flex min-h-11 items-center gap-1 self-start text-sm font-medium text-primary"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          All orders
-        </Link>
+    <div className="flex flex-col">
+      <div className="bg-cream py-loose">
+        <Container className="gap-snug flex flex-col">
+          <Link
+            href="/orders"
+            className="text-primary hover:bg-surface/70 -ms-2 inline-flex min-h-11 items-center gap-1 self-start rounded-full px-2 text-sm font-semibold transition-colors"
+          >
+            <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+            All orders
+          </Link>
 
-        <div className="flex flex-wrap items-start justify-between gap-gutter">
-          <div className="flex flex-col gap-1">
-            <h1 id="main-content" className="text-xl font-semibold tabular-nums text-text">
-              {order.orderNumber}
-            </h1>
-            <p className="text-sm text-text-muted">Placed {formatDateTime(order.placedAt)}</p>
+          <div className="gap-gutter flex flex-wrap items-start justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-eyebrow text-leaf uppercase">
+                Placed {formatDateTime(order.placedAt)}
+              </p>
+              <h1 className="text-display text-primary tabular-nums">{order.orderNumber}</h1>
+            </div>
+
+            <OrderStatusBadge status={order.status} label={order.statusLabel} />
           </div>
+        </Container>
+      </div>
 
-          <OrderStatusBadge status={order.status} label={order.statusLabel} />
-        </div>
-      </header>
-
-      <div className="flex flex-col gap-lg lg:flex-row lg:items-start lg:gap-8">
-        <div className="flex flex-1 flex-col gap-lg">
+      <Container className="gap-loose py-wide flex flex-col lg:flex-row lg:items-start lg:gap-8">
+        <div className="gap-loose flex flex-1 flex-col">
           <TrackingSection order={order} />
           <ItemsSection order={order} />
         </div>
 
-        <aside className="flex w-full flex-col gap-lg lg:sticky lg:top-24 lg:w-80 lg:shrink-0">
+        <aside className="gap-loose flex w-full flex-col lg:sticky lg:top-24 lg:w-80 lg:shrink-0">
           <FulfilmentSection order={order} />
           <PaymentSection order={order} />
           <TotalsSection order={order} />
           <CancelSection order={order} />
         </aside>
-      </div>
-    </Container>
+      </Container>
+    </div>
   );
 }
 
@@ -115,9 +118,9 @@ function Section({
   return (
     <section
       aria-labelledby={headingId}
-      className="flex flex-col gap-gutter rounded-lg border border-outline-variant bg-surface p-gutter"
+      className="gap-gutter ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-2xl ring-1"
     >
-      <h2 id={headingId} className="text-base font-semibold text-text">
+      <h2 id={headingId} className="text-text text-base font-bold tracking-[-0.015em]">
         {title}
       </h2>
       {children}
@@ -129,7 +132,7 @@ function TrackingSection({ order }: { order: OrderDetail }) {
   return (
     <Section title="Order progress" id="tracking">
       {order.cancelledAt ? (
-        <p className="rounded-md bg-surface-muted p-gutter text-sm text-text-muted">
+        <p className="bg-surface-muted p-gutter text-text-muted rounded-xl text-sm">
           Cancelled on {formatDateTime(order.cancelledAt)}
           {order.cancellationReason ? ' — ' + order.cancellationReason : '.'}
         </p>
@@ -143,27 +146,39 @@ function TrackingSection({ order }: { order: OrderDetail }) {
 function ItemsSection({ order }: { order: OrderDetail }) {
   return (
     <Section title={order.itemCount === 1 ? '1 item' : order.itemCount + ' items'} id="items">
-      <ul className="flex list-none flex-col divide-y divide-outline-variant">
+      <ul className="divide-outline-variant flex list-none flex-col divide-y">
         {order.items.map((item) => (
-          <li key={item.productId} className="flex items-start gap-gutter py-gutter first:pt-0 last:pb-0">
-            <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-surface-muted">
+          <li
+            key={item.productId}
+            className="gap-gutter py-gutter flex items-start first:pt-0 last:pb-0"
+          >
+            <div
+              className={cn(
+                'relative size-16 shrink-0 overflow-hidden rounded-xl',
+                productTint(item.productName),
+              )}
+            >
               <ProductImage
                 image={item.productImage ? { url: item.productImage, alt: item.productName } : null}
                 name={item.productName}
                 sizes="64px"
-                className="size-full"
+                className="size-full p-1"
               />
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              {item.brand ? <span className="text-xs text-text-muted">{item.brand}</span> : null}
-              <span className="text-sm font-medium text-text">{item.productName}</span>
-              <span className="text-xs text-text-muted">
+              {item.brand ? (
+                <span className="text-text-muted text-[0.6875rem] font-bold tracking-[0.04em] uppercase">
+                  {item.brand}
+                </span>
+              ) : null}
+              <span className="text-text text-card">{item.productName}</span>
+              <span className="text-text-muted text-xs font-medium">
                 {item.unitLabel} · {formatPkr(item.unitPrice)} × {item.quantity}
               </span>
             </div>
 
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-text">
+            <span className="text-text shrink-0 text-sm font-bold tabular-nums">
               {formatPkr(item.lineTotal)}
             </span>
           </li>
@@ -171,8 +186,8 @@ function ItemsSection({ order }: { order: OrderDetail }) {
       </ul>
 
       {order.customerNote ? (
-        <p className="rounded-md bg-surface-muted p-gutter text-sm text-text-muted">
-          <span className="font-medium text-text">Your note: </span>
+        <p className="bg-surface-muted p-gutter text-text-muted rounded-xl text-sm">
+          <span className="text-text font-medium">Your note: </span>
           {order.customerNote}
         </p>
       ) : null}
@@ -185,14 +200,14 @@ function FulfilmentSection({ order }: { order: OrderDetail }) {
     return (
       <Section title="Collect from" id="pickup">
         <div className="flex flex-col gap-1 text-sm">
-          <p className="flex items-center gap-1.5 font-medium text-text">
+          <p className="text-text flex items-center gap-1.5 font-medium">
             <Store className="size-4" aria-hidden="true" />
             {order.pickup.storeName}
           </p>
           <p className="text-text-muted">{order.pickup.storeAddress}</p>
           <a
             href={'tel:' + order.pickup.storePhone}
-            className="flex min-h-11 items-center gap-1.5 text-primary"
+            className="text-primary flex min-h-11 items-center gap-1.5"
           >
             <Phone className="size-4" aria-hidden="true" />
             {order.pickup.storePhone}
@@ -210,25 +225,25 @@ function FulfilmentSection({ order }: { order: OrderDetail }) {
   return (
     <Section title="Delivering to" id="delivery">
       <div className="flex flex-col gap-1 text-sm">
-        <p className="font-medium text-text">{order.deliveryAddress.recipientName}</p>
+        <p className="text-text font-medium">{order.deliveryAddress.recipientName}</p>
         <p className="text-text-muted">{order.deliveryAddress.formatted}</p>
         <a
           href={'tel:' + order.deliveryAddress.phone}
-          className="flex min-h-11 items-center gap-1.5 text-primary"
+          className="text-primary flex min-h-11 items-center gap-1.5"
         >
           <Phone className="size-4" aria-hidden="true" />
           {order.deliveryAddress.phone}
         </a>
 
         {order.deliveryAddress.deliveryInstructions ? (
-          <p className="flex items-start gap-1.5 text-text-muted">
+          <p className="text-text-muted flex items-start gap-1.5">
             <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
             {order.deliveryAddress.deliveryInstructions}
           </p>
         ) : null}
 
         {order.delivery ? (
-          <p className="flex items-center gap-1.5 pt-1 text-text-muted">
+          <p className="text-text-muted flex items-center gap-1.5 pt-1">
             <Truck className="size-4" aria-hidden="true" />
             {formatDistance(order.delivery.distanceMeters)} from the store
             {order.delivery.durationSeconds
@@ -253,15 +268,15 @@ function PaymentSection({ order }: { order: OrderDetail }) {
 
   return (
     <Section title="Payment" id="payment">
-      <div className="flex items-center justify-between gap-gutter text-sm">
+      <div className="gap-gutter flex items-center justify-between text-sm">
         <span className="text-text">{methodLabel}</span>
         <PaymentStatusBadge status={order.payment.status} />
       </div>
 
       {order.payment.paidAt ? (
-        <p className="text-xs text-text-muted">Paid on {formatDateTime(order.payment.paidAt)}</p>
+        <p className="text-text-muted text-xs">Paid on {formatDateTime(order.payment.paidAt)}</p>
       ) : order.payment.status === 'PENDING' ? (
-        <p className="text-xs text-text-muted">
+        <p className="text-text-muted text-xs">
           {order.fulfillmentMethod === 'PICKUP'
             ? 'Please pay in cash when you collect your order.'
             : 'Please have the exact amount ready for the rider.'}
@@ -274,17 +289,19 @@ function PaymentSection({ order }: { order: OrderDetail }) {
 function TotalsSection({ order }: { order: OrderDetail }) {
   return (
     <Section title="Payment summary" id="totals">
-      <dl className="flex flex-col gap-xs text-sm">
+      <dl className="gap-tight flex flex-col text-sm">
         <div className="flex items-center justify-between">
           <dt className="text-text-muted">Subtotal</dt>
-          <dd className="tabular-nums text-text">{formatPkr(order.pricing.subtotal)}</dd>
+          <dd className="text-text font-semibold tabular-nums">
+            {formatPkr(order.pricing.subtotal)}
+          </dd>
         </div>
 
         <div className="flex items-center justify-between">
           <dt className="text-text-muted">
             {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery charge' : 'Pickup'}
           </dt>
-          <dd className="tabular-nums text-text">
+          <dd className="text-text font-semibold tabular-nums">
             {order.fulfillmentMethod === 'DELIVERY'
               ? formatPkr(order.pricing.deliveryFee)
               : 'No charge'}
@@ -294,15 +311,17 @@ function TotalsSection({ order }: { order: OrderDetail }) {
         {order.pricing.discount > 0 ? (
           <div className="flex items-center justify-between">
             <dt className="text-text-muted">Discount</dt>
-            <dd className="tabular-nums text-success">−{formatPkr(order.pricing.discount)}</dd>
+            <dd className="text-success font-semibold tabular-nums">
+              −{formatPkr(order.pricing.discount)}
+            </dd>
           </div>
         ) : null}
       </dl>
 
-      <div className="flex items-baseline justify-between border-t border-outline-variant pt-gutter">
-        <span className="text-base font-semibold text-text">Total</span>
+      <div className="bg-cream ring-sand flex items-baseline justify-between rounded-xl px-3 py-2.5 ring-1">
+        <span className="text-text text-sm font-bold">Total</span>
         <span
-          className="text-lg font-bold tabular-nums text-primary"
+          className="text-primary text-price tabular-nums"
           aria-label={'Total ' + formatPkrLabel(order.pricing.total)}
         >
           {formatPkr(order.pricing.total)}
@@ -338,7 +357,7 @@ function CancelSection({ order }: { order: OrderDetail }) {
           ' will be cancelled and nothing will be charged. This cannot be undone.'
         }
         footer={
-          <div className="flex flex-col-reverse gap-xs sm:flex-row sm:justify-end">
+          <div className="gap-tight flex flex-col-reverse sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setIsConfirming(false)}>
               Keep my order
             </Button>

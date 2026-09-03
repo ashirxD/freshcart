@@ -13,7 +13,7 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <Container className="py-lg">
+        <Container className="py-loose">
           <ProductGridSkeleton />
         </Container>
       }

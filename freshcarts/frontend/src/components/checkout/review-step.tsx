@@ -43,22 +43,22 @@ export function ReviewStep({
       ?.label ?? 'Cash on delivery';
 
   return (
-    <section aria-labelledby="review-heading" className="flex flex-col gap-lg">
-      <h2 id="review-heading" className="text-base font-semibold text-text">
+    <section aria-labelledby="review-heading" className="gap-loose flex flex-col">
+      <h2 id="review-heading" className="text-text text-base font-bold tracking-[-0.015em]">
         Review your order
       </h2>
 
       {fulfillmentMethod === 'DELIVERY' && preview.delivery ? (
         <ReviewBlock title="Delivering to" onEdit={onEditAddress} editLabel="Change address">
-          <p className="font-medium text-text">{preview.delivery.address.recipientName}</p>
+          <p className="text-text font-medium">{preview.delivery.address.recipientName}</p>
           <p className="text-text-muted">{preview.delivery.address.formatted}</p>
-          <p className="flex items-center gap-1.5 text-text-muted">
+          <p className="text-text-muted flex items-center gap-1.5">
             <Phone className="size-3.5" aria-hidden="true" />
             {preview.delivery.address.phone}
           </p>
-          <p className="mt-1 text-text-muted">
+          <p className="text-text-muted mt-1">
             {formatDistance(preview.delivery.distanceMeters)} from the store ·{' '}
-            <span className="font-medium text-text">{formatPkr(preview.delivery.fee)}</span>{' '}
+            <span className="text-text font-medium">{formatPkr(preview.delivery.fee)}</span>{' '}
             delivery charge
           </p>
         </ReviewBlock>
@@ -66,23 +66,23 @@ export function ReviewStep({
 
       {fulfillmentMethod === 'PICKUP' && preview.pickup ? (
         <ReviewBlock title="Collecting from">
-          <p className="flex items-center gap-1.5 font-medium text-text">
+          <p className="text-text flex items-center gap-1.5 font-medium">
             <Store className="size-4" aria-hidden="true" />
             {preview.pickup.storeName}
           </p>
           <p className="text-text-muted">{preview.pickup.storeAddress}</p>
-          <p className="flex items-center gap-1.5 text-text-muted">
+          <p className="text-text-muted flex items-center gap-1.5">
             <Phone className="size-3.5" aria-hidden="true" />
             {preview.pickup.storePhone}
           </p>
           {preview.pickup.instructions ? (
-            <p className="mt-1 text-text-muted">{preview.pickup.instructions}</p>
+            <p className="text-text-muted mt-1">{preview.pickup.instructions}</p>
           ) : null}
         </ReviewBlock>
       ) : null}
 
       <ReviewBlock title="Paying with" onEdit={onEditPayment} editLabel="Change payment">
-        <p className="font-medium text-text">{paymentLabel}</p>
+        <p className="text-text font-medium">{paymentLabel}</p>
       </ReviewBlock>
 
       {customerNote.trim() ? (
@@ -113,9 +113,9 @@ function ReviewBlock({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-xs rounded-lg border border-outline-variant bg-surface p-gutter">
-      <div className="flex items-center justify-between gap-gutter">
-        <h3 className="text-sm font-semibold tracking-wide text-text-muted uppercase">{title}</h3>
+    <div className="gap-tight ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-xl ring-1">
+      <div className="gap-gutter flex items-center justify-between">
+        <h3 className="text-eyebrow text-text-muted uppercase">{title}</h3>
 
         {onEdit ? (
           <Button variant="ghost" size="sm" onClick={onEdit}>
