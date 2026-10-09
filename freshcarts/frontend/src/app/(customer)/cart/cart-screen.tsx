@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart, useClearCart } from '@/features/cart/cart.hooks';
+import { useT } from '@/i18n';
 import { useAuthStore } from '@/store/auth.store';
 
 /**
@@ -21,6 +22,7 @@ import { useAuthStore } from '@/store/auth.store';
  * panel that follows the page down on a desktop.
  */
 export function CartScreen() {
+  const t = useT();
   const status = useAuthStore((state) => state.status);
   const { data: cart, isPending, isError, error, refetch } = useCart();
   const clearCart = useClearCart();
@@ -28,7 +30,7 @@ export function CartScreen() {
   if (status === 'loading') {
     return (
       <Container className="gap-gutter py-wide flex flex-col">
-        <Skeleton className="h-9 w-48" label="Loading your basket" />
+        <Skeleton className="h-9 w-48" label={t('cart.loading')} />
         <Skeleton className="h-28 w-full rounded-2xl" />
         <Skeleton className="h-28 w-full rounded-2xl" />
       </Container>
@@ -38,15 +40,15 @@ export function CartScreen() {
   if (status !== 'authenticated') {
     return (
       <Container className="py-wide">
-        <h1 className="text-display text-primary">Your basket</h1>
+        <h1 className="text-display text-primary">{t('cart.title')}</h1>
 
         <EmptyState
           icon={<UserRound aria-hidden="true" />}
-          title="Sign in to see your basket"
-          description="Your basket is saved to your account, so it is waiting for you on any device."
+          title={t('cart.signInTitle')}
+          description={t('cart.signInBody')}
           action={
             <ButtonLink href="/login?next=%2Fcart" variant="primary">
-              Sign in
+              {t('nav.signIn')}
             </ButtonLink>
           }
           className="mt-loose bg-surface-muted rounded-2xl"
@@ -64,12 +66,10 @@ export function CartScreen() {
           <div className="flex flex-col gap-1">
             <p className="text-eyebrow text-leaf uppercase">
               {cart && cart.itemCount > 0
-                ? cart.totalQuantity === 1
-                  ? '1 item'
-                  : cart.totalQuantity + ' items'
-                : 'Nothing in it yet'}
+                ? t('common.itemCount', { count: cart.totalQuantity })
+                : t('cart.nothingYet')}
             </p>
-            <h1 className="text-display text-primary">Your basket</h1>
+            <h1 className="text-display text-primary">{t('cart.title')}</h1>
           </div>
 
           {cart && cart.itemCount > 0 ? (
@@ -79,7 +79,7 @@ export function CartScreen() {
               isLoading={clearCart.isPending}
               onClick={() => clearCart.mutate(undefined)}
             >
-              Empty the basket
+              {t('cart.empty')}
             </Button>
           ) : null}
         </Container>
@@ -88,7 +88,7 @@ export function CartScreen() {
       <Container className="gap-loose py-wide flex flex-col">
         {isPending ? (
           <div className="gap-gutter flex flex-col">
-            <Skeleton className="h-28 w-full rounded-2xl" label="Loading your basket" />
+            <Skeleton className="h-28 w-full rounded-2xl" label={t('cart.loading')} />
             <Skeleton className="h-28 w-full rounded-2xl" />
           </div>
         ) : null}
@@ -98,12 +98,12 @@ export function CartScreen() {
         {isEmpty ? (
           <EmptyState
             illustration={<EmptyBasketIllustration />}
-            title="Your basket is waiting"
-            description="Add a few everyday essentials and we will take it from there."
+            title={t('cart.emptyTitle')}
+            description={t('cart.emptyBody')}
             action={
               <div className="gap-tight flex flex-col items-center">
                 <ButtonLink href="/categories" variant="primary" size="lg">
-                  Start shopping
+                  {t('cart.startShopping')}
                 </ButtonLink>
 
                 {/* An empty basket is exactly when a written list is in a pocket. */}

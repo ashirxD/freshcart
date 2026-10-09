@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SelectField, TextareaField } from '@/components/admin/form-field';
 import { useRejectOrder, useUpdateOrderStatus } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
+import { orderStatusLabel } from '@/lib/order-copy';
+import { actionLabel } from '@/lib/store-copy';
 import { REJECTION_REASONS, type RejectionReason } from '@/types/store-manager';
 import type { StoreOrderAction, StoreOrderDetail } from '@/types/store-manager';
 
@@ -24,6 +27,7 @@ import type { StoreOrderAction, StoreOrderDetail } from '@/types/store-manager';
  * spinner to avoid.
  */
 export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
+  const { t, locale } = useI18n();
   const [confirming, setConfirming] = useState<StoreOrderAction | null>(null);
   const [rejecting, setRejecting] = useState(false);
 
@@ -35,7 +39,15 @@ export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
   if (order.availableActions.length === 0) {
     return (
       <p className="text-text-muted bg-surface-muted p-gutter rounded-xl text-sm">
-        This order is {order.statusLabel.toLowerCase()}. There is nothing left to do.
+        {t('store.actionBar.nothingLeft', {
+          status: orderStatusLabel(
+            order.status,
+            order.fulfillmentMethod,
+            order.statusLabel,
+            t,
+            locale,
+          ).toLowerCase(),
+        })}
       </p>
     );
   }
@@ -53,7 +65,7 @@ export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
             disabled={isPending}
             onClick={() => updateStatus.mutate({ id: order.id, status: primary.status })}
           >
-            {primary.label}
+            {actionLabel(primary, t, locale)}
           </Button>
         ) : null}
 
@@ -68,7 +80,7 @@ export function OrderActionBar({ order }: { order: StoreOrderDetail }) {
               action.action === 'REJECT' ? setRejecting(true) : setConfirming(action)
             }
           >
-            {action.label}
+            {actionLabel(action, t, locale)}
           </Button>
         ))}
       </div>
@@ -115,6 +127,7 @@ function ReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const { t, locale, ltr } = useI18n();
   const [reason, setReason] = useState('');
 
   if (!action) return null;
@@ -123,8 +136,8 @@ function ReasonDialog({
     <Modal
       open
       onClose={onCancel}
-      title={action.label}
-      description={'Order ' + orderNumber + '. The customer will see the reason you give.'}
+      title={actionLabel(action, t, locale)}
+      description={t('store.actionBar.reasonDescription', { orderNumber: ltr(orderNumber) })}
       footer={
         <div className="gap-gutter flex">
           <Button
@@ -134,17 +147,17 @@ function ReasonDialog({
             disabled={reason.trim().length < 3}
             onClick={() => onSubmit(reason.trim())}
           >
-            {action.label}
+            {actionLabel(action, t, locale)}
           </Button>
           <Button variant="outline" fullWidth onClick={onCancel}>
-            Keep order
+            {t('store.actionBar.keepOrder')}
           </Button>
         </div>
       }
     >
       <TextareaField
-        label="Reason"
-        hint="At least a few words. This appears in the customer's order timeline."
+        label={t('store.actionBar.reason')}
+        hint={t('store.actionBar.reasonHint')}
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         rows={3}
@@ -173,6 +186,7 @@ function RejectDialog({
   onCancel: () => void;
   onSubmit: (reason: RejectionReason, note?: string) => void;
 }) {
+  const { t, ltr } = useI18n();
   const [reason, setReason] = useState<RejectionReason>('ITEMS_UNAVAILABLE');
   const [note, setNote] = useState('');
 
@@ -182,8 +196,8 @@ function RejectDialog({
     <Modal
       open
       onClose={onCancel}
-      title="Reject order"
-      description={'Order ' + orderNumber + ' will be closed and the stock returned.'}
+      title={t('store.actionBar.rejectTitle')}
+      description={t('store.actionBar.rejectDescription', { orderNumber: ltr(orderNumber) })}
       footer={
         <div className="gap-gutter flex">
           <Button
@@ -192,25 +206,28 @@ function RejectDialog({
             isLoading={isSubmitting}
             onClick={() => onSubmit(reason, note.trim() || undefined)}
           >
-            Reject order
+            {t('store.actionBar.rejectTitle')}
           </Button>
           <Button variant="outline" fullWidth onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <SelectField
-          label="Reason"
-          options={REJECTION_REASONS.map((option) => ({ ...option }))}
+          label={t('store.actionBar.reason')}
+          options={REJECTION_REASONS.map((option) => ({
+            value: option.value,
+            label: t(('store.rejectionReason.' + option.value) as TranslationKey),
+          }))}
           value={reason}
           onChange={(event) => setReason(event.target.value as RejectionReason)}
         />
 
         <Input
-          label="Note (optional)"
-          hint="Added to what the customer sees."
+          label={t('store.actionBar.note')}
+          hint={t('store.actionBar.noteHint')}
           value={note}
           onChange={(event) => setNote(event.target.value)}
         />

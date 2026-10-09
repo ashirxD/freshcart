@@ -1,0 +1,134 @@
+{
+  "checkout": {
+    "steps": {
+      "method": "Method",
+      "address": "Address",
+      "payment": "Payment",
+      "review": "Review"
+    },
+    "screen": {
+      "stepOf": "Step {step} of {total}",
+      "title": "Checkout",
+      "back": "Go back to the previous step",
+      "progressLabel": "Checkout progress",
+      "signInTitle": "Sign in to place your order",
+      "signInBody": "Your basket is saved to your account and will be waiting for you.",
+      "emptyTitle": "Your basket is empty",
+      "emptyBody": "Add a few things to your basket, then come back to check out.",
+      "loading": "Opening checkout",
+      "addressQuestion": "Where should we deliver this order?",
+      "noteLabel": "Anything the store should know?",
+      "noteHint": "Optional. For example: please pack the eggs separately.",
+      "placeOrder": "Place order",
+      "placeOrderWithTotal": "Place order · {total}",
+      "stepDone": "Completed"
+    },
+    "fulfillment": {
+      "question": "How would you like to get your order?",
+      "deliveryTitle": "Delivered to you",
+      "deliveryDesc": "A rider brings it to your address.",
+      "deliveryBadge": "Charge by distance",
+      "deliveryNote": "Worked out from the road distance to your address, and shown to you before you place the order.",
+      "pickupTitle": "Collect in store",
+      "pickupDesc": "We pack it and hold it for you.",
+      "pickupBadge": "No charge",
+      "pickupNote": "Bring your order number to the counter. Nothing extra to pay for delivery."
+    },
+    "payment": {
+      "question": "How would you like to pay?",
+      "loading": "Loading payment methods",
+      "none": "No payment methods are available right now. Please try again shortly.",
+      "method": {
+        "CASH_ON_DELIVERY": "Cash on delivery",
+        "CARD": "Card",
+        "MOBILE_WALLET": "Mobile wallet"
+      },
+      "descCodPickup": "Pay in cash when you collect your order from the store.",
+      "descCodDelivery": "Pay the rider in cash when your order arrives.",
+      "descOnline": "Pay now, before your order is prepared."
+    },
+    "review": {
+      "title": "Review your order",
+      "loading": "Loading your order",
+      "deliveringTo": "Delivering to",
+      "changeAddress": "Change address",
+      "fromStore": "{distance} from the store · {fee} delivery charge",
+      "collectingFrom": "Collecting from",
+      "payingWith": "Paying with",
+      "changePayment": "Change payment",
+      "yourNote": "Your note",
+      "change": "Change"
+    },
+    "summary": {
+      "title": "Order summary",
+      "subtotalItems": "Subtotal ({items})",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "noCharge": "No charge",
+      "discount": "Discount",
+      "totalToPay": "Total to pay",
+      "totalAria": "Total {amount}",
+      "travelTime": "Estimated travel time from the store: {duration}.",
+      "calculating": "Calculating your total"
+    },
+    "units": {
+      "metres": "{n} m",
+      "km": "{n} km",
+      "aboutMin": "about {n} min",
+      "aboutHr": "about {n} hr",
+      "aboutHrMin": "about {h} hr {m} min"
+    },
+    "peek": {
+      "title": "Your basket",
+      "more_one": "+ 1 more item",
+      "more_other": "+ {count} more items",
+      "note": "Choose a delivery address and we will work out your total, including the delivery charge, before you place the order."
+    },
+    "problem": {
+      "genericTitle": "Something went wrong",
+      "genericMessage": "Please try again in a moment.",
+      "offlineTitle": "You appear to be offline",
+      "pricesTitle": "Some prices changed",
+      "continueNewPrices": "Continue at the new prices",
+      "reviewBasket": "Review my basket",
+      "basketNeeds": "Your basket needs a change",
+      "goToBasket": "Go to my basket",
+      "cannotDeliver": "We cannot deliver there",
+      "distanceNote": "That address is {distance} from the store. We deliver up to {max}.",
+      "needsMapTitle": "This address needs a map location",
+      "manageAddresses": "Manage my addresses",
+      "storeClosedTitle": "The store is not taking orders",
+      "keepBrowsing": "Keep browsing",
+      "basketEmpty": "Your basket is empty",
+      "duplicateTitle": "This order is already being placed",
+      "checkOrders": "Check my orders",
+      "cannotWork": "We cannot work out delivery right now",
+      "cannotContinue": "We could not continue",
+      "serverFault": "Something went wrong at our end. Nothing has been charged — please try again."
+    },
+    "issue": {
+      "PRODUCT_UNAVAILABLE": "{name} is no longer available.",
+      "PRODUCT_REMOVED": "{name} has been removed from the shop.",
+      "OUT_OF_STOCK": "{name} is out of stock.",
+      "INSUFFICIENT_STOCK": "Only {available} of {name} are available.",
+      "PRICE_CHANGED": "The price of {name} changed from {from} to {to}."
+    },
+    "confirmation": {
+      "title": "Thank you, your order is in",
+      "bodyDelivery": "The shop will confirm it shortly, then pick and pack your groceries for delivery.",
+      "bodyPickup": "The shop will pack it and let you know as soon as it is ready to collect.",
+      "orderNumber": "Your order number",
+      "cashOnCollection": "Cash on collection",
+      "collectFrom": "Collect from",
+      "distance": "Distance",
+      "nextDelivery": "You can follow every step on the tracking page — from confirmed, to packed, to on its way.",
+      "nextPickup": "Bring your order number with you. We will hold the order at the counter.",
+      "track": "Track this order",
+      "keepShopping": "Keep shopping",
+      "loading": "Confirming your order",
+      "loadError": "We could not load your confirmation",
+      "maybePlaced": "Your order may still have been placed — check {link} before trying again.",
+      "yourOrdersLink": "your orders"
+    }
+  }
+}

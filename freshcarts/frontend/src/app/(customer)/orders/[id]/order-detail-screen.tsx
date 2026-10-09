@@ -14,20 +14,12 @@ import { Modal } from '@/components/ui/modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useCancelOrder, useOrder } from '@/features/orders/orders.hooks';
+import { Ltr, Money } from '@/components/common/ltr';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
+import { formatDate } from '@/lib/dates';
 import { formatPkr, formatPkrLabel, productTint } from '@/lib/format';
 import type { OrderDetail } from '@/types/order';
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('en-PK', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
 
 /**
  * A single order.
@@ -38,12 +30,13 @@ function formatDateTime(iso: string): string {
  * products have been renamed, repriced or withdrawn (§5, §17, §27).
  */
 export function OrderDetailScreen({ orderId }: { orderId: string }) {
+  const { t, locale } = useI18n();
   const { data: order, isPending, isError, error, refetch } = useOrder(orderId);
 
   if (isPending) {
     return (
       <Container className="gap-gutter py-wide flex flex-col">
-        <Skeleton className="h-9 w-48" label="Loading your order" />
+        <Skeleton className="h-9 w-48" label={t('orders.detail.loading')} />
         <Skeleton className="h-32 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </Container>
@@ -56,7 +49,7 @@ export function OrderDetailScreen({ orderId }: { orderId: string }) {
         <ErrorState
           error={error}
           onRetry={() => void refetch()}
-          title="We could not open this order"
+          title={t('orders.detail.loadError')}
         />
       </Container>
     );
@@ -71,18 +64,24 @@ export function OrderDetailScreen({ orderId }: { orderId: string }) {
             className="text-primary hover:bg-surface/70 -ms-2 inline-flex min-h-11 items-center gap-1 self-start rounded-full px-2 text-sm font-semibold transition-colors"
           >
             <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-            All orders
+            {t('orders.detail.allOrders')}
           </Link>
 
           <div className="gap-gutter flex flex-wrap items-start justify-between">
             <div className="flex flex-col gap-1">
               <p className="text-eyebrow text-leaf uppercase">
-                Placed {formatDateTime(order.placedAt)}
+                {t('orders.detail.placed', { date: formatDate(order.placedAt, locale) })}
               </p>
-              <h1 className="text-display text-primary tabular-nums">{order.orderNumber}</h1>
+              <h1 className="text-display text-primary tabular-nums">
+                <Ltr>{order.orderNumber}</Ltr>
+              </h1>
             </div>
 
-            <OrderStatusBadge status={order.status} label={order.statusLabel} />
+            <OrderStatusBadge
+              status={order.status}
+              label={order.statusLabel}
+              fulfillmentMethod={order.fulfillmentMethod}
+            />
           </div>
         </Container>
       </div>
@@ -129,23 +128,31 @@ function Section({
 }
 
 function TrackingSection({ order }: { order: OrderDetail }) {
+  const { t, locale } = useI18n();
+
   return (
-    <Section title="Order progress" id="tracking">
+    <Section title={t('orders.detail.progress')} id="tracking">
       {order.cancelledAt ? (
         <p className="bg-surface-muted p-gutter text-text-muted rounded-xl text-sm">
-          Cancelled on {formatDateTime(order.cancelledAt)}
-          {order.cancellationReason ? ' — ' + order.cancellationReason : '.'}
+          {order.cancellationReason
+            ? t('orders.detail.cancelledOnReason', {
+                date: formatDate(order.cancelledAt, locale),
+                reason: order.cancellationReason,
+              })
+            : t('orders.detail.cancelledOn', { date: formatDate(order.cancelledAt, locale) })}
         </p>
       ) : null}
 
-      <OrderTimeline steps={order.timeline} />
+      <OrderTimeline steps={order.timeline} fulfillmentMethod={order.fulfillmentMethod} />
     </Section>
   );
 }
 
 function ItemsSection({ order }: { order: OrderDetail }) {
+  const { t } = useI18n();
+
   return (
-    <Section title={order.itemCount === 1 ? '1 item' : order.itemCount + ' items'} id="items">
+    <Section title={t('common.itemCount', { count: order.itemCount })} id="items">
       <ul className="divide-outline-variant flex list-none flex-col divide-y">
         {order.items.map((item) => (
           <li
@@ -174,12 +181,12 @@ function ItemsSection({ order }: { order: OrderDetail }) {
               ) : null}
               <span className="text-text text-card">{item.productName}</span>
               <span className="text-text-muted text-xs font-medium">
-                {item.unitLabel} · {formatPkr(item.unitPrice)} × {item.quantity}
+                {item.unitLabel} · <Money>{formatPkr(item.unitPrice)} × {item.quantity}</Money>
               </span>
             </div>
 
             <span className="text-text shrink-0 text-sm font-bold tabular-nums">
-              {formatPkr(item.lineTotal)}
+              <Money>{formatPkr(item.lineTotal)}</Money>
             </span>
           </li>
         ))}
@@ -187,8 +194,8 @@ function ItemsSection({ order }: { order: OrderDetail }) {
 
       {order.customerNote ? (
         <p className="bg-surface-muted p-gutter text-text-muted rounded-xl text-sm">
-          <span className="text-text font-medium">Your note: </span>
-          {order.customerNote}
+          <span className="text-text font-medium">{t('orders.detail.yourNote')}</span>
+          <bdi>{order.customerNote}</bdi>
         </p>
       ) : null}
     </Section>
@@ -196,24 +203,30 @@ function ItemsSection({ order }: { order: OrderDetail }) {
 }
 
 function FulfilmentSection({ order }: { order: OrderDetail }) {
+  const { t } = useI18n();
+
   if (order.fulfillmentMethod === 'PICKUP' && order.pickup) {
     return (
-      <Section title="Collect from" id="pickup">
+      <Section title={t('orders.detail.collectFrom')} id="pickup">
         <div className="flex flex-col gap-1 text-sm">
           <p className="text-text flex items-center gap-1.5 font-medium">
             <Store className="size-4" aria-hidden="true" />
-            {order.pickup.storeName}
+            <bdi>{order.pickup.storeName}</bdi>
           </p>
-          <p className="text-text-muted">{order.pickup.storeAddress}</p>
+          <p className="text-text-muted">
+            <bdi>{order.pickup.storeAddress}</bdi>
+          </p>
           <a
             href={'tel:' + order.pickup.storePhone}
             className="text-primary flex min-h-11 items-center gap-1.5"
           >
             <Phone className="size-4" aria-hidden="true" />
-            {order.pickup.storePhone}
+            <Ltr>{order.pickup.storePhone}</Ltr>
           </a>
           {order.pickup.instructions ? (
-            <p className="text-text-muted">{order.pickup.instructions}</p>
+            <p className="text-text-muted">
+              <bdi>{order.pickup.instructions}</bdi>
+            </p>
           ) : null}
         </div>
       </Section>
@@ -223,32 +236,40 @@ function FulfilmentSection({ order }: { order: OrderDetail }) {
   if (!order.deliveryAddress) return null;
 
   return (
-    <Section title="Delivering to" id="delivery">
+    <Section title={t('orders.detail.deliveringTo')} id="delivery">
       <div className="flex flex-col gap-1 text-sm">
-        <p className="text-text font-medium">{order.deliveryAddress.recipientName}</p>
-        <p className="text-text-muted">{order.deliveryAddress.formatted}</p>
+        <p className="text-text font-medium">
+          <bdi>{order.deliveryAddress.recipientName}</bdi>
+        </p>
+        <p className="text-text-muted">
+          <bdi>{order.deliveryAddress.formatted}</bdi>
+        </p>
         <a
           href={'tel:' + order.deliveryAddress.phone}
           className="text-primary flex min-h-11 items-center gap-1.5"
         >
           <Phone className="size-4" aria-hidden="true" />
-          {order.deliveryAddress.phone}
+          <Ltr>{order.deliveryAddress.phone}</Ltr>
         </a>
 
         {order.deliveryAddress.deliveryInstructions ? (
           <p className="text-text-muted flex items-start gap-1.5">
             <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            {order.deliveryAddress.deliveryInstructions}
+            <bdi>{order.deliveryAddress.deliveryInstructions}</bdi>
           </p>
         ) : null}
 
         {order.delivery ? (
           <p className="text-text-muted flex items-center gap-1.5 pt-1">
             <Truck className="size-4" aria-hidden="true" />
-            {formatDistance(order.delivery.distanceMeters)} from the store
             {order.delivery.durationSeconds
-              ? ' · ' + formatDuration(order.delivery.durationSeconds)
-              : ''}
+              ? t('orders.detail.fromStoreWithTime', {
+                  distance: formatDistance(order.delivery.distanceMeters, t),
+                  duration: formatDuration(order.delivery.durationSeconds, t),
+                })
+              : t('orders.detail.fromStore', {
+                  distance: formatDistance(order.delivery.distanceMeters, t),
+                })}
           </p>
         ) : null}
       </div>
@@ -257,29 +278,28 @@ function FulfilmentSection({ order }: { order: OrderDetail }) {
 }
 
 function PaymentSection({ order }: { order: OrderDetail }) {
+  const { t, locale } = useI18n();
   const methodLabel =
-    order.payment.method === 'CASH_ON_DELIVERY'
-      ? order.fulfillmentMethod === 'PICKUP'
-        ? 'Cash on collection'
-        : 'Cash on delivery'
-      : order.payment.method === 'CARD'
-        ? 'Card'
-        : 'Mobile wallet';
+    order.payment.method === 'CASH_ON_DELIVERY' && order.fulfillmentMethod === 'PICKUP'
+      ? t('checkout.confirmation.cashOnCollection')
+      : t(('checkout.payment.method.' + order.payment.method) as TranslationKey);
 
   return (
-    <Section title="Payment" id="payment">
+    <Section title={t('orders.detail.payment')} id="payment">
       <div className="gap-gutter flex items-center justify-between text-sm">
         <span className="text-text">{methodLabel}</span>
         <PaymentStatusBadge status={order.payment.status} />
       </div>
 
       {order.payment.paidAt ? (
-        <p className="text-text-muted text-xs">Paid on {formatDateTime(order.payment.paidAt)}</p>
+        <p className="text-text-muted text-xs">
+          {t('orders.detail.paidOn', { date: formatDate(order.payment.paidAt, locale) })}
+        </p>
       ) : order.payment.status === 'PENDING' ? (
         <p className="text-text-muted text-xs">
           {order.fulfillmentMethod === 'PICKUP'
-            ? 'Please pay in cash when you collect your order.'
-            : 'Please have the exact amount ready for the rider.'}
+            ? t('orders.detail.payCashPickup')
+            : t('orders.detail.payCashDelivery')}
         </p>
       ) : null}
     </Section>
@@ -287,44 +307,52 @@ function PaymentSection({ order }: { order: OrderDetail }) {
 }
 
 function TotalsSection({ order }: { order: OrderDetail }) {
+  const { t } = useI18n();
+
   return (
-    <Section title="Payment summary" id="totals">
+    <Section title={t('orders.detail.paymentSummary')} id="totals">
       <dl className="gap-tight flex flex-col text-sm">
         <div className="flex items-center justify-between">
-          <dt className="text-text-muted">Subtotal</dt>
+          <dt className="text-text-muted">{t('common.subtotal')}</dt>
           <dd className="text-text font-semibold tabular-nums">
-            {formatPkr(order.pricing.subtotal)}
+            <Money>{formatPkr(order.pricing.subtotal)}</Money>
           </dd>
         </div>
 
         <div className="flex items-center justify-between">
           <dt className="text-text-muted">
-            {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery charge' : 'Pickup'}
+            {order.fulfillmentMethod === 'DELIVERY'
+              ? t('orders.detail.deliveryCharge')
+              : t('checkout.summary.pickup')}
           </dt>
           <dd className="text-text font-semibold tabular-nums">
-            {order.fulfillmentMethod === 'DELIVERY'
-              ? formatPkr(order.pricing.deliveryFee)
-              : 'No charge'}
+            {order.fulfillmentMethod === 'DELIVERY' ? (
+              <Money>{formatPkr(order.pricing.deliveryFee)}</Money>
+            ) : (
+              t('checkout.summary.noCharge')
+            )}
           </dd>
         </div>
 
         {order.pricing.discount > 0 ? (
           <div className="flex items-center justify-between">
-            <dt className="text-text-muted">Discount</dt>
+            <dt className="text-text-muted">{t('checkout.summary.discount')}</dt>
             <dd className="text-success font-semibold tabular-nums">
-              −{formatPkr(order.pricing.discount)}
+              <Money>−{formatPkr(order.pricing.discount)}</Money>
             </dd>
           </div>
         ) : null}
       </dl>
 
       <div className="bg-cream ring-sand flex items-baseline justify-between rounded-xl px-3 py-2.5 ring-1">
-        <span className="text-text text-sm font-bold">Total</span>
+        <span className="text-text text-sm font-bold">{t('common.total')}</span>
         <span
           className="text-primary text-price tabular-nums"
-          aria-label={'Total ' + formatPkrLabel(order.pricing.total)}
+          aria-label={t('checkout.summary.totalAria', {
+            amount: formatPkrLabel(order.pricing.total, t),
+          })}
         >
-          {formatPkr(order.pricing.total)}
+          <Money>{formatPkr(order.pricing.total)}</Money>
         </span>
       </div>
     </Section>
@@ -333,6 +361,7 @@ function TotalsSection({ order }: { order: OrderDetail }) {
 
 /** Cancellation, shown only while the server says it is allowed. */
 function CancelSection({ order }: { order: OrderDetail }) {
+  const { t } = useI18n();
   const [isConfirming, setIsConfirming] = useState(false);
   const [reason, setReason] = useState('');
   const cancelOrder = useCancelOrder();
@@ -344,22 +373,18 @@ function CancelSection({ order }: { order: OrderDetail }) {
   return (
     <>
       <Button variant="outline" onClick={() => setIsConfirming(true)} fullWidth>
-        Cancel this order
+        {t('orders.detail.cancelThis')}
       </Button>
 
       <Modal
         open={isConfirming}
         onClose={() => setIsConfirming(false)}
-        title="Cancel this order?"
-        description={
-          'Order ' +
-          order.orderNumber +
-          ' will be cancelled and nothing will be charged. This cannot be undone.'
-        }
+        title={t('orders.detail.cancelTitle')}
+        description={t('orders.detail.cancelBody', { number: order.orderNumber })}
         footer={
           <div className="gap-tight flex flex-col-reverse sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setIsConfirming(false)}>
-              Keep my order
+              {t('orders.detail.keepMyOrder')}
             </Button>
             <Button
               variant="danger"
@@ -371,14 +396,14 @@ function CancelSection({ order }: { order: OrderDetail }) {
                 )
               }
             >
-              Yes, cancel it
+              {t('orders.detail.yesCancel')}
             </Button>
           </div>
         }
       >
         <Textarea
-          label="Why are you cancelling?"
-          hint="Optional. It helps the store improve."
+          label={t('orders.detail.whyCancel')}
+          hint={t('orders.detail.whyHint')}
           maxLength={300}
           value={reason}
           onChange={(event) => setReason(event.target.value)}

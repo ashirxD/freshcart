@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { useCreateStore, useUpdateStore } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
+import { weekdayName } from '@/lib/dates';
 import { isValidPkMobile, normalisePkPhone } from '@/lib/phone';
 import type { AdminStore, StoreOpeningHours } from '@/types/admin';
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 /** A sensible week for a new store; every field stays editable. */
-const DEFAULT_HOURS: StoreOpeningHours[] = DAY_NAMES.map((_, day) => ({
+const DEFAULT_HOURS: StoreOpeningHours[] = Array.from({ length: 7 }, (_, day) => ({
   day,
   opensAt: '08:00',
   closesAt: '23:00',
@@ -68,6 +68,7 @@ export function StoreDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t, locale } = useI18n();
   const isEditing = store !== null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -109,21 +110,21 @@ export function StoreDialog({
   const longitude = Number(form.longitude);
 
   const errors = {
-    name: form.name.trim().length < 2 ? 'Enter the store name' : undefined,
-    phone: isValidPkMobile(form.phone) ? undefined : 'Enter a valid Pakistani mobile number',
-    line1: form.line1.trim() ? undefined : 'Enter the street address',
-    area: form.area.trim() ? undefined : 'Enter the area',
-    city: form.city.trim() ? undefined : 'Enter the city',
+    name: form.name.trim().length < 2 ? t('admin.storeDialog.errName') : undefined,
+    phone: isValidPkMobile(form.phone) ? undefined : t('admin.storeDialog.errPhone'),
+    line1: form.line1.trim() ? undefined : t('admin.storeDialog.errStreet'),
+    area: form.area.trim() ? undefined : t('admin.storeDialog.errArea'),
+    city: form.city.trim() ? undefined : t('admin.storeDialog.errCity'),
     latitude:
       Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 && form.latitude !== ''
         ? undefined
-        : 'Latitude must be between -90 and 90',
+        : t('admin.storeDialog.errLatitude'),
     longitude:
       Number.isFinite(longitude) && longitude >= -180 && longitude <= 180 && form.longitude !== ''
         ? undefined
-        : 'Longitude must be between -180 and 180',
+        : t('admin.storeDialog.errLongitude'),
     hours: form.openingHours.some((window) => !window.isClosed && window.closesAt <= window.opensAt)
-      ? 'A closing time must come after its opening time'
+      ? t('admin.storeDialog.errHours')
       : undefined,
   };
 
@@ -160,30 +161,34 @@ export function StoreDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEditing ? 'Edit ' + store.name : 'Add a store'}
-      description="The coordinates are used to price every delivery from this store."
+      title={
+        isEditing
+          ? t('admin.storeDialog.editTitle', { name: store.name })
+          : t('admin.storeDialog.addTitle')
+      }
+      description={t('admin.storeDialog.description')}
       variant="centered"
       footer={
         <div className="gap-gutter flex justify-end">
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" onClick={submit} isLoading={isPending}>
-            {isEditing ? 'Save changes' : 'Create store'}
+            {isEditing ? t('admin.storeDialog.saveChanges') : t('admin.storeDialog.create')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <Input
-          label="Store name"
+          label={t('admin.storeDialog.name')}
           value={form.name}
           onChange={(event) => set('name', event.target.value)}
           error={showErrors ? errors.name : undefined}
         />
 
         <TextareaField
-          label="Description (optional)"
+          label={t('admin.storeDialog.descriptionLabel')}
           rows={2}
           value={form.description}
           onChange={(event) => set('description', event.target.value)}
@@ -191,7 +196,7 @@ export function StoreDialog({
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="Phone"
+            label={t('admin.storeDialog.phone')}
             type="tel"
             inputMode="tel"
             value={form.phone}
@@ -201,7 +206,7 @@ export function StoreDialog({
           />
 
           <Input
-            label="Email (optional)"
+            label={t('admin.storeDialog.email')}
             type="email"
             value={form.email}
             onChange={(event) => set('email', event.target.value)}
@@ -209,7 +214,7 @@ export function StoreDialog({
         </div>
 
         <Input
-          label="Street address"
+          label={t('admin.storeDialog.street')}
           value={form.line1}
           onChange={(event) => set('line1', event.target.value)}
           error={showErrors ? errors.line1 : undefined}
@@ -217,14 +222,14 @@ export function StoreDialog({
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="Area"
+            label={t('admin.storeDialog.area')}
             value={form.area}
             onChange={(event) => set('area', event.target.value)}
             error={showErrors ? errors.area : undefined}
           />
 
           <Input
-            label="City"
+            label={t('admin.storeDialog.city')}
             value={form.city}
             onChange={(event) => set('city', event.target.value)}
             error={showErrors ? errors.city : undefined}
@@ -233,35 +238,37 @@ export function StoreDialog({
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="Latitude"
+            label={t('admin.storeDialog.latitude')}
             type="number"
             inputMode="decimal"
             step="any"
             value={form.latitude}
             onChange={(event) => set('latitude', event.target.value)}
             error={showErrors ? errors.latitude : undefined}
-            hint="For example 31.5102"
+            hint={t('admin.storeDialog.latitudeHint')}
           />
 
           <Input
-            label="Longitude"
+            label={t('admin.storeDialog.longitude')}
             type="number"
             inputMode="decimal"
             step="any"
             value={form.longitude}
             onChange={(event) => set('longitude', event.target.value)}
             error={showErrors ? errors.longitude : undefined}
-            hint="For example 74.3441"
+            hint={t('admin.storeDialog.longitudeHint')}
           />
         </div>
 
         <fieldset className="border-outline-variant gap-tight flex flex-col rounded-xl border p-3">
-          <legend className="text-text px-1 text-sm font-medium">Opening hours</legend>
+          <legend className="text-text px-1 text-sm font-medium">
+            {t('admin.storeDialog.openingHours')}
+          </legend>
 
           {form.openingHours.map((window) => (
             <div key={window.day} className="gap-gutter flex flex-wrap items-center">
               <span className="text-text w-12 shrink-0 text-sm font-medium">
-                {DAY_NAMES[window.day]}
+                {weekdayName(window.day, locale, 'short')}
               </span>
 
               <label className="min-h-touch flex items-center gap-2 text-sm">
@@ -271,12 +278,12 @@ export function StoreDialog({
                   onChange={(event) => updateDay(window.day, { isClosed: event.target.checked })}
                   className="size-5 accent-[var(--color-primary)]"
                 />
-                <span className="text-text-muted">Closed</span>
+                <span className="text-text-muted">{t('common.closed')}</span>
               </label>
 
               <input
                 type="time"
-                aria-label={DAY_NAMES[window.day] + ' opening time'}
+                aria-label={t('admin.storeDialog.opening', { day: weekdayName(window.day, locale, 'short') })}
                 value={window.opensAt}
                 disabled={window.isClosed}
                 onChange={(event) => updateDay(window.day, { opensAt: event.target.value })}
@@ -284,12 +291,12 @@ export function StoreDialog({
               />
 
               <span className="text-text-muted text-sm" aria-hidden="true">
-                to
+                {t('admin.storeDialog.to')}
               </span>
 
               <input
                 type="time"
-                aria-label={DAY_NAMES[window.day] + ' closing time'}
+                aria-label={t('admin.storeDialog.closing', { day: weekdayName(window.day, locale, 'short') })}
                 value={window.closesAt}
                 disabled={window.isClosed}
                 onChange={(event) => updateDay(window.day, { closesAt: event.target.value })}
@@ -306,8 +313,8 @@ export function StoreDialog({
         </fieldset>
 
         <CheckboxField
-          label="Trading"
-          hint="An inactive store takes no orders and is hidden from shoppers."
+          label={t('admin.storeDialog.tradingLabel')}
+          hint={t('admin.storeDialog.tradingHint')}
           checked={form.isActive}
           onChange={(checked) => set('isActive', checked)}
         />

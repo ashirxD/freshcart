@@ -1,19 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Phone, Receipt, ShieldAlert, Store } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page';
 import { OverrideStatusDialog } from '@/components/admin/override-status-dialog';
 import { EmptyState } from '@/components/common/empty-state';
+import { Ltr, Money } from '@/components/common/ltr';
+import { formatDistance } from '@/components/checkout/order-summary-panel';
 import { ErrorState } from '@/components/common/error-state';
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/order-status-badge';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminOrder } from '@/features/admin/admin.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
+import { whoLabel } from '@/lib/admin-copy';
 import { ApiError } from '@/lib/api/errors';
+import { formatDate } from '@/lib/dates';
 import { formatPkr } from '@/lib/format';
+import { orderNote, orderStatusLabel } from '@/lib/order-copy';
 import type { AdminOrderDetail } from '@/types/admin';
 
 /**
@@ -29,15 +35,16 @@ import type { AdminOrderDetail } from '@/types/admin';
  * something that needs explaining to the customer reading the timeline.
  */
 export function AdminOrderDetailScreen({ id }: { id: string }) {
+  const { t, tx, locale } = useI18n();
   const [isOverriding, setOverriding] = useState(false);
   const { data: order, isPending, isError, error, refetch } = useAdminOrder(id);
 
   if (isPending) {
     return (
       <>
-        <AdminPageHeader title="Order" description="Loading…" />
+        <AdminPageHeader title={t('admin.meta.order')} description={t('common.loading')} />
         <div className="gap-gutter flex flex-col">
-          <Skeleton className="h-14 w-full" label="Loading the order" />
+          <Skeleton className="h-14 w-full" label={t('admin.orderDetail.loadingLabel')} />
           <Skeleton className="h-56 w-full" />
           <Skeleton className="h-40 w-full" />
         </div>
@@ -51,9 +58,9 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
     return missing ? (
       <EmptyState
         icon={<Receipt className="size-7" aria-hidden="true" />}
-        title="Order not found"
-        description="This order no longer exists, or the link is wrong."
-        action={<ButtonLink href="/admin/orders">Back to orders</ButtonLink>}
+        title={t('admin.orderDetail.notFoundTitle')}
+        description={t('admin.orderDetail.notFoundBody')}
+        action={<ButtonLink href="/admin/orders">{t('admin.orderDetail.backToOrders')}</ButtonLink>}
         className="bg-surface-muted rounded-lg"
       />
     ) : (
@@ -68,18 +75,31 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
         className="text-text-muted hover:text-text min-h-touch mb-tight inline-flex items-center gap-2 text-sm"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-        All orders
+        {t('admin.orderDetail.allOrders')}
       </Link>
 
       <AdminPageHeader
-        title={order.orderNumber}
+        title={<Ltr>{order.orderNumber}</Ltr>}
         description={
           <span className="gap-tight flex flex-wrap items-center">
-            <OrderStatusBadge status={order.status} label={order.statusLabel} size="sm" />
+            <OrderStatusBadge
+              status={order.status}
+              label={order.statusLabel}
+              fulfillmentMethod={order.fulfillmentMethod}
+              size="sm"
+            />
             <span>·</span>
-            <span>{order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}</span>
+            <span>
+              {t(
+                order.fulfillmentMethod === 'DELIVERY'
+                  ? 'store.fulfillment.DELIVERY'
+                  : 'store.fulfillment.PICKUP',
+              )}
+            </span>
             <span>·</span>
-            <span>{order.store.name}</span>
+            <span>
+              <bdi>{order.store.name}</bdi>
+            </span>
           </span>
         }
         actions={
@@ -89,7 +109,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
               onClick={() => setOverriding(true)}
               leadingIcon={<ShieldAlert className="size-4" aria-hidden="true" />}
             >
-              Override status
+              {t('admin.orderDetail.override')}
             </Button>
           ) : null
         }
@@ -97,7 +117,7 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
 
       <div className="gap-loose grid lg:grid-cols-[2fr_1fr]">
         <div className="gap-loose flex flex-col">
-          <Section title="Items">
+          <Section title={t('admin.orderDetail.items')}>
             <ul className="flex flex-col">
               {order.items.map((item) => (
                 <li
@@ -105,18 +125,22 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
                   className="border-outline-variant gap-gutter flex items-start justify-between border-b py-3 last:border-0"
                 >
                   <div className="min-w-0">
-                    <p className="text-text text-sm font-medium">{item.productName}</p>
+                    <p className="text-text text-sm font-medium">
+                      <bdi>{item.productName}</bdi>
+                    </p>
                     <p className="text-text-muted text-xs">
-                      {item.unitLabel} · {item.sku}
+                      {item.unitLabel} · <Ltr>{item.sku}</Ltr>
                     </p>
                   </div>
 
-                  <div className="text-right whitespace-nowrap">
+                  <div className="text-end whitespace-nowrap">
                     <p className="text-text text-sm tabular-nums">
-                      {item.quantity} × {formatPkr(item.unitPrice)}
+                      <Money>
+                        {item.quantity} × {formatPkr(item.unitPrice)}
+                      </Money>
                     </p>
                     <p className="text-text text-sm font-semibold tabular-nums">
-                      {formatPkr(item.lineTotal)}
+                      <Money>{formatPkr(item.lineTotal)}</Money>
                     </p>
                   </div>
                 </li>
@@ -124,21 +148,34 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
             </ul>
 
             <dl className="border-outline-variant mt-gutter gap-tight flex flex-col border-t pt-3 text-sm">
-              <Row label="Subtotal" value={formatPkr(order.pricing.subtotal)} />
+              <Row
+                label={t('common.subtotal')}
+                value={<Money>{formatPkr(order.pricing.subtotal)}</Money>}
+              />
 
               {order.fulfillmentMethod === 'DELIVERY' ? (
-                <Row label="Delivery fee" value={formatPkr(order.pricing.deliveryFee)} />
+                <Row
+                  label={t('admin.orderDetail.deliveryFee')}
+                  value={<Money>{formatPkr(order.pricing.deliveryFee)}</Money>}
+                />
               ) : null}
 
               {order.pricing.discount > 0 ? (
-                <Row label="Discount" value={'−' + formatPkr(order.pricing.discount)} />
+                <Row
+                  label={t('admin.orderDetail.discount')}
+                  value={<Money>{'−' + formatPkr(order.pricing.discount)}</Money>}
+                />
               ) : null}
 
-              <Row label="Total" value={formatPkr(order.pricing.total)} emphasis />
+              <Row
+                label={t('common.total')}
+                value={<Money>{formatPkr(order.pricing.total)}</Money>}
+                emphasis
+              />
             </dl>
           </Section>
 
-          <Section title="What happened">
+          <Section title={t('admin.orderDetail.history')}>
             <ol className="gap-gutter flex flex-col">
               {order.statusHistory.map((entry, index) => (
                 <li key={index} className="gap-gutter flex items-start">
@@ -147,17 +184,23 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
-                    <p className="text-text text-sm font-medium">{entry.statusLabel}</p>
-                    <p className="text-text-muted text-sm">{entry.note}</p>
+                    <p className="text-text text-sm font-medium">
+                      {orderStatusLabel(
+                        entry.status,
+                        order.fulfillmentMethod,
+                        entry.statusLabel,
+                        t,
+                        locale,
+                      )}
+                    </p>
+                    <p className="text-text-muted text-sm">
+                      <bdi>{orderNote(entry.note, t, locale)}</bdi>
+                    </p>
                     <p className="text-text-muted text-xs">
-                      {new Date(entry.changedAt).toLocaleString('en-PK', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: 'numeric',
-                        minute: '2-digit',
+                      {tx('admin.orderDetail.changedBy', {
+                        when: <bdi>{formatDate(entry.changedAt, locale, 'moment')}</bdi>,
+                        who: whoLabel(entry.changedByRole, locale),
                       })}
-                      {' · by '}
-                      {roleLabel(entry.changedByRole)}
                     </p>
                   </div>
                 </li>
@@ -167,93 +210,102 @@ export function AdminOrderDetailScreen({ id }: { id: string }) {
         </div>
 
         <div className="gap-loose flex flex-col">
-          <Section title="Customer">
-            <p className="text-text text-sm font-medium">{order.customer.name}</p>
+          <Section title={t('admin.orderDetail.customer')}>
+            <p className="text-text text-sm font-medium">
+              <bdi>{order.customer.name}</bdi>
+            </p>
             <a
               href={'tel:' + order.customer.phone}
               className="text-primary min-h-touch inline-flex items-center gap-2 text-sm tabular-nums"
             >
               <Phone className="size-4" aria-hidden="true" />
-              {order.customer.phone}
+              <Ltr>{order.customer.phone}</Ltr>
             </a>
 
             {order.customerNote ? (
               <p className="bg-surface-muted p-gutter text-text mt-tight rounded-lg text-sm">
-                “{order.customerNote}”
+                “<bdi>{order.customerNote}</bdi>”
               </p>
             ) : null}
           </Section>
 
           {order.deliveryAddress ? (
-            <Section title="Delivering to">
+            <Section title={t('admin.orderDetail.deliveringTo')}>
               <p className="text-text flex items-start gap-2 text-sm">
                 <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <span>{order.deliveryAddress.formatted}</span>
+                <span>
+                  <bdi>{order.deliveryAddress.formatted}</bdi>
+                </span>
               </p>
 
               {order.deliveryAddress.landmark ? (
-                <p className="text-text-muted text-sm">Near {order.deliveryAddress.landmark}</p>
+                <p className="text-text-muted text-sm">
+                  {tx('admin.orderDetail.near', {
+                    landmark: <bdi>{order.deliveryAddress.landmark}</bdi>,
+                  })}
+                </p>
               ) : null}
 
               {order.delivery ? (
                 <p className="text-text-muted mt-tight text-sm tabular-nums">
-                  {(order.delivery.distanceMeters / 1000).toFixed(1)} km ·{' '}
-                  {formatPkr(order.delivery.fee)} charged
+                  {tx('admin.orderDetail.distanceCharged', {
+                    distance: <Ltr>{formatDistance(order.delivery.distanceMeters, t)}</Ltr>,
+                    fee: <Money>{formatPkr(order.delivery.fee)}</Money>,
+                  })}
                 </p>
               ) : null}
             </Section>
           ) : null}
 
           {order.pickup ? (
-            <Section title="Collecting from">
+            <Section title={t('admin.orderDetail.collectingFrom')}>
               <p className="text-text flex items-start gap-2 text-sm">
                 <Store className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>
-                  {order.pickup.storeName}
+                  <bdi>{order.pickup.storeName}</bdi>
                   <br />
-                  {order.pickup.storeAddress}
+                  <bdi>{order.pickup.storeAddress}</bdi>
                 </span>
               </p>
             </Section>
           ) : null}
 
-          <Section title="Payment">
+          <Section title={t('admin.orderDetail.payment')}>
             <div className="gap-tight flex flex-wrap items-center">
               <span className="text-text text-sm">
-                {order.payment.method === 'CASH_ON_DELIVERY'
-                  ? 'Cash on delivery'
-                  : order.payment.method}
+                {t(('checkout.payment.method.' + order.payment.method) as TranslationKey)}
               </span>
               <PaymentStatusBadge status={order.payment.status} />
             </div>
 
             {order.payment.paidAt ? (
               <p className="text-text-muted text-xs">
-                Collected{' '}
-                {new Date(order.payment.paidAt).toLocaleString('en-PK', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: 'numeric',
-                  minute: '2-digit',
+                {tx('admin.orderDetail.collected', {
+                  when: <bdi>{formatDate(order.payment.paidAt, locale, 'moment')}</bdi>,
                 })}
               </p>
             ) : (
               // Payment status is moved by the order lifecycle, never by hand:
               // cash is marked collected when the order is handed over.
               <p className="text-text-muted text-xs">
-                Cash is recorded as collected when the order is handed over.
+                {t('admin.orderDetail.cashNote')}
               </p>
             )}
           </Section>
 
           {order.cancellation ? (
-            <Section title="Cancellation">
-              <p className="text-text text-sm">{order.cancellation.reason ?? 'No reason given'}</p>
+            <Section title={t('admin.orderDetail.cancellation')}>
+              <p className="text-text text-sm">
+                {order.cancellation.reason ? (
+                  <bdi>{order.cancellation.reason}</bdi>
+                ) : (
+                  t('admin.orderDetail.noReason')
+                )}
+              </p>
               <p className="text-text-muted text-xs">
-                {roleLabel(order.cancellation.byRole ?? 'SYSTEM')} ·{' '}
-                {new Date(order.cancellation.cancelledAt).toLocaleDateString('en-PK', {
-                  day: 'numeric',
-                  month: 'short',
+                {tx('admin.orderDetail.cancelledBy', {
+                  who: whoLabel(order.cancellation.byRole ?? 'SYSTEM', locale),
+                  when: <bdi>{formatDate(order.cancellation.cancelledAt, locale, 'shortDate')}</bdi>,
                 })}
               </p>
             </Section>
@@ -279,7 +331,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+function Row({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: ReactNode;
+  emphasis?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between">
       <dt className={emphasis ? 'text-text font-semibold' : 'text-text-muted'}>{label}</dt>
@@ -287,18 +347,6 @@ function Row({ label, value, emphasis }: { label: string; value: string; emphasi
         {value}
       </dd>
     </div>
-  );
-}
-
-/** Internal role enums, in words a person reads (section 46). */
-function roleLabel(role: string): string {
-  return (
-    {
-      CUSTOMER: 'the customer',
-      STORE_MANAGER: 'store staff',
-      ADMIN: 'an administrator',
-      SYSTEM: 'FreshCarts',
-    }[role] ?? role.toLowerCase()
   );
 }
 

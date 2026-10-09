@@ -5,6 +5,8 @@
  * all arrive pre-computed from the API, which stays the single authority.
  */
 
+import type { TFunction } from '@/i18n';
+
 const PKR = new Intl.NumberFormat('en-PK', {
   maximumFractionDigits: 0,
   useGrouping: true,
@@ -18,9 +20,14 @@ export function formatPkr(amount: number): string {
   return 'Rs. ' + PKR.format(amount);
 }
 
-/** Accessible spoken form, so a screen reader says "1450 rupees" not "Rs dot". */
-export function formatPkrLabel(amount: number): string {
-  return PKR.format(amount) + ' rupees';
+/**
+ * Accessible spoken form, so a screen reader says "1450 rupees" not "Rs dot".
+ * Pass `t` to get the word in the active language; without it the English form
+ * is returned, which is what any non-visual caller still gets.
+ */
+export function formatPkrLabel(amount: number, t?: TFunction): string {
+  const figure = PKR.format(amount);
+  return t ? t('product.rupees', { amount: figure }) : figure + ' rupees';
 }
 
 /** "12" up to 99, then "99+", for navigation badges. */

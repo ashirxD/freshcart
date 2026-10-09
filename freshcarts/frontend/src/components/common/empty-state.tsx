@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn';
 
 export interface EmptyStateProps {
   title: string;
-  description?: string;
+  description?: ReactNode;
   /** A lucide icon, sized by this component. Sits inside a tinted tile. */
   icon?: ReactNode;
   action?: ReactNode;

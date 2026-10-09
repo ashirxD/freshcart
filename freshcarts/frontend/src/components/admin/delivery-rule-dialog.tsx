@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { useCreateDeliveryRule, useUpdateDeliveryRule } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import type { DeliveryRule } from '@/types/admin';
 
 /** A single delivery fee cannot plausibly exceed this. Mirrors the schema. */
@@ -43,6 +44,7 @@ export function DeliveryRuleDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const isEditing = rule !== null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -77,21 +79,21 @@ export function DeliveryRuleDialog({
   const fee = Number(form.fee);
 
   const errors = {
-    label: form.label.trim().length < 2 ? 'Give this band a name staff will recognise' : undefined,
+    label: form.label.trim().length < 2 ? t('admin.ruleDialog.errLabel') : undefined,
     fromKm:
       form.fromKm !== '' && Number.isFinite(fromKm) && fromKm >= 0
         ? undefined
-        : 'Enter a distance of 0 km or more',
+        : t('admin.ruleDialog.errFrom'),
     toKm:
       form.toKm === '' || !Number.isFinite(toKm)
-        ? 'Enter the upper distance'
+        ? t('admin.ruleDialog.errToMissing')
         : toKm <= fromKm
-          ? 'The upper distance must be greater than the lower one'
+          ? t('admin.ruleDialog.errToOrder')
           : undefined,
     fee:
       form.fee !== '' && Number.isInteger(fee) && fee >= 0 && fee <= MAX_FEE_PKR
         ? undefined
-        : 'Enter a whole fee between Rs. 0 and Rs. ' + MAX_FEE_PKR,
+        : t('admin.ruleDialog.errFee', { max: MAX_FEE_PKR }),
   };
 
   const hasErrors = Object.values(errors).some(Boolean);
@@ -119,32 +121,36 @@ export function DeliveryRuleDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEditing ? 'Edit ' + rule.label : 'Add a pricing band'}
-      description="Changes apply to future orders. Orders already placed keep the fee they were charged."
+      title={
+        isEditing
+          ? t('admin.ruleDialog.editTitle', { label: rule.label })
+          : t('admin.ruleDialog.addTitle')
+      }
+      description={t('admin.ruleDialog.description')}
       variant="centered"
       footer={
         <div className="gap-gutter flex justify-end">
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" onClick={submit} isLoading={isPending}>
-            {isEditing ? 'Save band' : 'Add band'}
+            {isEditing ? t('admin.ruleDialog.saveBand') : t('admin.ruleDialog.addBand')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <Input
-          label="Band name"
+          label={t('admin.ruleDialog.label')}
           value={form.label}
           onChange={(event) => set('label', event.target.value)}
           error={showErrors ? errors.label : undefined}
-          hint="Staff only — shoppers never see this. For example: Nearby, Across town."
+          hint={t('admin.ruleDialog.labelHint')}
         />
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="From (km)"
+            label={t('admin.ruleDialog.from')}
             type="number"
             inputMode="decimal"
             min={0}
@@ -152,11 +158,11 @@ export function DeliveryRuleDialog({
             value={form.fromKm}
             onChange={(event) => set('fromKm', event.target.value)}
             error={showErrors ? errors.fromKm : undefined}
-            hint="Included in this band"
+            hint={t('admin.ruleDialog.fromHint')}
           />
 
           <Input
-            label="Up to (km)"
+            label={t('admin.ruleDialog.to')}
             type="number"
             inputMode="decimal"
             min={0}
@@ -164,12 +170,12 @@ export function DeliveryRuleDialog({
             value={form.toKm}
             onChange={(event) => set('toKm', event.target.value)}
             error={showErrors ? errors.toKm : undefined}
-            hint="Not included — the next band starts here"
+            hint={t('admin.ruleDialog.toHint')}
           />
         </div>
 
         <Input
-          label="Fee (Rs.)"
+          label={t('admin.ruleDialog.fee')}
           type="number"
           inputMode="numeric"
           min={0}
@@ -181,8 +187,8 @@ export function DeliveryRuleDialog({
         />
 
         <CheckboxField
-          label="In use"
-          hint="Only bands that are in use are considered when pricing a delivery."
+          label={t('admin.ruleDialog.inUse')}
+          hint={t('admin.ruleDialog.inUseHint')}
           checked={form.isActive}
           onChange={(checked) => set('isActive', checked)}
         />

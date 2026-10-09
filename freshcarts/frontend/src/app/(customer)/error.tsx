@@ -2,6 +2,7 @@
 
 import { ButtonLink } from '@/components/ui/button-link';
 import { RouteError } from '@/components/common/route-error';
+import { useT } from '@/i18n';
 
 /**
  * The storefront boundary.
@@ -16,15 +17,17 @@ export default function CustomerError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   return (
     <RouteError
       error={error}
       reset={reset}
-      title="Something went wrong"
-      description="We could not load this page. Your cart and your orders are safe."
+      title={t('states.somethingWentWrong')}
+      description={t('errorPage.customerBody')}
       secondaryAction={
         <ButtonLink href="/" variant="outline">
-          Browse products
+          {t('errorPage.browse')}
         </ButtonLink>
       }
     />

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { productTint } from '@/lib/format';
 import type { Product } from '@/types/catalog';
@@ -55,6 +56,7 @@ export function ProductSpotlight({ products, className }: ProductSpotlightProps)
  * so the extra space becomes information rather than empty padding.
  */
 function FeatureTile({ product }: { product: Product }) {
+  const t = useT();
   const isSoldOut = !product.stock.isAvailable;
 
   return (
@@ -99,7 +101,7 @@ function FeatureTile({ product }: { product: Product }) {
         {isSoldOut ? (
           <div className="bg-text/25 absolute inset-0 flex items-end p-3 backdrop-blur-[1px]">
             <span className="bg-surface text-text shadow-card rounded-full px-2.5 py-1 text-xs font-bold">
-              Out of stock
+              {t('product.outOfStock')}
             </span>
           </div>
         ) : null}

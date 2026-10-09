@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { StatusPill } from '@/components/admin/status-pill';
 import { ErrorState } from '@/components/common/error-state';
 import { SearchBar } from '@/components/common/search-bar';
+import { Ltr, Money } from '@/components/common/ltr';
 import { Container } from '@/components/layout/container';
 import { AvailabilityBadge } from '@/components/product/badges';
 import { ProductImage } from '@/components/product/product-image';
@@ -16,6 +17,7 @@ import {
   useDeleteProduct,
   useSetProductStatus,
 } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 
 /**
@@ -26,6 +28,7 @@ import { formatPkr } from '@/lib/format';
  * keep in sync.
  */
 export function ProductsAdminScreen() {
+  const { t, tx } = useI18n();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
@@ -43,9 +46,11 @@ export function ProductsAdminScreen() {
     <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-text text-xl font-semibold">Products</h1>
+          <h1 className="text-text text-xl font-semibold">{t('admin.products.title')}</h1>
           <p className="text-text-muted text-sm">
-            {data ? data.pagination.total + ' products in the catalogue' : 'Loading…'}
+            {data
+              ? t('admin.products.count', { count: data.pagination.total })
+              : t('common.loading')}
           </p>
         </div>
 
@@ -53,12 +58,13 @@ export function ProductsAdminScreen() {
           href="/admin/products/new"
           leadingIcon={<Plus className="size-4" aria-hidden="true" />}
         >
-          New product
+          {t('admin.products.new')}
         </ButtonLink>
       </header>
 
       <SearchBar
-        placeholder="Search by name, brand or item code"
+        placeholder={t('admin.products.searchPlaceholder')}
+        label={t('admin.products.searchLabel')}
         onSearch={(term) => {
           setSearch(term);
           // A new search means a new result set; staying on page 4 would show
@@ -70,7 +76,7 @@ export function ProductsAdminScreen() {
       {isPending ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-20 w-full" label="Loading products" />
+            <Skeleton key={index} className="h-20 w-full" label={t('admin.products.loadingRows')} />
           ))}
         </div>
       ) : null}
@@ -80,8 +86,8 @@ export function ProductsAdminScreen() {
       {data?.items.length === 0 ? (
         <p className="bg-surface-muted p-loose text-text-muted rounded-lg text-center text-sm">
           {search
-            ? 'No products match “' + search + '”.'
-            : 'No products yet. Create the first one to start selling.'}
+            ? tx('admin.products.noMatch', { term: <bdi>{search}</bdi> })
+            : t('admin.products.noneYet')}
         </p>
       ) : null}
 
@@ -103,30 +109,37 @@ export function ProductsAdminScreen() {
 
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-text text-sm font-semibold">{product.name}</h2>
+                  <h2 className="text-text text-sm font-semibold">
+                    <bdi>{product.name}</bdi>
+                  </h2>
                   <StatusPill isActive={product.isActive} />
                   {product.isFeatured ? (
                     <span className="bg-secondary-container text-on-secondary-container rounded-full px-2 py-0.5 text-xs font-semibold">
-                      Featured
+                      {t('admin.products.featured')}
                     </span>
                   ) : null}
                 </div>
 
                 <p className="text-text-muted text-xs">
-                  {product.sku} · {product.unitLabel}
-                  {product.brand ? ' · ' + product.brand : ''}
+                  <Ltr>{product.sku}</Ltr> · {product.unitLabel}
+                  {product.brand ? (
+                    <>
+                      {' · '}
+                      <bdi>{product.brand}</bdi>
+                    </>
+                  ) : null}
                 </p>
 
                 <AvailabilityBadge stock={product.stock} />
               </div>
 
               <p className="text-text font-semibold tabular-nums">
-                {formatPkr(product.sellingPrice)}
+                <Money>{formatPkr(product.sellingPrice)}</Money>
               </p>
 
               <div className="flex flex-wrap items-center gap-2">
                 <ButtonLink href={'/admin/products/' + product.id} variant="outline" size="sm">
-                  Edit
+                  {t('common.edit')}
                 </ButtonLink>
 
                 <Button
@@ -134,11 +147,11 @@ export function ProductsAdminScreen() {
                   size="sm"
                   onClick={() => setStatus.mutate({ id: product.id, isActive: !product.isActive })}
                 >
-                  {product.isActive ? 'Deactivate' : 'Activate'}
+                  {product.isActive ? t('admin.products.deactivate') : t('admin.products.activate')}
                 </Button>
 
                 <Button variant="ghost" size="sm" onClick={() => remove.mutate(product.id)}>
-                  Delete
+                  {t('admin.products.delete')}
                 </Button>
               </div>
             </li>
@@ -147,18 +160,18 @@ export function ProductsAdminScreen() {
       ) : null}
 
       {data && data.pagination.totalPages > 1 ? (
-        <nav aria-label="Product pages" className="gap-gutter flex items-center justify-center">
+        <nav aria-label={t('admin.products.pagesLabel')} className="gap-gutter flex items-center justify-center">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
           >
-            Previous
+            {t('common.previous')}
           </Button>
 
           <span aria-live="polite" className="text-text-muted text-sm">
-            Page {data.pagination.page} of {data.pagination.totalPages}
+            {t('common.page', { page: data.pagination.page, pages: data.pagination.totalPages })}
           </span>
 
           <Button
@@ -167,7 +180,7 @@ export function ProductsAdminScreen() {
             disabled={page >= data.pagination.totalPages}
             onClick={() => setPage((current) => current + 1)}
           >
-            Next
+            {t('common.next')}
           </Button>
         </nav>
       ) : null}

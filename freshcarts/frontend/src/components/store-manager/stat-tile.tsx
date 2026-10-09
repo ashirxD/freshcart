@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface StatTileProps {
@@ -42,6 +45,8 @@ const TONES = {
  * stock" with a way through to them.
  */
 export function StatTile({ label, value, href, tone = 'DEFAULT', className }: StatTileProps) {
+  const t = useT();
+
   const body = (
     <>
       <span className="text-3xl leading-none font-extrabold tracking-[-0.03em] tabular-nums">
@@ -50,7 +55,7 @@ export function StatTile({ label, value, href, tone = 'DEFAULT', className }: St
       <span className="text-sm leading-snug font-semibold">{label}</span>
       {href ? (
         <span className="text-text-muted mt-auto flex items-center gap-0.5 text-xs">
-          View
+          {t('store.dashboard.view')}
           <ChevronRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
         </span>
       ) : null}

@@ -12,6 +12,7 @@ import { categoryTone } from '@/components/category/category-tone';
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { Container } from '@/components/layout/container';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useCategories } from '@/features/catalog/catalog.hooks';
 
@@ -27,17 +28,16 @@ import { useCategories } from '@/features/catalog/catalog.hooks';
  * makes "Dairy & Eggs" recognisable in both places.
  */
 export function CategoriesScreen() {
+  const t = useT();
   const { data, isPending, isError, error, refetch } = useCategories({ withProductCount: true });
 
   return (
     <div className="flex flex-col">
       <div className="bg-cream py-wide">
         <Container className="flex flex-col gap-2">
-          <p className="text-eyebrow text-leaf uppercase">The whole shop</p>
-          <h1 className="text-display text-primary">Every aisle, end to end</h1>
-          <p className="text-text-muted max-w-xl text-sm">
-            Browse by aisle, or open one to filter by type, price and brand.
-          </p>
+          <p className="text-eyebrow text-leaf uppercase">{t('categories.eyebrow')}</p>
+          <h1 className="text-display text-primary">{t('categories.title')}</h1>
+          <p className="text-text-muted max-w-xl text-sm">{t('categories.intro')}</p>
         </Container>
       </div>
 
@@ -49,8 +49,8 @@ export function CategoriesScreen() {
         {data?.length === 0 ? (
           <EmptyState
             icon={<PackageOpen aria-hidden="true" />}
-            title="No aisles yet"
-            description="The shop has not published any categories. Please check back soon."
+            title={t('categories.noneTitle')}
+            description={t('categories.noneBody')}
             className="bg-surface-muted rounded-2xl"
           />
         ) : null}
@@ -94,9 +94,7 @@ export function CategoriesScreen() {
                   href={'/categories/' + category.slug}
                   className="group text-primary bg-surface/70 hover:bg-surface flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-bold transition-colors"
                 >
-                  {category.productCount === 1
-                    ? 'Shop 1 item'
-                    : 'Shop ' + (category.productCount ?? 0) + ' items'}
+                  {t('categories.shopItems', { count: category.productCount ?? 0 })}
                   <ArrowRight
                     className="ease-standard size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180"
                     aria-hidden="true"

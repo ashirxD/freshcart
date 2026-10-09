@@ -11,19 +11,21 @@ import {
 } from '@/components/admin/admin-page';
 import { StoreManagerDialog } from '@/components/admin/store-manager-dialog';
 import { SearchBar } from '@/components/common/search-bar';
+import { Ltr } from '@/components/common/ltr';
 import { Button } from '@/components/ui/button';
 import {
   useAdminStoreManagers,
   useAdminStores,
   useSetStoreManagerStatus,
 } from '@/features/admin/admin.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { AccountPill } from '../customers/customers-screen';
 import type { AdminStoreManager } from '@/types/admin';
 
 const ACCOUNT_FILTERS = [
-  { value: '' as const, label: 'All' },
-  { value: 'active' as const, label: 'Active' },
-  { value: 'inactive' as const, label: 'Deactivated' },
+  { value: '' as const, labelKey: 'common.all' as TranslationKey },
+  { value: 'active' as const, labelKey: 'admin.pill.active' as TranslationKey },
+  { value: 'inactive' as const, labelKey: 'admin.pill.deactivated' as TranslationKey },
 ] as const;
 
 type AccountFilter = (typeof ACCOUNT_FILTERS)[number]['value'];
@@ -39,6 +41,7 @@ type AccountFilter = (typeof ACCOUNT_FILTERS)[number]['value'];
  * their status history, and removing the account would orphan that record.
  */
 export function AdminStoreManagersScreen() {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [account, setAccount] = useState<AccountFilter>('');
   const [page, setPage] = useState(1);
@@ -56,9 +59,11 @@ export function AdminStoreManagersScreen() {
   return (
     <>
       <AdminPageHeader
-        title="Store managers"
+        title={t('admin.managers.title')}
         description={
-          data ? data.pagination.total + ' staff accounts' : 'Who runs each store day to day'
+          data
+            ? t('admin.managers.staff', { count: data.pagination.total })
+            : t('admin.managers.whoRuns')
         }
         actions={
           <Button
@@ -66,15 +71,15 @@ export function AdminStoreManagersScreen() {
             onClick={() => setEditing('new')}
             leadingIcon={<UserPlus className="size-4" aria-hidden="true" />}
           >
-            Add manager
+            {t('admin.managers.add')}
           </Button>
         }
       />
 
       <div className="gap-gutter mb-gutter flex flex-wrap items-center">
         <SearchBar
-          label="Search store managers"
-          placeholder="Name or phone"
+          label={t('admin.managers.searchLabel')}
+          placeholder={t('admin.managers.searchPlaceholder')}
           className="min-w-64 flex-1"
           onSearch={(term) => {
             setSearch(term);
@@ -83,8 +88,11 @@ export function AdminStoreManagersScreen() {
         />
 
         <FilterChips
-          label="Filter by account status"
-          options={ACCOUNT_FILTERS}
+          label={t('admin.customers.filterLabel')}
+          options={ACCOUNT_FILTERS.map((filter) => ({
+            value: filter.value,
+            label: t(filter.labelKey),
+          }))}
           value={account}
           onChange={(next) => {
             setAccount(next);
@@ -99,36 +107,36 @@ export function AdminStoreManagersScreen() {
         error={error}
         onRetry={() => void refetch()}
         isEmpty={data?.items.length === 0}
-        emptyTitle="No store managers yet"
-        emptyDescription="A store manager runs one store: its order queue, its stock and what it has available."
+        emptyTitle={t('admin.managers.emptyTitle')}
+        emptyDescription={t('admin.managers.emptyBody')}
         emptyAction={
           <Button variant="primary" onClick={() => setEditing('new')}>
-            Add the first manager
+            {t('admin.managers.addFirst')}
           </Button>
         }
       >
         <TableScroller>
           <table className="w-full min-w-[44rem] text-sm">
             <caption className="sr-only">
-              Store manager accounts and the store each one runs.
+              {t('admin.managers.caption')}
             </caption>
 
-            <thead className="border-outline-variant text-text-muted border-b text-left">
+            <thead className="border-outline-variant text-text-muted border-b text-start">
               <tr>
                 <th scope="col" className="p-gutter font-semibold">
-                  Name
+                  {t('admin.managers.colName')}
                 </th>
                 <th scope="col" className="p-gutter font-semibold">
-                  Phone
+                  {t('admin.managers.colPhone')}
                 </th>
                 <th scope="col" className="p-gutter font-semibold">
-                  Store
+                  {t('admin.managers.colStore')}
                 </th>
                 <th scope="col" className="p-gutter font-semibold">
-                  Account
+                  {t('admin.managers.colAccount')}
                 </th>
-                <th scope="col" className="p-gutter text-right font-semibold">
-                  <span className="sr-only">Actions</span>
+                <th scope="col" className="p-gutter text-end font-semibold">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -140,21 +148,27 @@ export function AdminStoreManagersScreen() {
                   className="border-outline-variant hover:bg-surface-muted border-b last:border-0"
                 >
                   <td className="p-gutter">
-                    <span className="text-text font-medium">{manager.fullName}</span>
+                    <span className="text-text font-medium">
+                      <bdi>{manager.fullName}</bdi>
+                    </span>
                     {manager.email ? (
-                      <span className="text-text-muted block text-xs">{manager.email}</span>
+                      <span className="text-text-muted block text-xs">
+                        <Ltr>{manager.email}</Ltr>
+                      </span>
                     ) : null}
                   </td>
 
-                  <td className="p-gutter text-text tabular-nums">{manager.phone}</td>
+                  <td className="p-gutter text-text tabular-nums">
+                    <Ltr>{manager.phone}</Ltr>
+                  </td>
 
                   <td className="p-gutter text-text-muted">
                     {manager.store ? (
-                      manager.store.name
+                      <bdi>{manager.store.name}</bdi>
                     ) : (
                       // A manager with no store cannot open any store screen —
                       // the server fails closed rather than defaulting.
-                      <span className="text-danger font-medium">No store assigned</span>
+                      <span className="text-danger font-medium">{t('admin.managers.noStore')}</span>
                     )}
                   </td>
 
@@ -165,7 +179,7 @@ export function AdminStoreManagersScreen() {
                   <td className="p-gutter">
                     <div className="gap-tight flex justify-end">
                       <Button variant="outline" size="sm" onClick={() => setEditing(manager)}>
-                        Edit
+                        {t('common.edit')}
                       </Button>
 
                       <Button
@@ -176,7 +190,9 @@ export function AdminStoreManagersScreen() {
                           setStatus.mutate({ id: manager.id, isActive: !manager.isActive })
                         }
                       >
-                        {manager.isActive ? 'Deactivate' : 'Reactivate'}
+                        {manager.isActive
+                          ? t('admin.managers.deactivate')
+                          : t('admin.managers.reactivate')}
                       </Button>
                     </div>
                   </td>
@@ -187,7 +203,7 @@ export function AdminStoreManagersScreen() {
         </TableScroller>
 
         <Pagination
-          label="Store manager pages"
+          label={t('admin.managers.pagesLabel')}
           page={data?.pagination.page ?? 1}
           totalPages={data?.pagination.totalPages ?? 1}
           onPageChange={setPage}

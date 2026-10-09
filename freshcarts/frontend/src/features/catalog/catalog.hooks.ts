@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@/lib/api/query-hooks';
 import type { Paginated, Product, ProductQuery } from '@/types/catalog';
 import { catalogApi } from './catalog.api';
 

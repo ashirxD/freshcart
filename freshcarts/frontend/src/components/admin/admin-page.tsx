@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /**
@@ -22,7 +23,7 @@ export function AdminPageHeader({
   description,
   actions,
 }: {
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
 }) {
@@ -74,6 +75,8 @@ export function AdminListState({
   skeletonClassName = 'h-16 w-full',
   children,
 }: AdminListStateProps) {
+  const t = useT();
+
   if (isPending) {
     return (
       <div className="flex flex-col gap-2">
@@ -83,7 +86,7 @@ export function AdminListState({
             className={skeletonClassName}
             // Only the first placeholder is announced: one polite "loading"
             // is information, six at once is noise in a screen reader.
-            label={index === 0 ? 'Loading' : undefined}
+            label={index === 0 ? t('states.loading') : undefined}
           />
         ))}
       </div>
@@ -117,6 +120,8 @@ export interface PaginationProps {
 
 /** Previous/next rather than numbered pages: an admin list is scanned, not indexed. */
 export function Pagination({ page, totalPages, onPageChange, label }: PaginationProps) {
+  const t = useT();
+
   if (totalPages <= 1) return null;
 
   return (
@@ -127,11 +132,11 @@ export function Pagination({ page, totalPages, onPageChange, label }: Pagination
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
       >
-        Previous
+        {t('common.previous')}
       </Button>
 
       <span aria-live="polite" className="text-text-muted text-sm">
-        Page {page} of {totalPages}
+        {t('common.page', { page, pages: totalPages })}
       </span>
 
       <Button
@@ -140,7 +145,7 @@ export function Pagination({ page, totalPages, onPageChange, label }: Pagination
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
       >
-        Next
+        {t('common.next')}
       </Button>
     </nav>
   );

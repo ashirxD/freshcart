@@ -17,12 +17,15 @@ import {
   UserCog,
   Users,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { EmptyState } from '@/components/common/empty-state';
+import { LanguageToggle } from '@/components/common/language-toggle';
 import { Container } from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -34,38 +37,45 @@ import { useAuthStore } from '@/store/auth.store';
  * Grouped the way the work is: what is happening now, what is being sold, who
  * is involved, and how the platform is configured.
  */
-const ADMIN_NAV = [
+interface NavItem {
+  href: string;
+  labelKey: TranslationKey;
+  icon: LucideIcon;
+  exact?: boolean;
+}
+
+const ADMIN_NAV: ReadonlyArray<{ headingKey: TranslationKey; items: ReadonlyArray<NavItem> }> = [
   {
-    heading: 'Operations',
+    headingKey: 'admin.nav.operations',
     items: [
-      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-      { href: '/admin/orders', label: 'Orders', icon: Receipt },
+      { href: '/admin', labelKey: 'admin.nav.dashboard', icon: LayoutDashboard, exact: true },
+      { href: '/admin/orders', labelKey: 'admin.nav.orders', icon: Receipt },
     ],
   },
   {
-    heading: 'Catalogue',
+    headingKey: 'admin.nav.catalogue',
     items: [
-      { href: '/admin/products', label: 'Products', icon: PackageSearch },
-      { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-      { href: '/admin/inventory', label: 'Inventory', icon: Boxes },
+      { href: '/admin/products', labelKey: 'admin.nav.products', icon: PackageSearch },
+      { href: '/admin/categories', labelKey: 'admin.nav.categories', icon: FolderTree },
+      { href: '/admin/inventory', labelKey: 'admin.nav.inventory', icon: Boxes },
     ],
   },
   {
-    heading: 'People',
+    headingKey: 'admin.nav.people',
     items: [
-      { href: '/admin/customers', label: 'Customers', icon: Users },
-      { href: '/admin/store-managers', label: 'Store managers', icon: UserCog },
-      { href: '/admin/stores', label: 'Stores', icon: Store },
+      { href: '/admin/customers', labelKey: 'admin.nav.customers', icon: Users },
+      { href: '/admin/store-managers', labelKey: 'admin.nav.storeManagers', icon: UserCog },
+      { href: '/admin/stores', labelKey: 'admin.nav.stores', icon: Store },
     ],
   },
   {
-    heading: 'Configuration',
+    headingKey: 'admin.nav.configuration',
     items: [
-      { href: '/admin/delivery-pricing', label: 'Delivery pricing', icon: Truck },
-      { href: '/admin/settings', label: 'Settings', icon: Settings },
+      { href: '/admin/delivery-pricing', labelKey: 'admin.nav.deliveryPricing', icon: Truck },
+      { href: '/admin/settings', labelKey: 'admin.nav.settings', icon: Settings },
     ],
   },
-] as const;
+];
 
 function isCurrent(pathname: string, href: string, exact?: boolean): boolean {
   return exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
@@ -84,6 +94,7 @@ function isCurrent(pathname: string, href: string, exact?: boolean): boolean {
  * reachable on a tablet or a phone without a second navigation model.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const status = useAuthStore((state) => state.status);
@@ -93,7 +104,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (status === 'loading') {
     return (
       <Container className="gap-gutter py-loose flex flex-col">
-        <Skeleton className="h-8 w-48" label="Checking your access" />
+        <Skeleton className="h-8 w-48" label={t('admin.shell.checkingAccess')} />
         <Skeleton className="h-64 w-full" />
       </Container>
     );
@@ -104,8 +115,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <Container className="py-loose">
         <EmptyState
           icon={<ShieldAlert aria-hidden="true" />}
-          title="Admin access only"
-          description="This area is for store administrators. Sign in with an admin account to continue."
+          title={t('admin.shell.accessOnlyTitle')}
+          description={t('admin.shell.accessOnlyBody')}
           action={
             <Button
               variant="primary"
@@ -113,7 +124,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 router.push(user ? '/' : '/login?next=' + encodeURIComponent(pathname))
               }
             >
-              {user ? 'Back to the store' : 'Sign in'}
+              {user ? t('admin.shell.backToStore') : t('nav.signIn')}
             </Button>
           }
           className="bg-surface-muted rounded-2xl"
@@ -123,14 +134,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   const navigation = (
-    <nav aria-label="Back office" className="gap-loose flex flex-col">
+    <nav aria-label={t('admin.nav.backOffice')} className="gap-loose flex flex-col">
       {ADMIN_NAV.map((group) => (
-        <div key={group.heading} className="gap-tight flex flex-col">
-          <h2 className="text-eyebrow text-text-muted px-3 uppercase">{group.heading}</h2>
+        <div key={group.headingKey} className="gap-tight flex flex-col">
+          <h2 className="text-eyebrow text-text-muted px-3 uppercase">{t(group.headingKey)}</h2>
 
           <ul className="flex flex-col gap-0.5">
             {group.items.map((item) => {
-              const active = isCurrent(pathname, item.href, 'exact' in item && item.exact);
+              const active = isCurrent(pathname, item.href, item.exact);
               const Icon = item.icon;
 
               return (
@@ -157,7 +168,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                       />
                     ) : null}
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 </li>
               );
@@ -193,12 +204,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               )
             }
           >
-            <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
+            <span className="sr-only">{isMenuOpen ? t('admin.shell.closeMenu') : t('admin.shell.openMenu')}</span>
           </Button>
 
           <Link
             href="/admin"
-            aria-label="FreshCarts admin, dashboard"
+            aria-label={t('admin.shell.homeAria')}
             className="flex items-center gap-2.5"
           >
             <Logo size="sm" markOnly />
@@ -206,20 +217,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <span className="text-primary text-base font-extrabold tracking-[-0.02em]">
                 FreshCarts
               </span>
-              <span className="text-eyebrow text-text-muted uppercase">Admin</span>
+              <span className="text-eyebrow text-text-muted uppercase">{t('admin.shell.adminLabel')}</span>
             </span>
           </Link>
 
           <div className="gap-gutter ms-auto flex items-center">
+            <LanguageToggle size="sm" />
             <span className="text-text-muted hidden text-sm font-medium sm:inline">
-              {user.fullName}
+              <bdi>{user.fullName}</bdi>
             </span>
             <Link
               href="/"
               className="text-primary hover:bg-primary/8 flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold transition-colors"
             >
               <Store className="size-4" aria-hidden="true" />
-              View store
+              {t('admin.shell.viewStore')}
             </Link>
           </div>
         </div>

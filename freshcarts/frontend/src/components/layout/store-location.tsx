@@ -3,6 +3,7 @@
 import { MapPin } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrentStore } from '@/features/catalog/catalog.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface StoreLocationProps {
@@ -35,13 +36,14 @@ export function StoreLocation({
   className,
 }: StoreLocationProps) {
   const { data: store, isPending } = useCurrentStore();
+  const t = useT();
   const onDark = tone === 'onDark';
 
   if (isPending) {
     return (
       <Skeleton
         className={cn('h-5 w-40', onDark && 'bg-cream/20', className)}
-        label="Loading store details"
+        label={t('nav.loadingStore')}
       />
     );
   }
@@ -58,7 +60,7 @@ export function StoreLocation({
           aria-hidden="true"
         />
         <span className={onDark ? 'text-cream/85' : 'text-text-muted'}>
-          Delivering from{' '}
+          {t('nav.deliveringFrom')}{' '}
           <span className={cn('font-semibold', onDark ? 'text-cream' : 'text-text')}>
             {store.name}
           </span>
@@ -92,7 +94,7 @@ export function StoreLocation({
             onDark ? 'text-cream/70' : 'text-text-muted',
           )}
         >
-          Delivering to{' '}
+          {t('nav.deliveringTo')}{' '}
         </span>
         {store.address.area}
       </span>

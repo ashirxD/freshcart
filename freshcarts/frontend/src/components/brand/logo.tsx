@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface BrandMarkProps {
@@ -125,7 +128,7 @@ export function Logo({ tone = 'default', size = 'md', markOnly = false, classNam
 /**
  * The header logo as a link home.
  *
- * Its accessible name is "FreshCarts, home" rather than the two words a screen
+ * Its accessible name is "FreshCarts, home" (in the active language) rather than the two words a screen
  * reader would otherwise read out of the split wordmark ("Fresh", "Carts").
  */
 export function LogoLink({
@@ -134,10 +137,12 @@ export function LogoLink({
   markOnly = false,
   className,
 }: LogoProps) {
+  const t = useT();
+
   return (
     <Link
       href="/"
-      aria-label="FreshCarts, home"
+      aria-label={t('common.logoHome')}
       className={cn('group flex shrink-0 items-center', className)}
     >
       <Logo

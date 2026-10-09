@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { Phone, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Ltr } from '@/components/common/ltr';
+import { useI18n, useT, type TranslationKey } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import { OrderSummaryPanel, formatDistance } from './order-summary-panel';
 import type { CheckoutPreview, FulfillmentMethod } from '@/types/order';
@@ -34,46 +36,64 @@ export function ReviewStep({
   onEditAddress,
   onEditPayment,
 }: ReviewStepProps) {
+  const { t, tx } = useI18n();
+
   if (!preview) {
-    return <Skeleton className="h-64 w-full" label="Loading your order" />;
+    return <Skeleton className="h-64 w-full" label={t('checkout.review.loading')} />;
   }
 
-  const paymentLabel =
-    preview.paymentMethods.find((option) => option.method === preview.selectedPaymentMethod)
-      ?.label ?? 'Cash on delivery';
+  const paymentLabel = t(
+    ('checkout.payment.method.' +
+      (preview.selectedPaymentMethod ?? 'CASH_ON_DELIVERY')) as TranslationKey,
+  );
 
   return (
     <section aria-labelledby="review-heading" className="gap-loose flex flex-col">
       <h2 id="review-heading" className="text-text text-base font-bold tracking-[-0.015em]">
-        Review your order
+        {t('checkout.review.title')}
       </h2>
 
       {fulfillmentMethod === 'DELIVERY' && preview.delivery ? (
-        <ReviewBlock title="Delivering to" onEdit={onEditAddress} editLabel="Change address">
-          <p className="text-text font-medium">{preview.delivery.address.recipientName}</p>
-          <p className="text-text-muted">{preview.delivery.address.formatted}</p>
+        <ReviewBlock
+          title={t('checkout.review.deliveringTo')}
+          onEdit={onEditAddress}
+          editLabel={t('checkout.review.changeAddress')}
+        >
+          <p className="text-text font-medium">
+            <bdi>{preview.delivery.address.recipientName}</bdi>
+          </p>
+          <p className="text-text-muted">
+            <bdi>{preview.delivery.address.formatted}</bdi>
+          </p>
           <p className="text-text-muted flex items-center gap-1.5">
             <Phone className="size-3.5" aria-hidden="true" />
-            {preview.delivery.address.phone}
+            <Ltr>{preview.delivery.address.phone}</Ltr>
           </p>
           <p className="text-text-muted mt-1">
-            {formatDistance(preview.delivery.distanceMeters)} from the store ·{' '}
-            <span className="text-text font-medium">{formatPkr(preview.delivery.fee)}</span>{' '}
-            delivery charge
+            {tx('checkout.review.fromStore', {
+              distance: <Ltr>{formatDistance(preview.delivery.distanceMeters, t)}</Ltr>,
+              fee: (
+                <Ltr className="text-text font-medium whitespace-nowrap">
+                  {formatPkr(preview.delivery.fee)}
+                </Ltr>
+              ),
+            })}
           </p>
         </ReviewBlock>
       ) : null}
 
       {fulfillmentMethod === 'PICKUP' && preview.pickup ? (
-        <ReviewBlock title="Collecting from">
+        <ReviewBlock title={t('checkout.review.collectingFrom')}>
           <p className="text-text flex items-center gap-1.5 font-medium">
             <Store className="size-4" aria-hidden="true" />
-            {preview.pickup.storeName}
+            <bdi>{preview.pickup.storeName}</bdi>
           </p>
-          <p className="text-text-muted">{preview.pickup.storeAddress}</p>
+          <p className="text-text-muted">
+            <bdi>{preview.pickup.storeAddress}</bdi>
+          </p>
           <p className="text-text-muted flex items-center gap-1.5">
             <Phone className="size-3.5" aria-hidden="true" />
-            {preview.pickup.storePhone}
+            <Ltr>{preview.pickup.storePhone}</Ltr>
           </p>
           {preview.pickup.instructions ? (
             <p className="text-text-muted mt-1">{preview.pickup.instructions}</p>
@@ -81,13 +101,19 @@ export function ReviewStep({
         </ReviewBlock>
       ) : null}
 
-      <ReviewBlock title="Paying with" onEdit={onEditPayment} editLabel="Change payment">
+      <ReviewBlock
+        title={t('checkout.review.payingWith')}
+        onEdit={onEditPayment}
+        editLabel={t('checkout.review.changePayment')}
+      >
         <p className="text-text font-medium">{paymentLabel}</p>
       </ReviewBlock>
 
       {customerNote.trim() ? (
-        <ReviewBlock title="Your note">
-          <p className="text-text-muted">{customerNote.trim()}</p>
+        <ReviewBlock title={t('checkout.review.yourNote')}>
+          <p className="text-text-muted">
+            <bdi>{customerNote.trim()}</bdi>
+          </p>
         </ReviewBlock>
       ) : null}
 
@@ -112,6 +138,8 @@ function ReviewBlock({
   editLabel?: string;
   children: ReactNode;
 }) {
+  const t = useT();
+
   return (
     <div className="gap-tight ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-xl ring-1">
       <div className="gap-gutter flex items-center justify-between">
@@ -119,7 +147,7 @@ function ReviewBlock({
 
         {onEdit ? (
           <Button variant="ghost" size="sm" onClick={onEdit}>
-            {editLabel ?? 'Change'}
+            {editLabel ?? t('checkout.review.change')}
           </Button>
         ) : null}
       </div>

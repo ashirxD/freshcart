@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
+import { Ltr } from '@/components/common/ltr';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/i18n';
 
 /**
  * The shared body of every Next.js `error.tsx` in the app.
@@ -34,6 +36,8 @@ export function RouteError({
   description: string;
   secondaryAction?: ReactNode;
 }) {
+  const t = useT();
+
   useEffect(() => {
     // The full error goes to the console for a developer; the screen does not
     // show it. In production this is where a reporting call would go.
@@ -56,14 +60,14 @@ export function RouteError({
 
       <div className="gap-gutter flex flex-wrap items-center justify-center">
         <Button variant="primary" onClick={reset}>
-          Try again
+          {t('common.tryAgain')}
         </Button>
         {secondaryAction}
       </div>
 
       {error.digest ? (
         <p className="text-text-muted text-xs">
-          Reference: <span className="tabular-nums">{error.digest}</span>
+          {t('states.reference')} <Ltr className="tabular-nums">{error.digest}</Ltr>
         </p>
       ) : null}
     </div>

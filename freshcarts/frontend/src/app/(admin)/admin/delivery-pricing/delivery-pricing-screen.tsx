@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { AdminListState, AdminPageHeader, TableScroller } from '@/components/admin/admin-page';
 import { DeliveryRuleDialog } from '@/components/admin/delivery-rule-dialog';
+import { Money } from '@/components/common/ltr';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import {
@@ -12,6 +13,7 @@ import {
   useDeliveryRules,
   useUpdateDeliveryRule,
 } from '@/features/admin/admin.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import type { DeliveryRule } from '@/types/admin';
 
@@ -39,6 +41,7 @@ function km(meters: number): string {
  * because they are properties of the set rather than of any one row.
  */
 export function AdminDeliveryPricingScreen() {
+  const { t, locale } = useI18n();
   const [editing, setEditing] = useState<DeliveryRule | 'new' | null>(null);
 
   const { data, isPending, isError, error, refetch } = useDeliveryRules();
@@ -51,11 +54,11 @@ export function AdminDeliveryPricingScreen() {
   return (
     <>
       <AdminPageHeader
-        title="Delivery pricing"
+        title={t('admin.delivery.title')}
         description={
           radius
-            ? 'Distance bands for deliveries up to ' + km(radius) + ' km'
-            : 'Distance bands used to price every delivery'
+            ? t('admin.delivery.upTo', { km: km(radius) })
+            : t('admin.delivery.usedToPrice')
         }
         actions={
           <Button
@@ -63,7 +66,7 @@ export function AdminDeliveryPricingScreen() {
             onClick={() => setEditing('new')}
             leadingIcon={<Plus className="size-4" aria-hidden="true" />}
           >
-            Add band
+            {t('admin.delivery.addBand')}
           </Button>
         }
       />
@@ -75,18 +78,19 @@ export function AdminDeliveryPricingScreen() {
         >
           <p className="text-secondary mb-tight flex items-center gap-2 text-sm font-semibold">
             <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-            This pricing set has problems
+            {t('admin.delivery.problemsTitle')}
           </p>
 
           <ul className="text-secondary flex list-inside list-disc flex-col gap-0.5 text-sm">
             {data.problems.map((problem, index) => (
-              <li key={index}>{problem.message}</li>
+              <li key={index}>
+                {locale === 'en' ? problem.message : t(('admin.delivery.problem' + problem.kind) as TranslationKey)}
+              </li>
             ))}
           </ul>
 
           <p className="text-text-muted mt-tight text-xs">
-            A distance no band covers cannot be priced, and checkout refuses the order rather than
-            inventing a fee.
+            {t('admin.delivery.problemNote')}
           </p>
         </div>
       ) : null}
@@ -97,37 +101,36 @@ export function AdminDeliveryPricingScreen() {
         error={error}
         onRetry={() => void refetch()}
         isEmpty={data?.rules.length === 0}
-        emptyTitle="No pricing bands yet"
-        emptyDescription="Without at least one active band, no delivery can be priced and checkout will refuse every delivery order."
+        emptyTitle={t('admin.delivery.emptyTitle')}
+        emptyDescription={t('admin.delivery.emptyBody')}
         emptyAction={
           <Button variant="primary" onClick={() => setEditing('new')}>
-            Add the first band
+            {t('admin.delivery.addFirst')}
           </Button>
         }
       >
         <TableScroller>
           <table className="w-full min-w-[40rem] text-sm">
             <caption className="sr-only">
-              Delivery pricing bands. Each band covers distances from its lower bound up to, but not
-              including, its upper bound.
+              {t('admin.delivery.caption')}
             </caption>
 
-            <thead className="border-outline-variant text-text-muted border-b text-left">
+            <thead className="border-outline-variant text-text-muted border-b text-start">
               <tr>
                 <th scope="col" className="p-gutter font-semibold">
-                  Band
+                  {t('admin.delivery.colBand')}
                 </th>
                 <th scope="col" className="p-gutter font-semibold">
-                  Distance
+                  {t('admin.delivery.colDistance')}
                 </th>
-                <th scope="col" className="p-gutter text-right font-semibold">
-                  Fee
+                <th scope="col" className="p-gutter text-end font-semibold">
+                  {t('admin.delivery.colFee')}
                 </th>
                 <th scope="col" className="p-gutter font-semibold">
-                  Status
+                  {t('admin.delivery.colStatus')}
                 </th>
-                <th scope="col" className="p-gutter text-right font-semibold">
-                  <span className="sr-only">Actions</span>
+                <th scope="col" className="p-gutter text-end font-semibold">
+                  <span className="sr-only">{t('common.actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -138,18 +141,25 @@ export function AdminDeliveryPricingScreen() {
                   key={rule.id}
                   className="border-outline-variant hover:bg-surface-muted border-b last:border-0"
                 >
-                  <td className="p-gutter text-text font-medium">{rule.label}</td>
+                  <td className="p-gutter text-text font-medium">
+                    <bdi>{rule.label}</bdi>
+                  </td>
 
                   <td className="p-gutter text-text-muted tabular-nums">
-                    {km(rule.minDistanceMeters)}–{km(rule.maxDistanceMeters)} km
+                    {t('admin.delivery.range', {
+                      from: km(rule.minDistanceMeters),
+                      to: km(rule.maxDistanceMeters),
+                    })}
                     <span className="block text-xs">
-                      includes {km(rule.minDistanceMeters)} km, excludes{' '}
-                      {km(rule.maxDistanceMeters)} km
+                      {t('admin.delivery.includes', {
+                        from: km(rule.minDistanceMeters),
+                        to: km(rule.maxDistanceMeters),
+                      })}
                     </span>
                   </td>
 
-                  <td className="p-gutter text-text text-right font-semibold tabular-nums">
-                    {formatPkr(rule.fee)}
+                  <td className="p-gutter text-text text-end font-semibold tabular-nums">
+                    <Money>{formatPkr(rule.fee)}</Money>
                   </td>
 
                   <td className="p-gutter">
@@ -161,14 +171,14 @@ export function AdminDeliveryPricingScreen() {
                           : 'bg-surface-sunken text-text-muted',
                       )}
                     >
-                      {rule.isActive ? 'In use' : 'Off'}
+                      {rule.isActive ? t('admin.delivery.inUse') : t('admin.delivery.off')}
                     </span>
                   </td>
 
                   <td className="p-gutter">
                     <div className="gap-tight flex justify-end">
                       <Button variant="outline" size="sm" onClick={() => setEditing(rule)}>
-                        Edit
+                        {t('common.edit')}
                       </Button>
 
                       <Button
@@ -177,7 +187,7 @@ export function AdminDeliveryPricingScreen() {
                         isLoading={updateRule.isPending}
                         onClick={() => updateRule.mutate({ id: rule.id, isActive: !rule.isActive })}
                       >
-                        {rule.isActive ? 'Turn off' : 'Turn on'}
+                        {rule.isActive ? t('admin.delivery.turnOff') : t('admin.delivery.turnOn')}
                       </Button>
 
                       <Button
@@ -187,10 +197,10 @@ export function AdminDeliveryPricingScreen() {
                         onClick={() => deleteRule.mutate(rule.id)}
                         // The server refuses to delete the last active band, so
                         // there is no way to leave the store unable to price.
-                        aria-label={'Delete the ' + rule.label + ' band'}
+                        aria-label={t('admin.delivery.deleteAria', { label: rule.label })}
                         leadingIcon={<Trash2 className="size-4" aria-hidden="true" />}
                       >
-                        <span className="sr-only">Delete</span>
+                        <span className="sr-only">{t('admin.products.delete')}</span>
                       </Button>
                     </div>
                   </td>

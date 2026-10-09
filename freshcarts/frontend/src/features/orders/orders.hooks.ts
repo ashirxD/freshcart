@@ -1,8 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { apiFetch } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
+import { ltrNow, tNow } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { toQueryString } from '@/features/catalog/catalog.api';
 import { cartKeys } from '@/features/cart/cart.hooks';
 import { useAuthStore } from '@/store/auth.store';
@@ -98,16 +101,16 @@ export function useCancelOrder() {
       void queryClient.invalidateQueries({ queryKey: cartKeys.all });
 
       toast({
-        title: 'Order cancelled',
-        description: 'Order ' + order.orderNumber + ' has been cancelled.',
+        title: tNow('toast.orderCancelled'),
+        description: tNow('toast.orderCancelledBody', { orderNumber: ltrNow(order.orderNumber) }),
         variant: 'success',
       });
     },
     onError: (error: unknown) => {
       toast({
-        title: 'Could not cancel this order',
+        title: tNow('toast.orderCancelFailed'),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },

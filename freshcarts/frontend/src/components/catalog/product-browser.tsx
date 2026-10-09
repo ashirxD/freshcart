@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { flattenPages, useBrands, useProductList } from '@/features/catalog/catalog.hooks';
 import { useCatalogFilters } from '@/features/catalog/use-catalog-filters';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { Category, ProductQuery } from '@/types/catalog';
 import { FilterPanel } from './filter-panel';
@@ -42,6 +43,7 @@ export function ProductBrowser({
   emptyState,
   className,
 }: ProductBrowserProps) {
+  const t = useT();
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const { filters, setFilters, clearFilters, activeFilterCount } = useCatalogFilters();
   const { data: brands = [] } = useBrands();
@@ -77,7 +79,9 @@ export function ProductBrowser({
       {/* Desktop keeps filters permanently visible; there is room for them. */}
       <aside className="hidden w-64 shrink-0 lg:block">
         <div className="ring-outline-variant bg-surface p-gutter shadow-card sticky top-24 rounded-2xl ring-1">
-          <h2 className="mb-gutter text-text text-base font-bold tracking-[-0.015em]">Filters</h2>
+          <h2 className="mb-gutter text-text text-base font-bold tracking-[-0.015em]">
+            {t('catalog.filters')}
+          </h2>
           {filterPanel}
         </div>
       </aside>
@@ -92,7 +96,9 @@ export function ProductBrowser({
           {/* Announced politely so a screen-reader user hears the result count
               change after applying a filter, without losing their place. */}
           <p aria-live="polite" className="text-text-muted text-sm font-medium">
-            {isPending ? 'Loading products…' : total === 1 ? '1 product' : total + ' products'}
+            {isPending
+              ? t('catalog.loadingProducts')
+              : t('catalog.productCount', { count: total })}
           </p>
 
           <div className="flex items-center gap-2">
@@ -103,7 +109,7 @@ export function ProductBrowser({
               leadingIcon={<SlidersHorizontal className="size-4" aria-hidden="true" />}
               className="lg:hidden"
             >
-              Filters
+              {t('catalog.filters')}
               {activeFilterCount > 0 ? (
                 <span className="bg-primary text-on-primary ms-1 rounded-full px-1.5 text-xs font-bold">
                   {activeFilterCount}
@@ -132,13 +138,13 @@ export function ProductBrowser({
                   onClick={() => void fetchNextPage()}
                   isLoading={isFetchingNextPage}
                 >
-                  Load more products
+                  {t('catalog.loadMore')}
                 </Button>
               </div>
             ) : (
               <p className="pt-loose text-text-muted flex items-center justify-center gap-2 text-center text-sm">
                 <span aria-hidden="true" className="shelf-rule h-px w-12" />
-                That is all {total === 1 ? '1 product' : total + ' products'}
+                {t('catalog.thatIsAll', { count: total })}
                 <span aria-hidden="true" className="shelf-rule h-px w-12" />
               </p>
             )}
@@ -151,11 +157,11 @@ export function ProductBrowser({
       <Modal
         open={isFilterSheetOpen}
         onClose={() => setFilterSheetOpen(false)}
-        title="Filters"
-        description="Narrow down what you are looking for"
+        title={t('catalog.filters')}
+        description={t('catalog.narrowDown')}
         footer={
           <Button fullWidth onClick={() => setFilterSheetOpen(false)}>
-            Show {total === 1 ? '1 product' : total + ' products'}
+            {t('catalog.showProducts', { count: total })}
           </Button>
         }
       >

@@ -5,8 +5,12 @@ import { SelectField } from '@/components/admin/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { Ltr } from '@/components/common/ltr';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStockHistory, useUpdateStock } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
+import { formatDate } from '@/lib/dates';
+import { roleLabel, stockReasonLabel } from '@/lib/store-copy';
 import { STOCK_CHANGE_REASONS } from '@/types/store-manager';
 import type { StockChangeReason, StoreInventoryRow } from '@/types/store-manager';
 
@@ -30,6 +34,7 @@ export function SetStockDialog({
   row: StoreInventoryRow;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const [quantity, setQuantity] = useState(String(row.quantity));
   const [threshold, setThreshold] = useState(String(row.lowStockThreshold));
   const [reason, setReason] = useState<StockChangeReason>('CORRECTION');
@@ -54,8 +59,11 @@ export function SetStockDialog({
     <Modal
       open
       onClose={onClose}
-      title="Set stock"
-      description={row.productName + ' · ' + row.quantity + ' on hand now'}
+      title={t('store.stockDialog.setTitle')}
+      description={t('store.stockDialog.setDescription', {
+        name: row.productName,
+        count: row.quantity,
+      })}
       footer={
         <div className="gap-gutter flex">
           <Button
@@ -72,17 +80,17 @@ export function SetStockDialog({
               })
             }
           >
-            Save
+            {t('common.save')}
           </Button>
           <Button variant="outline" fullWidth onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <Input
-          label="Quantity on hand"
+          label={t('store.stockDialog.quantity')}
           type="number"
           inputMode="numeric"
           min={0}
@@ -91,7 +99,7 @@ export function SetStockDialog({
         />
 
         <Input
-          label="Warn when stock reaches"
+          label={t('store.stockDialog.threshold')}
           type="number"
           inputMode="numeric"
           min={0}
@@ -100,24 +108,28 @@ export function SetStockDialog({
         />
 
         <SelectField
-          label="Reason"
-          hint="Recorded against your name in the stock history."
-          options={STOCK_CHANGE_REASONS.map((option) => ({ ...option }))}
+          label={t('store.stockDialog.reason')}
+          hint={t('store.stockDialog.reasonHint')}
+          options={STOCK_CHANGE_REASONS.map((option) => ({
+            value: option.value,
+            label: t(('store.stockReason.' + option.value) as TranslationKey),
+          }))}
           value={reason}
           onChange={(event) => setReason(event.target.value as StockChangeReason)}
         />
 
         <Input
-          label="Note (optional)"
-          placeholder="e.g. delivery 40 crates"
+          label={t('store.stockDialog.note')}
+          placeholder={t('store.stockDialog.notePlaceholder')}
           value={note}
           onChange={(event) => setNote(event.target.value)}
         />
 
         {isValid && delta !== 0 ? (
           <p aria-live="polite" className="text-text-muted text-sm">
-            This will {delta > 0 ? 'add ' + delta : 'remove ' + Math.abs(delta)} unit
-            {Math.abs(delta) === 1 ? '' : 's'}.
+            {delta > 0
+              ? t('store.stockDialog.add', { count: delta })
+              : t('store.stockDialog.remove', { count: Math.abs(delta) })}
           </p>
         ) : null}
       </div>
@@ -133,38 +145,48 @@ export function StockHistoryDialog({
   row: StoreInventoryRow | null;
   onClose: () => void;
 }) {
+  const { t, locale } = useI18n();
   const { data, isPending } = useStockHistory(row?.productId ?? null);
 
   if (!row) return null;
 
   return (
-    <Modal open onClose={onClose} title="Stock history" description={row.productName}>
+    <Modal
+      open
+      onClose={onClose}
+      title={t('store.stockDialog.historyTitle')}
+      description={row.productName}
+    >
       {isPending ? (
-        <Skeleton className="h-32 w-full" label="Loading stock history" />
+        <Skeleton className="h-32 w-full" label={t('store.stockDialog.historyLoading')} />
       ) : data && data.length > 0 ? (
         <ol className="gap-gutter flex list-none flex-col">
           {data.map((entry, index) => (
             <li key={index} className="gap-0.5 flex flex-col text-sm">
               <span className="text-text font-medium tabular-nums">
-                {entry.previousQuantity} → {entry.newQuantity} ({entry.delta > 0 ? '+' : ''}
-                {entry.delta})
+                <Ltr>
+                  {entry.previousQuantity} → {entry.newQuantity} ({entry.delta > 0 ? '+' : ''}
+                  {entry.delta})
+                </Ltr>
               </span>
               <span className="text-text-muted text-xs">
-                {entry.reason.toLowerCase()} ·{' '}
+                {stockReasonLabel(entry.reason, locale)} ·{' '}
                 <time dateTime={entry.changedAt}>
-                  {new Date(entry.changedAt).toLocaleString('en-PK')}
+                  <bdi>{formatDate(entry.changedAt, locale, 'dateTime')}</bdi>
                 </time>
                 {' · '}
-                {entry.changedByRole === 'STORE_MANAGER' ? 'Store' : entry.changedByRole}
+                {roleLabel(entry.changedByRole, locale)}
               </span>
-              {entry.note ? <span className="text-text-muted text-xs">{entry.note}</span> : null}
+              {entry.note ? (
+                <span className="text-text-muted text-xs">
+                  <bdi>{entry.note}</bdi>
+                </span>
+              ) : null}
             </li>
           ))}
         </ol>
       ) : (
-        <p className="text-text-muted text-sm">
-          No stock changes have been recorded for this product yet.
-        </p>
+        <p className="text-text-muted text-sm">{t('store.stockDialog.historyEmpty')}</p>
       )}
     </Modal>
   );

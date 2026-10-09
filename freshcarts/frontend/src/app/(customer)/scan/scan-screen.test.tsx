@@ -238,7 +238,7 @@ describe('ScanScreen', () => {
       await user.click(within(dialog).getByRole('radio', { name: /surf excel/i }));
 
       expect(await screen.findByText('Surf Excel Washing Powder')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /add 2 items to cart/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /add 2 items to basket/i })).toBeEnabled();
     });
 
     it('offers a way out for an item that was not found', async () => {
@@ -282,7 +282,7 @@ describe('ScanScreen', () => {
       expect(screen.getByRole('button', { name: /nothing ready to add/i })).toBeDisabled();
 
       await user.click(screen.getByRole('button', { name: /undo/i }));
-      expect(await screen.findByRole('button', { name: /add 1 item to cart/i })).toBeEnabled();
+      expect(await screen.findByRole('button', { name: /add 1 item to basket/i })).toBeEnabled();
     });
 
     it('caps the quantity at what is in stock and says so', async () => {
@@ -311,7 +311,7 @@ describe('ScanScreen', () => {
       await scanAList(user);
 
       expect(await screen.findByText(/only 4 are available/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /add 1 item to cart/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /add 1 item to basket/i })).toBeInTheDocument();
     });
 
     it('shows an out-of-stock match without offering to add it', async () => {
@@ -360,7 +360,7 @@ describe('ScanScreen', () => {
 
       renderWithProviders(<ScanScreen />);
       await scanAList(user);
-      await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
+      await user.click(await screen.findByRole('button', { name: /add 1 item to basket/i }));
 
       await screen.findByRole('heading', { name: /added to your basket/i });
 
@@ -401,7 +401,7 @@ describe('ScanScreen', () => {
 
       renderWithProviders(<ScanScreen />);
       await scanAList(user);
-      await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
+      await user.click(await screen.findByRole('button', { name: /add 1 item to basket/i }));
 
       expect(
         await screen.findByRole('heading', { name: /added to your basket/i }),
@@ -427,7 +427,7 @@ describe('ScanScreen', () => {
 
       renderWithProviders(<ScanScreen />);
       await scanAList(user);
-      await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
+      await user.click(await screen.findByRole('button', { name: /add 1 item to basket/i }));
 
       const back = await screen.findByRole('button', { name: /sort out the remaining 2 items/i });
       await user.click(back);
@@ -469,7 +469,7 @@ describe('ScanScreen', () => {
 
       renderWithProviders(<ScanScreen />, { queryClient });
       await scanAList(user);
-      await user.click(await screen.findByRole('button', { name: /add 1 item to cart/i }));
+      await user.click(await screen.findByRole('button', { name: /add 1 item to basket/i }));
 
       await waitFor(() => expect(queryClient.getQueryData(['cart', 'detail'])).toEqual(cart));
       expect(calls.filter((call) => call.url.endsWith('/cart')).length).toBe(0);

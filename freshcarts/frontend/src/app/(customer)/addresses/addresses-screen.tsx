@@ -18,8 +18,11 @@ import {
   useSetDefaultAddress,
   useUpdateAddress,
 } from '@/features/addresses/addresses.hooks';
+import { Ltr } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { toAddressForm } from '@/lib/validation/address.schema';
 import { useAuthStore } from '@/store/auth.store';
+import type { TranslationKey } from '@/i18n';
 import type { Address, AddressLabel } from '@/types/address';
 
 const LABEL_ICON: Record<AddressLabel, typeof Home> = {
@@ -38,6 +41,7 @@ type Editing = { kind: 'none' } | { kind: 'new' } | { kind: 'edit'; address: Add
  * them when an address turns out to be missing its map location.
  */
 export function AddressesScreen() {
+  const t = useT();
   const sessionStatus = useAuthStore((state) => state.status);
   const [editing, setEditing] = useState<Editing>({ kind: 'none' });
   const [pendingDelete, setPendingDelete] = useState<Address | null>(null);
@@ -51,7 +55,7 @@ export function AddressesScreen() {
   if (sessionStatus === 'loading') {
     return (
       <Container className="gap-gutter py-loose flex flex-col">
-        <Skeleton className="h-8 w-48" label="Loading your addresses" />
+        <Skeleton className="h-8 w-48" label={t('addresses.loading')} />
         <Skeleton className="h-28 w-full" />
       </Container>
     );
@@ -60,14 +64,14 @@ export function AddressesScreen() {
   if (sessionStatus !== 'authenticated') {
     return (
       <Container className="py-wide">
-        <h1 className="text-display text-primary">Your addresses</h1>
+        <h1 className="text-display text-primary">{t('addresses.title')}</h1>
         <EmptyState
           icon={<UserRound aria-hidden="true" />}
-          title="Sign in to manage your addresses"
-          description="Saved addresses make checkout a couple of taps."
+          title={t('addresses.signInTitle')}
+          description={t('addresses.signInBody')}
           action={
             <ButtonLink href="/login?next=%2Faddresses" variant="primary">
-              Sign in
+              {t('nav.signIn')}
             </ButtonLink>
           }
           className="mt-loose bg-surface-muted rounded-2xl"
@@ -81,8 +85,8 @@ export function AddressesScreen() {
       <div className="bg-cream py-loose">
         <Container className="gap-gutter flex flex-wrap items-end justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-eyebrow text-leaf uppercase">Where we deliver</p>
-            <h1 className="text-display text-primary">Your addresses</h1>
+            <p className="text-eyebrow text-leaf uppercase">{t('addresses.eyebrow')}</p>
+            <h1 className="text-display text-primary">{t('addresses.title')}</h1>
           </div>
 
           {addresses && addresses.length > 0 ? (
@@ -90,7 +94,7 @@ export function AddressesScreen() {
               onClick={() => setEditing({ kind: 'new' })}
               leadingIcon={<Plus className="size-4" aria-hidden="true" />}
             >
-              Add address
+              {t('addresses.add')}
             </Button>
           ) : null}
         </Container>
@@ -98,22 +102,22 @@ export function AddressesScreen() {
 
       <Container className="gap-loose py-wide flex flex-col">
         {isPending ? (
-          <Skeleton className="h-28 w-full rounded-2xl" label="Loading your addresses" />
+          <Skeleton className="h-28 w-full rounded-2xl" label={t('addresses.loading')} />
         ) : null}
         {isError ? <ErrorState error={error} onRetry={() => void refetch()} /> : null}
 
         {addresses && addresses.length === 0 ? (
           <EmptyState
             icon={<MapPin aria-hidden="true" />}
-            title="No saved addresses yet"
-            description="Add one now and checkout becomes a couple of taps. A landmark helps the rider find you."
+            title={t('addresses.emptyTitle')}
+            description={t('addresses.emptyBody')}
             action={
               <Button
                 size="lg"
                 onClick={() => setEditing({ kind: 'new' })}
                 leadingIcon={<Plus className="size-4" aria-hidden="true" />}
               >
-                Add an address
+                {t('addresses.addAnAddress')}
               </Button>
             }
             className="bg-surface-muted rounded-2xl"
@@ -141,27 +145,29 @@ export function AddressesScreen() {
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-text font-bold">
-                          {address.label.charAt(0) + address.label.slice(1).toLowerCase()}
-                          {address.nickname ? ' · ' + address.nickname : ''}
+                          {t(('addresses.label.' + address.label) as TranslationKey)}
+                          {address.nickname ? ' · ' : ''}
+                          {address.nickname ? <bdi>{address.nickname}</bdi> : null}
                         </h2>
 
                         {address.isDefault ? (
                           <Badge tone="brand" icon={<Star className="size-3" aria-hidden="true" />}>
-                            Default
+                            {t('addresses.default')}
                           </Badge>
                         ) : null}
                       </div>
 
-                      <p className="text-text-muted text-sm">{address.formatted}</p>
                       <p className="text-text-muted text-sm">
-                        {address.recipientName} · {address.phone}
+                        <bdi>{address.formatted}</bdi>
+                      </p>
+                      <p className="text-text-muted text-sm">
+                        <bdi>{address.recipientName}</bdi> · <Ltr>{address.phone}</Ltr>
                       </p>
 
                       {!address.hasCoordinates ? (
                         <p className="text-danger bg-danger/8 mt-1.5 flex items-start gap-1.5 rounded-lg p-2 text-sm font-medium">
                           <MapPinOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                          No map location — delivery to this address cannot be calculated. Edit it
-                          to add one.
+                          {t('addresses.noMapLocation')}
                         </p>
                       ) : null}
                     </div>
@@ -173,7 +179,7 @@ export function AddressesScreen() {
                       size="sm"
                       onClick={() => setEditing({ kind: 'edit', address })}
                     >
-                      Edit
+                      {t('addresses.edit')}
                     </Button>
 
                     {!address.isDefault ? (
@@ -183,7 +189,7 @@ export function AddressesScreen() {
                         isLoading={setDefault.isPending}
                         onClick={() => setDefault.mutate(address.id)}
                       >
-                        Make default
+                        {t('addresses.makeDefault')}
                       </Button>
                     ) : null}
 
@@ -194,7 +200,7 @@ export function AddressesScreen() {
                       leadingIcon={<Trash2 className="size-4" aria-hidden="true" />}
                       onClick={() => setPendingDelete(address)}
                     >
-                      Remove
+                      {t('addresses.remove')}
                     </Button>
                   </div>
                 </li>
@@ -207,8 +213,8 @@ export function AddressesScreen() {
         <Modal
           open={editing.kind !== 'none'}
           onClose={() => setEditing({ kind: 'none' })}
-          title={editing.kind === 'edit' ? 'Edit address' : 'Add an address'}
-          description="The map location is what lets us calculate your delivery charge."
+          title={editing.kind === 'edit' ? t('addresses.editTitle') : t('addresses.addTitle')}
+          description={t('addresses.locationNote')}
         >
           {editing.kind === 'new' ? (
             <AddressForm
@@ -227,7 +233,7 @@ export function AddressesScreen() {
               // rather than leaving the previous one's values behind.
               key={editing.address.id}
               defaultValues={toAddressForm(editing.address)}
-              submitLabel="Save changes"
+              submitLabel={t('addresses.saveChanges')}
               isSubmitting={updateAddress.isPending}
               showDefaultToggle={!editing.address.isDefault}
               onCancel={() => setEditing({ kind: 'none' })}
@@ -245,17 +251,14 @@ export function AddressesScreen() {
         <Modal
           open={pendingDelete !== null}
           onClose={() => setPendingDelete(null)}
-          title="Remove this address?"
+          title={t('addresses.removeTitle')}
           description={
-            pendingDelete
-              ? pendingDelete.formatted +
-                ' will be removed from your address book. Past orders keep their own copy and are not affected.'
-              : ''
+            pendingDelete ? t('addresses.removeBody', { address: pendingDelete.formatted }) : ''
           }
           footer={
             <div className="gap-tight flex flex-col-reverse sm:flex-row sm:justify-end">
               <Button variant="outline" onClick={() => setPendingDelete(null)}>
-                Keep it
+                {t('addresses.keepIt')}
               </Button>
               <Button
                 variant="danger"
@@ -267,7 +270,7 @@ export function AddressesScreen() {
                   });
                 }}
               >
-                Remove address
+                {t('addresses.removeAddress')}
               </Button>
             </div>
           }

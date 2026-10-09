@@ -354,7 +354,7 @@ describe('CheckoutScreen', () => {
       await userEvent.click(await screen.findByRole('radio', { name: /42-B/ }));
 
       expect(await screen.findByText(/only 2 of eggs are available/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /go to my cart/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /go to my basket/i })).toBeInTheDocument();
     });
   });
 
@@ -364,7 +364,7 @@ describe('CheckoutScreen', () => {
 
       renderWithProviders(<CheckoutScreen />);
 
-      expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+      expect(await screen.findByText(/your basket is empty/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /start shopping/i })).toBeInTheDocument();
     });
   });

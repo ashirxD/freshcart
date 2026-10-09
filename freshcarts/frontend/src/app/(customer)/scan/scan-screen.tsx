@@ -11,6 +11,8 @@ import { ScanReview } from '@/components/scan/scan-review';
 import { ButtonLink } from '@/components/ui/button-link';
 import { useConfirmScan, useScanGroceryList } from '@/features/scan/scan.hooks';
 import { useScanSelection } from '@/features/scan/use-scan-selection';
+import { useT } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import type { ScanConfirmation, ScanResult } from '@/types/scan';
@@ -34,12 +36,13 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 type Stage =
   | { name: 'idle' }
   | { name: 'selected'; file: File }
-  | { name: 'processing' }
+  | { name: 'processing'; file: File }
   | { name: 'reviewing'; result: ScanResult }
   | { name: 'added'; outcome: ScanConfirmation; result: ScanResult }
   | { name: 'failed'; error: unknown };
 
 export function ScanScreen() {
+  const t = useT();
   const [stage, setStage] = useState<Stage>({ name: 'idle' });
   const [rejection, setRejection] = useState<string | null>(null);
   const toast = useToast();
@@ -64,7 +67,7 @@ export function ScanScreen() {
 
   const submit = useCallback(
     (file: File) => {
-      setStage({ name: 'processing' });
+      setStage({ name: 'processing', file });
 
       scan.mutate(file, {
         onSuccess: (result) => setStage({ name: 'reviewing', result }),
@@ -92,22 +95,20 @@ export function ScanScreen() {
         },
         onError: (error) => {
           toast({
-            title: 'Could not add these items',
+            title: t('ocr.screen.addFailed'),
             description:
-              error instanceof Error
-                ? error.message
-                : 'Please check your connection and try again.',
+              error instanceof Error ? describeError(error, t) : t('errors.checkConnection'),
             variant: 'error',
           });
         },
       },
     );
-  }, [confirm, selection, stage, toast]);
+  }, [confirm, selection, stage, t, toast]);
 
   if (status === 'loading') {
     return (
       <Container className="py-loose">
-        <p className="text-text-muted text-sm">Loading…</p>
+        <p className="text-text-muted text-sm">{t('common.loading')}</p>
       </Container>
     );
   }
@@ -115,11 +116,9 @@ export function ScanScreen() {
   if (status !== 'authenticated' || role !== 'CUSTOMER') {
     return (
       <Container className="gap-loose py-loose flex flex-col items-center text-center">
-        <h1 className="text-text text-xl font-bold">Sign in to scan your grocery list</h1>
-        <p className="text-text-muted text-sm">
-          We add the items straight to your cart, so we need to know whose cart it is.
-        </p>
-        <ButtonLink href="/login?next=/scan">Sign in</ButtonLink>
+        <h1 className="text-text text-xl font-bold">{t('ocr.screen.signInTitle')}</h1>
+        <p className="text-text-muted text-sm">{t('ocr.screen.signInBody')}</p>
+        <ButtonLink href="/login?next=/scan">{t('nav.signIn')}</ButtonLink>
       </Container>
     );
   }
@@ -151,7 +150,7 @@ export function ScanScreen() {
           />
         ) : null}
 
-        {stage.name === 'processing' ? <ScanProgress /> : null}
+        {stage.name === 'processing' ? <ScanProgress file={stage.file} /> : null}
 
         {stage.name === 'reviewing' ? (
           stage.result.items.length === 0 ? (

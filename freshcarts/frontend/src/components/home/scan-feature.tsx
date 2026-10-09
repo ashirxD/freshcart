@@ -4,6 +4,7 @@ import { Camera, Check, ScanLine, ShoppingBasket, Sparkle } from 'lucide-react';
 import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/ui/button-link';
 import { useScanAvailability } from '@/features/scan/scan.hooks';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /**
@@ -13,11 +14,11 @@ import { cn } from '@/lib/cn';
  * names, no service names. "We read it" is what happens as far as anyone
  * outside this repository is concerned.
  */
-const STEPS = [
-  { icon: Camera, label: 'Photograph your list', detail: 'Handwritten or printed. English or Urdu.' },
-  { icon: ScanLine, label: 'We read it', detail: 'Line by line, the way you wrote it.' },
-  { icon: Sparkle, label: 'We find the products', detail: 'Matched against what the shop has today.' },
-  { icon: ShoppingBasket, label: 'You check and confirm', detail: 'Nothing is added without your say.' },
+const STEPS: Array<{ icon: typeof Camera; label: TranslationKey; detail: TranslationKey }> = [
+  { icon: Camera, label: 'home.scan.step1', detail: 'home.scan.step1Detail' },
+  { icon: ScanLine, label: 'home.scan.step2', detail: 'home.scan.step2Detail' },
+  { icon: Sparkle, label: 'home.scan.step3', detail: 'home.scan.step3Detail' },
+  { icon: ShoppingBasket, label: 'home.scan.step4', detail: 'home.scan.step4Detail' },
 ];
 
 /**
@@ -35,6 +36,7 @@ const STEPS = [
  * vanishes under a thumb.
  */
 export function ScanFeature() {
+  const t = useT();
   const { data } = useScanAvailability();
 
   if (!data?.available) return null;
@@ -47,15 +49,14 @@ export function ScanFeature() {
       <Container>
         <div className="items-center gap-8 lg:grid lg:grid-cols-2 lg:gap-14">
           <div className="flex flex-col gap-4">
-            <p className="text-eyebrow text-attention uppercase">The list scanner</p>
+            <p className="text-eyebrow text-attention uppercase">{t('home.scan.eyebrow')}</p>
 
             <h2 id="scan-feature-heading" className="text-display text-primary max-w-md">
-              Have a grocery list? Take a photo of it.
+              {t('home.scan.title')}
             </h2>
 
             <p className="text-text-muted max-w-md text-base leading-relaxed">
-              Send us the list on the back of your envelope and we will find every item in the shop
-              and put it in your basket. You check it before anything is ordered.
+              {t('home.scan.body')}
             </p>
 
             <ol className="gap-snug mt-1 grid sm:grid-cols-2">
@@ -74,9 +75,11 @@ export function ScanFeature() {
                     <span className="flex min-w-0 flex-col">
                       <span className="text-text text-sm font-bold">
                         <span className="text-attention tabular-nums">{index + 1}. </span>
-                        {step.label}
+                        {t(step.label)}
                       </span>
-                      <span className="text-text-muted text-xs leading-snug">{step.detail}</span>
+                      <span className="text-text-muted text-xs leading-snug">
+                        {t(step.detail)}
+                      </span>
                     </span>
                   </li>
                 );
@@ -89,7 +92,7 @@ export function ScanFeature() {
                 size="lg"
                 leadingIcon={<Camera className="size-5" aria-hidden="true" />}
               >
-                Scan your list
+                {t('home.scan.cta')}
               </ButtonLink>
             </div>
           </div>
@@ -125,6 +128,8 @@ const EXAMPLE_LINES = [
  * simply a list with ticks on it: still the right idea, minus the movement.
  */
 function ScanIllustration() {
+  const t = useT();
+
   return (
     <div className="relative w-full max-w-sm">
       {/* A second sheet behind, very slightly rotated: a stack of paper rather
@@ -140,10 +145,10 @@ function ScanIllustration() {
       >
         <div className="border-outline-variant mb-4 flex items-center justify-between border-b pb-3">
           <span className="text-text text-sm font-extrabold tracking-[-0.01em]">
-            Grocery list
+            {t('home.scan.exampleTitle')}
           </span>
           <span className="bg-leaf/12 text-success rounded-full px-2 py-0.5 text-[0.625rem] font-bold">
-            Reading…
+            {t('home.scan.exampleReading')}
           </span>
         </div>
 
@@ -190,7 +195,7 @@ function ScanIllustration() {
         className="bg-primary text-cream shadow-raised absolute -end-2 -bottom-4 flex items-center gap-2 rounded-xl px-3 py-2 sm:-end-6"
       >
         <ShoppingBasket className="size-4 shrink-0" />
-        <span className="text-xs font-bold">Added to your basket</span>
+        <span className="text-xs font-bold">{t('home.scan.exampleAdded')}</span>
       </div>
     </div>
   );

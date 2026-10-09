@@ -13,21 +13,24 @@ import {
 import { SearchBar } from '@/components/common/search-bar';
 import { OrderStatusBadge } from '@/components/orders/order-status-badge';
 import { SelectField } from '@/components/admin/form-field';
+import { Ltr, Money } from '@/components/common/ltr';
 import { useAdminOrders, useAdminStores } from '@/features/admin/admin.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { formatPkr } from '@/lib/format';
 import type { AdminOrderQuery, AdminOrderSummary } from '@/types/admin';
 import type { OrderStatus } from '@/types/order';
 
 /** The filters staff actually reach for, in the order they reach for them. */
 const STATUS_FILTERS = [
-  { value: '' as const, label: 'All' },
-  { value: 'NEEDS_ACTION' as const, label: 'Needs action' },
-  { value: 'PENDING' as const, label: 'New' },
-  { value: 'PREPARING' as const, label: 'Preparing' },
-  { value: 'OUT_FOR_DELIVERY' as const, label: 'On the way' },
-  { value: 'READY_FOR_PICKUP' as const, label: 'Ready' },
-  { value: 'DELIVERED' as const, label: 'Completed' },
-  { value: 'CANCELLED' as const, label: 'Cancelled' },
+  { value: '' as const, labelKey: 'common.all' as TranslationKey },
+  { value: 'NEEDS_ACTION' as const, labelKey: 'admin.orders.filterNeedsAction' as TranslationKey },
+  { value: 'PENDING' as const, labelKey: 'admin.orders.filterNew' as TranslationKey },
+  { value: 'PREPARING' as const, labelKey: 'admin.orders.filterPreparing' as TranslationKey },
+  { value: 'OUT_FOR_DELIVERY' as const, labelKey: 'admin.orders.filterOnTheWay' as TranslationKey },
+  { value: 'READY_FOR_PICKUP' as const, labelKey: 'admin.orders.filterReady' as TranslationKey },
+  { value: 'DELIVERED' as const, labelKey: 'admin.orders.filterCompleted' as TranslationKey },
+  { value: 'CANCELLED' as const, labelKey: 'admin.orders.filterCancelled' as TranslationKey },
 ] as const;
 
 type StatusFilter = (typeof STATUS_FILTERS)[number]['value'];
@@ -45,6 +48,7 @@ type StatusFilter = (typeof STATUS_FILTERS)[number]['value'];
  * bound (section 90).
  */
 export function AdminOrdersScreen() {
+  const { t } = useI18n();
   const params = useSearchParams();
 
   // Deep links from the dashboard land here with a filter already applied.
@@ -77,16 +81,18 @@ export function AdminOrdersScreen() {
   return (
     <>
       <AdminPageHeader
-        title="Orders"
+        title={t('admin.orders.title')}
         description={
-          data ? data.pagination.total + ' orders match these filters' : 'Across every store'
+          data
+            ? t('admin.orders.matching', { count: data.pagination.total })
+            : t('admin.orders.acrossStores')
         }
       />
 
       <div className="gap-gutter mb-gutter flex flex-wrap items-end">
         <SearchBar
-          label="Search orders"
-          placeholder="Order number, or customer name or phone"
+          label={t('admin.orders.searchLabel')}
+          placeholder={t('admin.orders.searchPlaceholder')}
           className="min-w-64 flex-1"
           onSearch={(term) => {
             setSearch(term);
@@ -97,9 +103,9 @@ export function AdminOrdersScreen() {
         {/* Only shown when there is more than one store to choose between. */}
         {stores.data && stores.data.length > 1 ? (
           <SelectField
-            label="Store"
+            label={t('admin.orders.store')}
             className="max-w-56"
-            placeholder="Every store"
+            placeholder={t('admin.orders.everyStore')}
             value={storeId}
             onChange={(event) => {
               setStoreId(event.target.value);
@@ -112,8 +118,11 @@ export function AdminOrdersScreen() {
 
       <div className="mb-gutter">
         <FilterChips
-          label="Filter by status"
-          options={STATUS_FILTERS}
+          label={t('admin.orders.filterLabel')}
+          options={STATUS_FILTERS.map((filter) => ({
+            value: filter.value,
+            label: t(filter.labelKey),
+          }))}
           value={status}
           onChange={(next) => {
             setStatus(next);
@@ -128,28 +137,42 @@ export function AdminOrdersScreen() {
         error={error}
         onRetry={() => void refetch()}
         isEmpty={data?.items.length === 0}
-        emptyTitle="No orders match these filters"
+        emptyTitle={t('admin.orders.emptyTitle')}
         emptyDescription={
           search || status || storeId
-            ? 'Try a different status, store or search term.'
-            : 'Orders will appear here as customers place them.'
+            ? t('admin.orders.emptyFiltered')
+            : t('admin.orders.emptyNone')
         }
       >
         <TableScroller>
           <table className="w-full min-w-[52rem] text-sm">
             <caption className="sr-only">
-              Orders across every store, newest first. Each row links to the full order.
+              {t('admin.orders.caption')}
             </caption>
 
-            <thead className="border-outline-variant text-text-muted border-b text-left">
+            <thead className="border-outline-variant text-text-muted border-b text-start">
               <tr>
-                <th scope="col" className="p-gutter font-semibold">Order</th>
-                <th scope="col" className="p-gutter font-semibold">Customer</th>
-                <th scope="col" className="p-gutter font-semibold">Store</th>
-                <th scope="col" className="p-gutter font-semibold">How</th>
-                <th scope="col" className="p-gutter font-semibold">Status</th>
-                <th scope="col" className="p-gutter text-right font-semibold">Total</th>
-                <th scope="col" className="p-gutter font-semibold">Placed</th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colOrder')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colCustomer')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colStore')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colHow')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colStatus')}
+                </th>
+                <th scope="col" className="p-gutter text-end font-semibold">
+                  {t('admin.orders.colTotal')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.orders.colPlaced')}
+                </th>
               </tr>
             </thead>
 
@@ -160,7 +183,7 @@ export function AdminOrdersScreen() {
         </TableScroller>
 
         <Pagination
-          label="Order pages"
+          label={t('admin.orders.pagesLabel')}
           page={data?.pagination.page ?? 1}
           totalPages={data?.pagination.totalPages ?? 1}
           onPageChange={setPage}
@@ -171,6 +194,8 @@ export function AdminOrdersScreen() {
 }
 
 function OrderRow({ order }: { order: AdminOrderSummary }) {
+  const { t, locale } = useI18n();
+
   return (
     <tr className="border-outline-variant hover:bg-surface-muted border-b last:border-0">
       <td className="p-gutter">
@@ -178,38 +203,49 @@ function OrderRow({ order }: { order: AdminOrderSummary }) {
           href={'/admin/orders/' + order.id}
           className="text-primary font-semibold tabular-nums underline-offset-2 hover:underline"
         >
-          {order.orderNumber}
+          <Ltr>{order.orderNumber}</Ltr>
         </Link>
         <span className="text-text-muted block text-xs">
-          {order.itemCount} item{order.itemCount === 1 ? '' : 's'}
+          {t('common.itemCount', { count: order.itemCount })}
         </span>
       </td>
 
       <td className="p-gutter">
-        <span className="text-text block">{order.customer.name}</span>
-        <span className="text-text-muted block text-xs tabular-nums">{order.customer.phone}</span>
+        <span className="text-text block">
+          <bdi>{order.customer.name}</bdi>
+        </span>
+        <span className="text-text-muted block text-xs tabular-nums">
+          <Ltr>{order.customer.phone}</Ltr>
+        </span>
       </td>
 
-      <td className="p-gutter text-text-muted">{order.store.name}</td>
+      <td className="p-gutter text-text-muted">
+        <bdi>{order.store.name}</bdi>
+      </td>
 
       {/* Shopper-facing wording, not the enum (section 46). */}
       <td className="p-gutter text-text-muted">
-        {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}
+        {t(
+          order.fulfillmentMethod === 'DELIVERY'
+            ? 'store.fulfillment.DELIVERY'
+            : 'store.fulfillment.PICKUP',
+        )}
       </td>
 
       <td className="p-gutter">
-        <OrderStatusBadge status={order.status} label={order.statusLabel} />
+        <OrderStatusBadge
+          status={order.status}
+          label={order.statusLabel}
+          fulfillmentMethod={order.fulfillmentMethod}
+        />
       </td>
 
-      <td className="p-gutter text-text text-right font-semibold tabular-nums">
-        {formatPkr(order.total)}
+      <td className="p-gutter text-text text-end font-semibold tabular-nums">
+        <Money>{formatPkr(order.total)}</Money>
       </td>
 
       <td className="p-gutter text-text-muted whitespace-nowrap">
-        {new Date(order.placedAt).toLocaleDateString('en-PK', {
-          day: 'numeric',
-          month: 'short',
-        })}
+        {formatDate(order.placedAt, locale, 'shortDate')}
       </td>
     </tr>
   );

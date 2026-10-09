@@ -30,7 +30,14 @@ describe('AddressPicker', () => {
     expect(
       screen.getByText('42-B, Street 4, Salamatpura, Lahore (near Opposite Al-Fatah)'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Ayesha Khan · \+923001234569/)).toBeInTheDocument();
+    // The name and the number are separate isolated runs (so an Urdu name cannot
+    // scramble the phone number beside it), but the shopper reads one line.
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' && element.textContent === 'Ayesha Khan · +923001234569',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('marks the default address', async () => {

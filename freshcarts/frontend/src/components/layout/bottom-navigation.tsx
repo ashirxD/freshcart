@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, ShoppingBasket } from 'lucide-react';
 import { useCart, useCartCount } from '@/features/cart/cart.hooks';
+import { Money } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr } from '@/lib/format';
 import { CartCountBadge } from './cart-count-badge';
@@ -40,6 +42,7 @@ export function BottomNavigation() {
   // moment a mutation writes the new cart, with no prop threading.
   const cartCount = useCartCount();
   const { data: cart } = useCart();
+  const t = useT();
 
   const showsCartBar =
     cartCount > 0 && !CART_BAR_EXCLUDED.some((route) => pathname.startsWith(route));
@@ -77,15 +80,17 @@ export function BottomNavigation() {
 
             <span className="flex min-w-0 flex-col leading-tight">
               <span className="text-on-primary/80 text-xs font-medium">
-                {cart.totalQuantity === 1 ? '1 item' : cart.totalQuantity + ' items'} in your basket
+                {t('nav.itemsInBasket', {
+                  items: t('common.itemCount', { count: cart.totalQuantity }),
+                })}
               </span>
               <span className="text-base font-extrabold tabular-nums">
-                {formatPkr(cart.subtotal)}
+                <Money>{formatPkr(cart.subtotal)}</Money>
               </span>
             </span>
 
             <span className="ms-auto flex shrink-0 items-center gap-1 text-sm font-bold">
-              View
+              {t('nav.view')}
               <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </span>
           </Link>
@@ -93,7 +98,7 @@ export function BottomNavigation() {
       ) : null}
 
       <nav
-        aria-label="Primary"
+        aria-label={t('nav.primary')}
         className={cn(
           'border-outline-variant bg-surface/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-md md:hidden',
           // Keeps the bar clear of the iOS home indicator.
@@ -107,7 +112,10 @@ export function BottomNavigation() {
 
             const label =
               item.showsCartCount && cartCount > 0
-                ? item.label + ', ' + (cartCount === 1 ? '1 item' : cartCount + ' items')
+                ? t('nav.navItemWithCount', {
+                    label: t(item.labelKey),
+                    items: t('common.itemCount', { count: cartCount }),
+                  })
                 : undefined;
 
             return (
@@ -139,7 +147,7 @@ export function BottomNavigation() {
                     ) : null}
                   </span>
 
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               </li>
             );

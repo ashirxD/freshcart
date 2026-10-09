@@ -2,6 +2,7 @@
 
 import { useId } from 'react';
 import { ArrowUpDown } from 'lucide-react';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { ProductSort } from '@/types/catalog';
 
@@ -11,13 +12,13 @@ import type { ProductSort } from '@/types/catalog';
  * There is no "Most popular": nothing records sales or views yet, so offering
  * it would sort by nothing and quietly mislead. It arrives with order history.
  */
-const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
-  { value: 'relevance', label: 'Best match' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
-  { value: 'discount', label: 'Biggest saving' },
-  { value: 'newest', label: 'Newest first' },
-  { value: 'name_asc', label: 'Name: A to Z' },
+const SORT_OPTIONS: Array<{ value: ProductSort; label: TranslationKey }> = [
+  { value: 'relevance', label: 'catalog.sort.relevance' },
+  { value: 'price_asc', label: 'catalog.sort.price_asc' },
+  { value: 'price_desc', label: 'catalog.sort.price_desc' },
+  { value: 'discount', label: 'catalog.sort.discount' },
+  { value: 'newest', label: 'catalog.sort.newest' },
+  { value: 'name_asc', label: 'catalog.sort.name_asc' },
 ];
 
 export interface SortSelectorProps {
@@ -31,12 +32,13 @@ export interface SortSelectorProps {
  * full keyboard support, and no bespoke listbox to get wrong.
  */
 export function SortSelector({ value, onChange, className }: SortSelectorProps) {
+  const t = useT();
   const id = useId();
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <label htmlFor={id} className="sr-only">
-        Sort products by
+        {t('catalog.sortBy')}
       </label>
 
       <div
@@ -59,7 +61,7 @@ export function SortSelector({ value, onChange, className }: SortSelectorProps) 
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.label)}
             </option>
           ))}
         </select>

@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { AlertTriangle, PauseCircle } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page';
 import { ErrorState } from '@/components/common/error-state';
+import { Money } from '@/components/common/ltr';
 import { StatTile } from '@/components/store-manager/stat-tile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminDashboard } from '@/features/admin/admin.hooks';
+import { useT } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 
 /**
@@ -18,18 +20,22 @@ import { formatPkr } from '@/lib/format';
  * here: every figure is a count or a sum the database already holds.
  */
 export function AdminDashboardScreen() {
+  const t = useT();
   const { data, isPending, isError, error, refetch } = useAdminDashboard();
 
   if (isPending) {
     return (
       <>
-        <AdminPageHeader title="Dashboard" description="Loading today's numbers…" />
+        <AdminPageHeader
+          title={t('admin.nav.dashboard')}
+          description={t('admin.dashboard.loadingDesc')}
+        />
         <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton
               key={index}
               className="h-24 w-full"
-              label={index === 0 ? 'Loading dashboard' : undefined}
+              label={index === 0 ? t('admin.dashboard.loadingLabel') : undefined}
             />
           ))}
         </div>
@@ -40,7 +46,7 @@ export function AdminDashboardScreen() {
   if (isError) {
     return (
       <>
-        <AdminPageHeader title="Dashboard" />
+        <AdminPageHeader title={t('admin.nav.dashboard')} />
         <ErrorState error={error} onRetry={() => void refetch()} />
       </>
     );
@@ -51,11 +57,11 @@ export function AdminDashboardScreen() {
   return (
     <>
       <AdminPageHeader
-        title="Dashboard"
+        title={t('admin.nav.dashboard')}
         description={
           stores.open > 0
-            ? stores.open + ' of ' + stores.active + ' active stores are open right now'
-            : 'No store is inside its opening hours right now'
+            ? t('admin.dashboard.storesOpen', { open: stores.open, active: stores.active })
+            : t('admin.dashboard.noStoreOpen')
         }
       />
 
@@ -69,9 +75,9 @@ export function AdminDashboardScreen() {
         >
           <PauseCircle className="size-5 shrink-0" aria-hidden="true" />
           <span>
-            Ordering is paused platform-wide. No customer can place an order.{' '}
+            {t('admin.dashboard.paused')}{' '}
             <Link href="/admin/settings" className="underline">
-              Change this in settings
+              {t('admin.dashboard.changeInSettings')}
             </Link>
           </span>
         </p>
@@ -79,25 +85,25 @@ export function AdminDashboardScreen() {
 
       <section aria-labelledby="today-heading" className="mb-loose">
         <h2 id="today-heading" className="text-text mb-gutter text-base font-semibold">
-          Today
+          {t('admin.dashboard.today')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
-          <StatTile label="Orders today" value={orders.ordersToday} href="/admin/orders" />
+          <StatTile label={t('admin.dashboard.ordersToday')} value={orders.ordersToday} href="/admin/orders" />
 
           {/* Rendered as a tile with a formatted value rather than a raw count,
               because rupees and quantities must never be read as the same unit. */}
-          <MoneyTile label="Revenue today" amount={orders.revenueToday} />
+          <MoneyTile label={t('admin.dashboard.revenueToday')} amount={orders.revenueToday} />
 
           <StatTile
-            label="Waiting on the store"
+            label={t('admin.dashboard.waitingOnStore')}
             value={orders.needsAction}
             href="/admin/orders?needsAction=true"
             tone={orders.needsAction > 0 ? 'ATTENTION' : 'DEFAULT'}
           />
 
           <StatTile
-            label="New orders"
+            label={t('admin.dashboard.newOrders')}
             value={orders.pending}
             href="/admin/orders?status=PENDING"
             tone={orders.pending > 0 ? 'ATTENTION' : 'DEFAULT'}
@@ -107,50 +113,53 @@ export function AdminDashboardScreen() {
 
       <section aria-labelledby="week-heading" className="mb-loose">
         <h2 id="week-heading" className="text-text mb-gutter text-base font-semibold">
-          Last seven days
+          {t('admin.dashboard.lastSeven')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
-          <StatTile label="Orders" value={orders.ordersThisWeek} href="/admin/orders" />
-          <MoneyTile label="Revenue" amount={orders.revenueThisWeek} />
+          <StatTile label={t('admin.dashboard.orders')} value={orders.ordersThisWeek} href="/admin/orders" />
+          <MoneyTile label={t('admin.dashboard.revenue')} amount={orders.revenueThisWeek} />
           <StatTile
-            label="Out for delivery"
+            label={t('admin.dashboard.outForDelivery')}
             value={orders.outForDelivery}
             href="/admin/orders?status=OUT_FOR_DELIVERY"
           />
           <StatTile
-            label="Ready for pickup"
+            label={t('admin.dashboard.readyForPickup')}
             value={orders.readyForPickup}
             href="/admin/orders?status=READY_FOR_PICKUP"
           />
         </div>
 
         <p className="text-text-muted mt-tight text-xs">
-          Revenue counts orders that were placed and not cancelled, rejected or failed, at the
-          totals they were charged.
+          {t('admin.dashboard.revenueNote')}
         </p>
       </section>
 
       <section aria-labelledby="catalogue-heading" className="mb-loose">
         <h2 id="catalogue-heading" className="text-text mb-gutter text-base font-semibold">
-          Catalogue and stock
+          {t('admin.dashboard.catalogueStock')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
           <StatTile
-            label="Products on sale"
+            label={t('admin.dashboard.productsOnSale')}
             value={catalogue.activeProducts}
             href="/admin/products"
           />
-          <StatTile label="Categories" value={catalogue.categories} href="/admin/categories" />
           <StatTile
-            label="Running low"
+            label={t('admin.dashboard.categories')}
+            value={catalogue.categories}
+            href="/admin/categories"
+          />
+          <StatTile
+            label={t('admin.dashboard.runningLow')}
             value={inventory.lowStock}
             href="/admin/inventory?status=LOW_STOCK"
             tone={inventory.lowStock > 0 ? 'WARNING' : 'DEFAULT'}
           />
           <StatTile
-            label="Out of stock"
+            label={t('admin.dashboard.outOfStock')}
             value={inventory.outOfStock}
             href="/admin/inventory?status=OUT_OF_STOCK"
             tone={inventory.outOfStock > 0 ? 'DANGER' : 'DEFAULT'}
@@ -160,31 +169,34 @@ export function AdminDashboardScreen() {
 
       <section aria-labelledby="people-heading">
         <h2 id="people-heading" className="text-text mb-gutter text-base font-semibold">
-          People and stores
+          {t('admin.dashboard.peopleStores')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
-          <StatTile label="Customers" value={people.customers} href="/admin/customers" />
           <StatTile
-            label="Active customers"
+            label={t('admin.dashboard.customers')}
+            value={people.customers}
+            href="/admin/customers"
+          />
+          <StatTile
+            label={t('admin.dashboard.activeCustomers')}
             value={people.activeCustomers}
             href="/admin/customers?isActive=true"
           />
           <StatTile
-            label="Store managers"
+            label={t('admin.dashboard.storeManagers')}
             value={people.storeManagers}
             href="/admin/store-managers"
           />
-          <StatTile label="Stores" value={stores.total} href="/admin/stores" />
+          <StatTile label={t('admin.dashboard.stores')} value={stores.total} href="/admin/stores" />
         </div>
 
         {catalogue.inactiveProducts > 0 ? (
           <p className="text-text-muted mt-gutter flex items-center gap-2 text-sm">
             <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-            {catalogue.inactiveProducts} product
-            {catalogue.inactiveProducts === 1 ? ' is' : 's are'} hidden from shoppers.{' '}
+            {t('admin.dashboard.hiddenProducts', { count: catalogue.inactiveProducts })}{' '}
             <Link href="/admin/products" className="text-primary underline">
-              Review
+              {t('admin.dashboard.review')}
             </Link>
           </p>
         ) : null}
@@ -204,7 +216,7 @@ function MoneyTile({ label, amount }: { label: string; amount: number }) {
   return (
     <div className="gap-tight ring-outline-variant bg-surface p-gutter shadow-card flex min-h-24 flex-col rounded-2xl ring-1">
       <span className="text-text text-2xl leading-none font-bold tabular-nums">
-        {formatPkr(amount)}
+        <Money>{formatPkr(amount)}</Money>
       </span>
       <span className="text-text text-sm leading-snug font-medium">{label}</span>
     </div>

@@ -1,16 +1,26 @@
+'use client';
+
 import Link from 'next/link';
 import { Bike, ChevronRight, Store } from 'lucide-react';
+import { Ltr, Money } from '@/components/common/ltr';
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/order-status-badge';
+import { DEFAULT_LOCALE, INTL_TAGS, useI18n, useT, type Locale } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr } from '@/lib/format';
+import { actionLabel } from '@/lib/store-copy';
 import type { StoreOrderSummary } from '@/types/store-manager';
 
 /** "12:40" for today, "31 Aug 12:40" otherwise — staff scan by time, not date. */
-export function formatPlacedAt(iso: string, now: Date = new Date()): string {
+export function formatPlacedAt(
+  iso: string,
+  now: Date = new Date(),
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const tag = INTL_TAGS[locale];
   const placed = new Date(iso);
   const sameDay = placed.toDateString() === now.toDateString();
 
-  const time = placed.toLocaleTimeString('en-PK', {
+  const time = placed.toLocaleTimeString(tag, {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -18,17 +28,18 @@ export function formatPlacedAt(iso: string, now: Date = new Date()): string {
 
   if (sameDay) return time;
 
-  return placed.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }) + ' ' + time;
+  return placed.toLocaleDateString(tag, { day: 'numeric', month: 'short' }) + ' ' + time;
 }
 
 export function FulfillmentBadge({ method }: { method: StoreOrderSummary['fulfillmentMethod'] }) {
+  const t = useT();
   const isDelivery = method === 'DELIVERY';
   const Icon = isDelivery ? Bike : Store;
 
   return (
     <span className="text-text-muted inline-flex items-center gap-1.5 text-xs font-medium">
       <Icon className="size-3.5" aria-hidden="true" />
-      {isDelivery ? 'Delivery' : 'Pickup'}
+      {isDelivery ? t('store.fulfillment.DELIVERY') : t('store.fulfillment.PICKUP')}
     </span>
   );
 }
@@ -46,6 +57,8 @@ export function FulfillmentBadge({ method }: { method: StoreOrderSummary['fulfil
  * store is holding up.
  */
 export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
+  const { t, locale } = useI18n();
+
   return (
     <li>
       <Link
@@ -65,14 +78,21 @@ export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-text font-semibold tabular-nums">{order.orderNumber}</span>
-            <OrderStatusBadge status={order.status} label={order.statusLabel} size="sm" />
+            <span className="text-text font-semibold tabular-nums">
+              <Ltr>{order.orderNumber}</Ltr>
+            </span>
+            <OrderStatusBadge
+              status={order.status}
+              label={order.statusLabel}
+              fulfillmentMethod={order.fulfillmentMethod}
+              size="sm"
+            />
             <FulfillmentBadge method={order.fulfillmentMethod} />
           </div>
 
           <p className="text-text-muted truncate text-sm">
-            {order.customer.name} · {order.itemCount === 1 ? '1 item' : order.itemCount + ' items'}{' '}
-            · <time dateTime={order.placedAt}>{formatPlacedAt(order.placedAt)}</time>
+            <bdi>{order.customer.name}</bdi> · {t('common.itemCount', { count: order.itemCount })} ·{' '}
+            <time dateTime={order.placedAt}>{formatPlacedAt(order.placedAt, new Date(), locale)}</time>
           </p>
 
           {/*
@@ -81,12 +101,16 @@ export function StoreOrderRow({ order }: { order: StoreOrderSummary }) {
             "Out for delivery" here.
           */}
           {order.nextAction ? (
-            <p className="text-primary text-xs font-semibold">Next: {order.nextAction.label}</p>
+            <p className="text-primary text-xs font-semibold">
+              {t('store.orderRow.next', { label: actionLabel(order.nextAction, t, locale) })}
+            </p>
           ) : null}
         </div>
 
         <div className="gap-tight flex shrink-0 flex-col items-end">
-          <span className="text-text font-semibold tabular-nums">{formatPkr(order.total)}</span>
+          <span className="text-text font-semibold tabular-nums">
+            <Money>{formatPkr(order.total)}</Money>
+          </span>
           <PaymentStatusBadge status={order.paymentStatus} />
         </div>
 

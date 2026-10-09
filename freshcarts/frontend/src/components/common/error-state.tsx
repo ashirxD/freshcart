@@ -2,7 +2,9 @@
 
 import { RefreshCw, Unplug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-copy';
 import { cn } from '@/lib/cn';
 
 export interface ErrorStateProps {
@@ -23,11 +25,10 @@ export interface ErrorStateProps {
  * when a request fails, and the copy says so instead of implying a catastrophe.
  */
 export function ErrorState({ error, onRetry, title, className }: ErrorStateProps) {
+  const { t, locale } = useI18n();
   const isClientError = error instanceof ApiError && error.status < 500;
 
-  const description = isClientError
-    ? (error as ApiError).message
-    : 'Your cart and your account are safe. This is usually a patchy connection — let us try that again.';
+  const description = isClientError ? describeError(error, t, locale) : t('states.safeAndRetry');
 
   return (
     <div
@@ -44,7 +45,7 @@ export function ErrorState({ error, onRetry, title, className }: ErrorStateProps
 
       <div className="gap-tight flex flex-col">
         <h3 className="text-text text-base font-bold tracking-[-0.015em]">
-          {title ?? 'Something went wrong'}
+          {title ?? t('states.somethingWentWrong')}
         </h3>
         <p className="text-text-muted max-w-sm text-sm leading-relaxed">{description}</p>
       </div>
@@ -56,7 +57,7 @@ export function ErrorState({ error, onRetry, title, className }: ErrorStateProps
           onClick={onRetry}
           leadingIcon={<RefreshCw className="size-4" aria-hidden="true" />}
         >
-          Try again
+          {t('common.tryAgain')}
         </Button>
       ) : null}
     </div>

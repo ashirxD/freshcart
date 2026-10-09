@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Camera, ScanLine } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useScanAvailability } from '@/features/scan/scan.hooks';
 
@@ -26,6 +27,7 @@ export interface ScanCtaProps {
  * is in somebody's pocket.
  */
 export function ScanCta({ variant = 'banner', className }: ScanCtaProps) {
+  const t = useT();
   const { data } = useScanAvailability();
 
   if (!data?.available) return null;
@@ -41,7 +43,7 @@ export function ScanCta({ variant = 'banner', className }: ScanCtaProps) {
         )}
       >
         <ScanLine className="size-4" aria-hidden="true" />
-        Scan a grocery list instead
+        {t('ocr.cta.inline')}
       </Link>
     );
   }
@@ -64,10 +66,10 @@ export function ScanCta({ variant = 'banner', className }: ScanCtaProps) {
       </span>
 
       <span className="flex min-w-0 flex-col">
-        <span className="text-text text-card">Have a grocery list?</span>
+        <span className="text-text text-card">{t('ocr.cta.haveList')}</span>
         {/* The promise in the shopper's terms rather than ours. */}
         <span className="text-text-muted text-sm">
-          Take a photo and we will build the basket for you.
+          {t('ocr.cta.takePhoto')}
         </span>
       </span>
 

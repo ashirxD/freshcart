@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Search, User } from 'lucide-react';
 import { LogoLink } from '@/components/brand/logo';
 import { IconLink } from '@/components/ui/icon-button';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { StoreLocation } from './store-location';
@@ -29,6 +30,7 @@ import { StoreLocation } from './store-location';
 export function MobileHeader() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
+  const t = useT();
 
   return (
     <header
@@ -47,7 +49,7 @@ export function MobileHeader() {
 
         <IconLink
           href="/search"
-          label="Search products"
+          label={t('nav.searchProducts')}
           isCurrent={pathname.startsWith('/search')}
           className="size-11"
         >
@@ -55,7 +57,7 @@ export function MobileHeader() {
         </IconLink>
 
         {user ? (
-          <IconLink href="/orders" label="Your account and orders" className="size-11">
+          <IconLink href="/orders" label={t('nav.accountAndOrders')} className="size-11">
             {/* The initial doubles as an avatar, so a signed-in shopper can see
                 at a glance that they are signed in. */}
             <span
@@ -71,7 +73,7 @@ export function MobileHeader() {
             className="text-primary bg-primary/8 flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold"
           >
             <User className="size-4" aria-hidden="true" />
-            Sign in
+            {t('nav.signIn')}
           </Link>
         )}
       </div>

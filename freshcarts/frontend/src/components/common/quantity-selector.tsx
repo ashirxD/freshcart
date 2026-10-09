@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus, Plus, Trash2 } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface QuantitySelectorProps {
@@ -15,11 +16,10 @@ export interface QuantitySelectorProps {
   removable?: boolean;
   size?: 'sm' | 'md';
   /**
-   * What is being counted, phrased to follow a verb:
-   * "quantity of Olpers Full Cream Milk" reads as "Increase quantity of…".
+   * Names the thing being counted in every label ("Increase quantity of Olpers
+   * Full Cream Milk"), so a screen of identical steppers is never a screen of
+   * identical announcements — and so "Remove" is never ambiguous.
    */
-  label?: string;
-  /** Named in the remove label, so "Remove" is never ambiguous on a busy screen. */
   itemName?: string;
   className?: string;
 }
@@ -49,10 +49,11 @@ export function QuantitySelector({
   disabled = false,
   removable = false,
   size = 'md',
-  label = 'quantity',
   itemName,
   className,
 }: QuantitySelectorProps) {
+  const t = useT();
+  const label = itemName ? t('quantity.of', { name: itemName }) : t('quantity.generic');
   const lowerBound = removable ? 0 : min;
   const canDecrease = !disabled && value > lowerBound;
   const canIncrease = !disabled && (max === undefined || value + step <= max);
@@ -74,7 +75,11 @@ export function QuantitySelector({
         type="button"
         onClick={() => onChange(Math.max(lowerBound, value - step))}
         disabled={!canDecrease}
-        aria-label={willRemove ? 'Remove ' + (itemName ?? 'item') : 'Decrease ' + label}
+        aria-label={
+          willRemove
+            ? t('quantity.remove', { name: itemName ?? t('quantity.item') })
+            : t('quantity.decrease', { label })
+        }
         className={cn(
           'text-primary flex items-center justify-center rounded-full',
           'ease-standard transition-[background-color,color,transform] duration-150 active:scale-90',
@@ -93,7 +98,7 @@ export function QuantitySelector({
       {/* Announced as a live value so screen-reader users hear the new quantity. */}
       <span
         aria-live="polite"
-        aria-label={value + ' — ' + label}
+        aria-label={t('quantity.value', { value, label })}
         className={cn(
           'text-text min-w-7 overflow-hidden text-center font-bold tabular-nums',
           size === 'sm' ? 'text-sm' : 'text-base',
@@ -108,7 +113,7 @@ export function QuantitySelector({
         type="button"
         onClick={() => onChange(value + step)}
         disabled={!canIncrease}
-        aria-label={'Increase ' + label}
+        aria-label={t('quantity.increase', { label })}
         className={cn(
           'bg-primary text-on-primary flex items-center justify-center rounded-full',
           'ease-standard transition-[background-color,transform] duration-150 active:scale-90',

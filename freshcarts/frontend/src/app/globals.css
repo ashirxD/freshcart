@@ -71,8 +71,14 @@
   --color-on-danger: #ffffff;
 
   /* --- Typography ------------------------------------------------------- */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-urdu: var(--font-noto-nastaliq), serif;
+  /* One stack serves both languages, and its ORDER is the point: Inter first, so
+     Latin letters, digits and "Rs." — product names, prices, phone numbers,
+     order numbers — stay in the face they have in English; Nastaliq second, and
+     Inter has no Arabic-script glyphs, so Urdu falls through to it character by
+     character. A stack that led with Nastaliq would draw every "340" in whatever
+     serif the browser reached for next, because the Nastaliq subset has no Latin. */
+  --font-sans: var(--font-inter), var(--font-noto-nastaliq), ui-sans-serif, system-ui, sans-serif;
+  --font-urdu: var(--font-inter), var(--font-noto-nastaliq), ui-sans-serif, system-ui, sans-serif;
 
   /* A real scale, so hierarchy comes from type before it comes from colour.
      Each step carries its own line height, tracking and weight — a heading
@@ -333,10 +339,60 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Urdu content gets its display face and the extra line height the script needs. */
-  :lang(ur) {
+  /* A stretch of Urdu INSIDE an otherwise English page — a shopper's handwritten
+     list, a product name in Urdu script. (The whole-page case is the
+     `html[lang='ur']` block below, which tunes every type step rather than
+     forcing one value on every element.) */
+  :where([lang='ur']:not(html)) {
     font-family: var(--font-urdu);
-    line-height: 2.2;
+    line-height: 2.1;
+  }
+
+  /* ==========================================================================
+     URDU MODE — typography
+
+     Nastaliq is not Inter with different letters. It is a calligraphic face
+     whose letters climb and drop far outside the em box, so the line heights
+     that suit English (1.0–1.5) put one line's descenders into the next line's
+     ascenders. The fix is the same one the design system uses everywhere else:
+     the type SCALE is made of tokens, so each step's line height is raised here,
+     once, and every heading, button, card and paragraph follows. No component
+     sets an Urdu-specific value.
+     ========================================================================== */
+  html[lang='ur'] {
+    /* The base line box, for any text with no type step of its own. */
+    line-height: 1.95;
+
+    /* Nastaliq reads small beside Latin at the same size, so the whole scale
+       grows a little. rem-based, so type and the spacing built on it move
+       together and the layout does not get tighter. */
+    font-size: 106.25%;
+
+    --text-xs--line-height: 2.1;
+    --text-sm--line-height: 2.05;
+    --text-base--line-height: 2;
+    --text-lg--line-height: 1.95;
+    --text-xl--line-height: 1.85;
+    --text-2xl--line-height: 1.75;
+    --text-3xl--line-height: 1.65;
+    --text-4xl--line-height: 1.6;
+    --text-5xl--line-height: 1.55;
+
+    --text-eyebrow--line-height: 1.9;
+    --text-hero--line-height: 1.6;
+    --text-display--line-height: 1.65;
+    --text-section--line-height: 1.7;
+    --text-card--line-height: 1.85;
+    --text-price--line-height: 1.7;
+    --text-price-lg--line-height: 1.6;
+
+    /* The explicit `leading-*` utilities, which would otherwise pin a title to
+       1.25 and clip it. `none` stays: it is used on single-character badges. */
+    --leading-tight: 1.7;
+    --leading-snug: 1.8;
+    --leading-normal: 1.9;
+    --leading-relaxed: 2;
+    --leading-loose: 2.2;
   }
 
   /* A single, consistent, highly visible focus treatment across the app. */
@@ -370,10 +426,46 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      /* A staggered entrance must not leave content invisible for its delay. */
+      animation-delay: 0s !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Right-to-left and Urdu rules that must beat the utilities
+
+   These are deliberately OUTSIDE any @layer. Unlayered CSS outranks every
+   layered rule whatever its specificity, which is exactly the property wanted
+   here — and the reason none of it needs `!important`.
+   -------------------------------------------------------------------------- */
+
+/* Letter-spacing pulls a connected script apart: Urdu letters are meant to join,
+   and tracking — positive or negative — breaks the joins. The design system
+   tracks its headings tightly and its eyebrows widely, in tokens and in
+   arbitrary `tracking-[…]` values alike, so for Urdu it is switched off at the
+   root of the problem rather than hunted down one component at a time. */
+html[lang='ur'] *,
+html[lang='ur'] *::before,
+html[lang='ur'] *::after {
+  letter-spacing: normal;
+}
+
+/* The language switch: the page dips for a moment as the words change, instead
+   of swapping under the reader with no signal that anything happened. */
+html.locale-switching body {
+  animation: locale-fade 220ms var(--ease-standard) both;
+}
+
+@keyframes locale-fade {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
   }
 }
 

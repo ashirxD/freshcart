@@ -15,6 +15,8 @@ interface AuthState {
   accessToken: string | null;
   status: SessionStatus;
   setSession: (user: AuthUser, accessToken: string) => void;
+  /** Merges profile fields into the signed-in user without touching the session. */
+  updateUser: (patch: Partial<AuthUser>) => void;
   clearSession: () => void;
   markAnonymous: () => void;
 }
@@ -24,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   status: 'loading',
   setSession: (user, accessToken) => set({ user, accessToken, status: 'authenticated' }),
+  updateUser: (patch) => set((state) => (state.user ? { user: { ...state.user, ...patch } } : state)),
   clearSession: () => set({ user: null, accessToken: null, status: 'anonymous' }),
   markAnonymous: () => set({ status: 'anonymous' }),
 }));

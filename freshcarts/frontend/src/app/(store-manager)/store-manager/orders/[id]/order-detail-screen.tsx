@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Phone, Store } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
+import { Ltr, Money } from '@/components/common/ltr';
+import { formatDistance } from '@/components/checkout/order-summary-panel';
 import { ErrorState } from '@/components/common/error-state';
 import { Container } from '@/components/layout/container';
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/orders/order-status-badge';
@@ -15,8 +17,12 @@ import { ButtonLink } from '@/components/ui/button-link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCancelSubstitution, useStoreOrder } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
+import { formatDate } from '@/lib/dates';
 import { formatPkr } from '@/lib/format';
+import { orderNote, orderStatusLabel } from '@/lib/order-copy';
+import { roleLabel } from '@/lib/store-copy';
 import type { StoreOrderDetail, StoreOrderItem } from '@/types/store-manager';
 
 /** The states in which an order's lines may still be swapped, per the API. */
@@ -30,13 +36,14 @@ const EDITABLE_STATUSES = ['CONFIRMED', 'PREPARING'];
  * going, and what happened so far.
  */
 export function OrderDetailScreen({ id }: { id: string }) {
+  const { t, tx, locale } = useI18n();
   const [substituting, setSubstituting] = useState<StoreOrderItem | null>(null);
   const { data: order, isPending, isError, error, refetch } = useStoreOrder(id);
 
   if (isPending) {
     return (
       <Container className="gap-loose flex flex-col">
-        <Skeleton className="h-7 w-56" label="Loading the order" />
+        <Skeleton className="h-7 w-56" label={t('store.detail.loading')} />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-56 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -52,9 +59,11 @@ export function OrderDetailScreen({ id }: { id: string }) {
         {missing ? (
           <EmptyState
             icon={<Store className="size-7" aria-hidden="true" />}
-            title="Order not found"
-            description="This order does not belong to your store, or it no longer exists."
-            action={<ButtonLink href="/store-manager/orders">Back to orders</ButtonLink>}
+            title={t('store.detail.notFoundTitle')}
+            description={t('store.detail.notFoundBody')}
+            action={
+              <ButtonLink href="/store-manager/orders">{t('store.detail.backToOrders')}</ButtonLink>
+            }
             className="bg-surface-muted rounded-lg"
           />
         ) : (
@@ -73,20 +82,28 @@ export function OrderDetailScreen({ id }: { id: string }) {
         className="text-text-muted hover:text-text inline-flex w-fit items-center gap-1.5 text-sm"
       >
         <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-        All orders
+        {t('store.detail.allOrders')}
       </Link>
 
       <header className="gap-gutter flex flex-wrap items-start justify-between">
         <div className="gap-tight flex flex-col">
-          <h1 className="text-text text-xl font-semibold tabular-nums">{order.orderNumber}</h1>
+          <h1 className="text-text text-xl font-semibold tabular-nums">
+            <Ltr>{order.orderNumber}</Ltr>
+          </h1>
           <div className="flex flex-wrap items-center gap-2">
-            <OrderStatusBadge status={order.status} label={order.statusLabel} />
+            <OrderStatusBadge
+              status={order.status}
+              label={order.statusLabel}
+              fulfillmentMethod={order.fulfillmentMethod}
+            />
             <FulfillmentBadge method={order.fulfillmentMethod} />
             <PaymentStatusBadge status={order.paymentStatus} />
           </div>
         </div>
 
-        <p className="text-text text-xl font-bold tabular-nums">{formatPkr(order.total)}</p>
+        <p className="text-text text-xl font-bold tabular-nums">
+          <Money>{formatPkr(order.total)}</Money>
+        </p>
       </header>
 
       {/* What to do next, at the top where it cannot be missed (§45). */}
@@ -95,7 +112,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
         aria-labelledby="actions-heading"
       >
         <h2 id="actions-heading" className="text-text text-base font-semibold">
-          Next step
+          {t('store.detail.nextStep')}
         </h2>
         <OrderActionBar order={order} />
       </section>
@@ -103,10 +120,23 @@ export function OrderDetailScreen({ id }: { id: string }) {
       {order.cancellation ? (
         <p className="bg-danger/5 text-danger p-gutter rounded-lg text-sm">
           <span className="font-semibold">
-            {order.statusLabel} on{' '}
-            {new Date(order.cancellation.cancelledAt).toLocaleString('en-PK')}
+            {tx('store.detail.statusOn', {
+              status: orderStatusLabel(
+                order.status,
+                order.fulfillmentMethod,
+                order.statusLabel,
+                t,
+                locale,
+              ),
+              date: <bdi>{formatDate(order.cancellation.cancelledAt, locale, 'dateTime')}</bdi>,
+            })}
           </span>
-          {order.cancellation.reason ? ' — ' + order.cancellation.reason : ''}
+          {order.cancellation.reason ? (
+            <>
+              {' — '}
+              <bdi>{order.cancellation.reason}</bdi>
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -141,6 +171,7 @@ export function OrderDetailScreen({ id }: { id: string }) {
  * explicitly rules out building one.
  */
 function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
+  const { t, tx } = useI18n();
   const address = order.deliveryAddress;
 
   return (
@@ -149,11 +180,17 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
       aria-labelledby="fulfilment-heading"
     >
       <h2 id="fulfilment-heading" className="text-text text-base font-semibold">
-        {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}
+        {t(
+          order.fulfillmentMethod === 'DELIVERY'
+            ? 'store.fulfillment.DELIVERY'
+            : 'store.fulfillment.PICKUP',
+        )}
       </h2>
 
       <div className="gap-tight flex flex-col text-sm">
-        <p className="text-text font-medium">{order.customer.name}</p>
+        <p className="text-text font-medium">
+          <bdi>{order.customer.name}</bdi>
+        </p>
 
         {order.customer.phone ? (
           <a
@@ -161,27 +198,33 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
             className="text-primary min-h-touch inline-flex items-center gap-1.5 font-medium"
           >
             <Phone className="size-4" aria-hidden="true" />
-            {order.customer.phone}
+            <Ltr>{order.customer.phone}</Ltr>
           </a>
         ) : null}
       </div>
 
       {address ? (
         <div className="gap-tight flex flex-col text-sm">
-          <p className="text-text">{address.formatted}</p>
+          <p className="text-text">
+            <bdi>{address.formatted}</bdi>
+          </p>
           {address.landmark ? (
-            <p className="text-text-muted">Landmark: {address.landmark}</p>
+            <p className="text-text-muted">
+              {tx('store.detail.landmark', { landmark: <bdi>{address.landmark}</bdi> })}
+            </p>
           ) : null}
           {address.deliveryInstructions ? (
             <p className="bg-secondary-container/20 text-text rounded-md px-2 py-1">
-              {address.deliveryInstructions}
+              <bdi>{address.deliveryInstructions}</bdi>
             </p>
           ) : null}
 
           {order.delivery ? (
             <p className="text-text-muted">
-              {(order.delivery.distanceMeters / 1000).toFixed(1)} km ·{' '}
-              {formatPkr(order.delivery.fee)} delivery fee
+              {tx('store.detail.distanceFee', {
+                distance: <Ltr>{formatDistance(order.delivery.distanceMeters, t)}</Ltr>,
+                fee: <Money>{formatPkr(order.delivery.fee)}</Money>,
+              })}
             </p>
           ) : null}
 
@@ -197,15 +240,21 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
             className="text-primary min-h-touch inline-flex items-center gap-1.5 text-sm font-medium"
           >
             <MapPin className="size-4" aria-hidden="true" />
-            Open in maps
+            {t('store.detail.openMaps')}
           </a>
         </div>
       ) : order.pickup ? (
         <div className="gap-tight flex flex-col text-sm">
-          <p className="text-text font-medium">{order.pickup.storeName}</p>
-          <p className="text-text-muted">{order.pickup.storeAddress}</p>
+          <p className="text-text font-medium">
+            <bdi>{order.pickup.storeName}</bdi>
+          </p>
+          <p className="text-text-muted">
+            <bdi>{order.pickup.storeAddress}</bdi>
+          </p>
           {order.pickup.instructions ? (
-            <p className="text-text-muted">{order.pickup.instructions}</p>
+            <p className="text-text-muted">
+              <bdi>{order.pickup.instructions}</bdi>
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -214,33 +263,48 @@ function FulfillmentPanel({ order }: { order: StoreOrderDetail }) {
 }
 
 function PricingPanel({ order }: { order: StoreOrderDetail }) {
+  const { t } = useI18n();
+
   return (
     <section
       className="border-outline-variant bg-surface p-gutter gap-gutter flex flex-col rounded-lg border"
       aria-labelledby="pricing-heading"
     >
       <h2 id="pricing-heading" className="text-text text-base font-semibold">
-        Payment
+        {t('store.detail.paymentHeading')}
       </h2>
 
       <dl className="gap-tight flex flex-col text-sm">
-        <Row label="Subtotal" value={formatPkr(order.pricing.subtotal)} />
+        <Row label={t('common.subtotal')} value={<Money>{formatPkr(order.pricing.subtotal)}</Money>} />
         {order.pricing.deliveryFee > 0 ? (
-          <Row label="Delivery" value={formatPkr(order.pricing.deliveryFee)} />
+          <Row
+            label={t('store.detail.deliveryRow')}
+            value={<Money>{formatPkr(order.pricing.deliveryFee)}</Money>}
+          />
         ) : null}
-        <Row label="Total" value={formatPkr(order.pricing.total)} emphasis />
         <Row
-          label="Method"
-          value={
-            order.paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on delivery' : order.paymentMethod
-          }
+          label={t('common.total')}
+          value={<Money>{formatPkr(order.pricing.total)}</Money>}
+          emphasis
+        />
+        <Row
+          label={t('store.detail.method')}
+          value={t(('checkout.payment.method.' + order.paymentMethod) as TranslationKey)}
         />
       </dl>
     </section>
   );
 }
 
-function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+function Row({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: ReactNode;
+  emphasis?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between gap-2">
       <dt className="text-text-muted">{label}</dt>
@@ -253,33 +317,39 @@ function Row({ label, value, emphasis }: { label: string; value: string; emphasi
 
 /** The audit trail, including who acted — which the customer's view withholds. */
 function HistoryPanel({ order }: { order: StoreOrderDetail }) {
+  const { t, locale } = useI18n();
+
   return (
     <section
       className="border-outline-variant bg-surface p-gutter gap-gutter flex flex-col rounded-lg border"
       aria-labelledby="history-heading"
     >
       <h2 id="history-heading" className="text-text text-base font-semibold">
-        History
+        {t('store.detail.history')}
       </h2>
 
       <ol className="gap-gutter flex list-none flex-col">
         {order.statusHistory.map((entry, index) => (
           <li key={index} className="flex flex-col gap-0.5 text-sm">
-            <span className="text-text font-medium">{entry.statusLabel}</span>
+            <span className="text-text font-medium">
+              {orderStatusLabel(
+                entry.status,
+                order.fulfillmentMethod,
+                entry.statusLabel,
+                t,
+                locale,
+              )}
+            </span>
             <span className="text-text-muted text-xs">
               <time dateTime={entry.changedAt}>
-                {new Date(entry.changedAt).toLocaleString('en-PK')}
+                <bdi>{formatDate(entry.changedAt, locale, 'dateTime')}</bdi>
               </time>
               {' · '}
-              {entry.changedByRole === 'CUSTOMER'
-                ? 'Customer'
-                : entry.changedByRole === 'STORE_MANAGER'
-                  ? 'Store'
-                  : entry.changedByRole === 'SYSTEM'
-                    ? 'System'
-                    : entry.changedByRole}
+              {roleLabel(entry.changedByRole, locale)}
             </span>
-            <span className="text-text-muted">{entry.note}</span>
+            <span className="text-text-muted">
+              <bdi>{orderNote(entry.note, t, locale)}</bdi>
+            </span>
           </li>
         ))}
       </ol>
@@ -289,6 +359,7 @@ function HistoryPanel({ order }: { order: StoreOrderDetail }) {
 
 /** Replacements proposed on this order, and their outcome. */
 function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
+  const { t, tx } = useI18n();
   const cancel = useCancelSubstitution();
 
   if (order.substitutions.length === 0) return null;
@@ -296,7 +367,7 @@ function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
   return (
     <section className="gap-gutter flex flex-col" aria-labelledby="substitutions-heading">
       <h2 id="substitutions-heading" className="text-text text-base font-semibold">
-        Replacements
+        {t('store.detail.replacements')}
       </h2>
 
       <ul className="border-outline-variant divide-outline-variant bg-surface divide-y rounded-lg border">
@@ -304,21 +375,36 @@ function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
           <li key={substitution.id} className="gap-gutter p-gutter flex flex-wrap items-start">
             <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
               <p className="text-text">
-                <span className="line-through">{substitution.original.productName}</span>
-                {' → '}
-                <span className="font-medium">{substitution.replacement.productName}</span>
-                {' (× ' + substitution.replacement.quantity + ')'}
+                <span className="line-through">
+                  <bdi>{substitution.original.productName}</bdi>
+                </span>
+                <span aria-hidden="true" className="inline-block rtl:-scale-x-100">
+                  {' → '}
+                </span>
+                <span className="font-medium">
+                  <bdi>{substitution.replacement.productName}</bdi>
+                </span>
+                <Ltr>{' (× ' + substitution.replacement.quantity + ')'}</Ltr>
               </p>
 
               <p className="text-text-muted text-xs">
-                Customer pays {formatPkr(substitution.chargedLineTotal)}
-                {substitution.storeAbsorbs > 0
-                  ? ' · store absorbs ' + formatPkr(substitution.storeAbsorbs)
-                  : ''}
+                {tx('store.detail.customerPays', {
+                  amount: <Money>{formatPkr(substitution.chargedLineTotal)}</Money>,
+                })}
+                {substitution.storeAbsorbs > 0 ? (
+                  <>
+                    {' · '}
+                    {tx('store.detail.storeAbsorbs', {
+                      amount: <Money>{formatPkr(substitution.storeAbsorbs)}</Money>,
+                    })}
+                  </>
+                ) : null}
               </p>
 
               {substitution.note ? (
-                <p className="text-text-muted text-xs">{substitution.note}</p>
+                <p className="text-text-muted text-xs">
+                  <bdi>{substitution.note}</bdi>
+                </p>
               ) : null}
             </div>
 
@@ -333,12 +419,12 @@ function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
                 }
               >
                 {substitution.status === 'PROPOSED'
-                  ? 'Waiting for customer'
+                  ? t('store.detail.waiting')
                   : substitution.status === 'ACCEPTED'
-                    ? 'Accepted'
+                    ? t('store.detail.accepted')
                     : substitution.status === 'REJECTED'
-                      ? 'Declined'
-                      : 'Withdrawn'}
+                      ? t('store.detail.declined')
+                      : t('store.detail.withdrawn')}
               </span>
 
               {substitution.status === 'PROPOSED' ? (
@@ -348,7 +434,7 @@ function SubstitutionHistory({ order }: { order: StoreOrderDetail }) {
                   isLoading={cancel.isPending}
                   onClick={() => cancel.mutate(substitution.id)}
                 >
-                  Withdraw
+                  {t('store.detail.withdraw')}
                 </Button>
               ) : null}
             </div>

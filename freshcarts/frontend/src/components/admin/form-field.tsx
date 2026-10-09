@@ -6,6 +6,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /**
@@ -25,6 +26,7 @@ interface FieldShellProps {
 }
 
 function FieldShell({ label, hint, error, children, className }: FieldShellProps) {
+  const { tm } = useI18n();
   const id = useId();
   const messageId = id + '-message';
   const invalid = Boolean(error);
@@ -39,7 +41,7 @@ function FieldShell({ label, hint, error, children, className }: FieldShellProps
 
       {error ? (
         <p id={messageId} role="alert" className="text-danger text-sm">
-          {error}
+          {tm(error)}
         </p>
       ) : hint ? (
         <p id={messageId} className="text-text-muted text-sm">

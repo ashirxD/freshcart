@@ -3,6 +3,8 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
+import { useI18n } from '@/i18n';
+import { describeScanFailure } from '@/lib/scan-copy';
 import type { ScanConfirmation } from '@/types/scan';
 
 export interface ScanOutcomeProps {
@@ -28,6 +30,7 @@ export function ScanOutcome({
   onReviewRemaining,
   remainingCount,
 }: ScanOutcomeProps) {
+  const { t, locale } = useI18n();
   const addedCount = outcome.added.reduce((sum, entry) => sum + entry.quantity, 0);
   const hasFailures = outcome.failed.length > 0;
 
@@ -54,20 +57,22 @@ export function ScanOutcome({
         </span>
 
         <h1 id="scan-outcome-heading" className="text-display text-primary">
-          {outcome.added.length > 0 ? 'Added to your basket' : 'Nothing could be added'}
+          {outcome.added.length > 0 ? t('ocr.outcome.added') : t('ocr.outcome.nothing')}
         </h1>
 
         {outcome.added.length > 0 ? (
           <p className="text-text-muted text-sm">
-            {addedCount} {addedCount === 1 ? 'item' : 'items'} across {outcome.added.length}{' '}
-            {outcome.added.length === 1 ? 'product' : 'products'}.
+            {t('ocr.outcome.summary', {
+              items: t('common.itemCount', { count: addedCount }),
+              products: t('catalog.productCount', { count: outcome.added.length }),
+            })}
           </p>
         ) : null}
       </header>
 
       {outcome.added.length > 0 ? (
         <OutcomeList
-          title="Added"
+          title={t('ocr.outcome.addedTitle')}
           tone="success"
           entries={outcome.added.map((entry) => ({
             key: entry.productId,
@@ -79,31 +84,32 @@ export function ScanOutcome({
 
       {hasFailures ? (
         <OutcomeList
-          title="Could not be added"
+          title={t('ocr.outcome.couldNot')}
           tone="warning"
           entries={outcome.failed.map((entry) => ({
             key: entry.productId,
-            name: entry.productName ?? 'This item',
-            // The server's own sentence: it names the product and the number.
-            detail: entry.reason,
+            name: entry.productName ?? t('ocr.outcome.thisItem'),
+            // English shows the server's own sentence (it names the product and
+            // the number); other languages rebuild it from the same facts.
+            detail: describeScanFailure(entry, t, locale),
           }))}
         />
       ) : null}
 
       <div className="gap-tight flex flex-col">
         <ButtonLink href="/cart" size="lg" fullWidth>
-          Go to your basket
+          {t('ocr.outcome.goToBasket')}
         </ButtonLink>
 
         {remainingCount > 0 ? (
           <Button variant="outline" fullWidth onClick={onReviewRemaining}>
             {/* §31: the unresolved items are still there to sort out. */}
-            Sort out the remaining {remainingCount === 1 ? 'item' : remainingCount + ' items'}
+            {t('ocr.outcome.sortOut', { count: remainingCount })}
           </Button>
         ) : null}
 
         <Button variant="ghost" fullWidth onClick={onScanAnother}>
-          Scan another list
+          {t('ocr.review.scanAnother')}
         </Button>
       </div>
     </section>

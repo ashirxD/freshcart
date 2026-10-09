@@ -1,5 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { DEFAULT_LOCALE, directionOf, type Locale } from '@/i18n/config';
+import { readLocaleCookie } from '@/i18n/cookie';
+import { createT } from '@/i18n/translate';
+
 /**
  * The last-resort boundary: a failure in the ROOT layout itself, which the
  * route-group boundaries sit inside and therefore cannot catch.
@@ -11,6 +16,10 @@
  * the design tokens' values, copied deliberately: background, ink and the
  * brand green, kept in step with globals.css by hand because there is no
  * stylesheet at this point to read them from.
+ *
+ * It also sits ABOVE the locale provider, so it reads the language cookie itself
+ * — after mount, never during render, so the server and client agree on the
+ * first paint and English is the (briefly) shown fallback.
  */
 export default function GlobalError({
   error,
@@ -19,8 +28,16 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+
+  useEffect(() => {
+    setLocale(readLocaleCookie() ?? DEFAULT_LOCALE);
+  }, []);
+
+  const t = createT(locale);
+
   return (
-    <html lang="en">
+    <html lang={locale} dir={directionOf(locale)}>
       <body
         style={{
           fontFamily: 'system-ui, sans-serif',
@@ -36,10 +53,10 @@ export default function GlobalError({
           margin: 0,
         }}
       >
-        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>FreshCarts is unavailable</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>{t('errorPage.title')}</h1>
 
         <p style={{ color: '#5A5750', fontSize: '14px', maxWidth: '28rem', marginTop: '8px' }}>
-          Something went wrong while loading the application. Please try again in a moment.
+          {t('errorPage.body')}
         </p>
 
         <button
@@ -58,12 +75,12 @@ export default function GlobalError({
             cursor: 'pointer',
           }}
         >
-          Try again
+          {t('common.tryAgain')}
         </button>
 
         {error.digest ? (
           <p style={{ color: '#5A5750', fontSize: '12px', marginTop: '16px' }}>
-            Reference: {error.digest}
+            {t('states.reference')} <bdi dir="ltr">{error.digest}</bdi>
           </p>
         ) : null}
       </body>

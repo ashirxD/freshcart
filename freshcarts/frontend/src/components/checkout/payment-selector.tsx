@@ -4,6 +4,7 @@ import { Banknote, CreditCard, Smartphone } from 'lucide-react';
 import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePaymentMethods } from '@/features/checkout/checkout.hooks';
+import { useT, type TFunction, type TranslationKey } from '@/i18n';
 import type { FulfillmentMethod, PaymentMethod } from '@/types/order';
 
 export interface PaymentSelectorProps {
@@ -20,14 +21,18 @@ const METHOD_ICON: Record<PaymentMethod, typeof Banknote> = {
 };
 
 /** When the shopper actually parts with the money — different for pickup. */
-function describe(method: PaymentMethod, fulfillmentMethod: FulfillmentMethod): string {
+function describe(
+  method: PaymentMethod,
+  fulfillmentMethod: FulfillmentMethod,
+  t: TFunction,
+): string {
   if (method === 'CASH_ON_DELIVERY') {
     return fulfillmentMethod === 'PICKUP'
-      ? 'Pay in cash when you collect your order from the store.'
-      : 'Pay the rider in cash when your order arrives.';
+      ? t('checkout.payment.descCodPickup')
+      : t('checkout.payment.descCodDelivery');
   }
 
-  return 'Pay now, before your order is prepared.';
+  return t('checkout.payment.descOnline');
 }
 
 /**
@@ -44,23 +49,24 @@ export function PaymentSelector({
   fulfillmentMethod,
   error,
 }: PaymentSelectorProps) {
+  const t = useT();
   const { data: methods, isPending } = usePaymentMethods();
 
   if (isPending) {
-    return <Skeleton className="h-20 w-full" label="Loading payment methods" />;
+    return <Skeleton className="h-20 w-full" label={t('checkout.payment.loading')} />;
   }
 
   if (!methods || methods.length === 0) {
     return (
       <p role="alert" className="bg-surface-muted p-gutter text-danger rounded-lg text-sm">
-        No payment methods are available right now. Please try again shortly.
+        {t('checkout.payment.none')}
       </p>
     );
   }
 
   return (
     <RadioCardGroup
-      label="How would you like to pay?"
+      label={t('checkout.payment.question')}
       value={value}
       onChange={(next) => onChange(next as PaymentMethod)}
       error={error}
@@ -73,8 +79,10 @@ export function PaymentSelector({
             <RadioCard
               key={option.method}
               value={option.method}
-              title={option.label}
-              description={describe(option.method, fulfillmentMethod)}
+              // The API's own label is English copy; the UI keeps its own wording
+              // for each method, keyed by the method itself.
+              title={t(('checkout.payment.method.' + option.method) as TranslationKey)}
+              description={describe(option.method, fulfillmentMethod, t)}
               icon={<Icon className="size-5" />}
             />
           );

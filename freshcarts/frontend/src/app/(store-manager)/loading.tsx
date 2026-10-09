@@ -1,11 +1,16 @@
+'use client';
+
 import { Container } from '@/components/layout/container';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT } from '@/i18n';
 
 /** Keeps the console shell in place while a store screen resolves. */
 export default function StoreManagerLoading() {
+  const t = useT();
+
   return (
     <Container className="gap-gutter py-loose flex flex-col">
-      <Skeleton className="h-7 w-56" label="Loading" />
+      <Skeleton className="h-7 w-56" label={t('states.loading')} />
       <div className="gap-gutter grid grid-cols-2 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={index} className="h-24 w-full rounded-2xl" />

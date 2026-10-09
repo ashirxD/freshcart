@@ -11,27 +11,23 @@ import { SetStockDialog, StockHistoryDialog } from '@/components/store-manager/s
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreInventory, useUpdateStock } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
+import { Ltr } from '@/components/common/ltr';
 import type { StockStatus } from '@/types/catalog';
 import type { StoreInventoryRow } from '@/types/store-manager';
 
-const STATUS_TABS: Array<{ value: string; label: string }> = [
-  { value: 'ALL', label: 'All' },
-  { value: 'LOW_STOCK', label: 'Low stock' },
-  { value: 'OUT_OF_STOCK', label: 'Out of stock' },
-  { value: 'IN_STOCK', label: 'In stock' },
+const STATUS_TABS: Array<{ value: string; labelKey: TranslationKey }> = [
+  { value: 'ALL', labelKey: 'common.all' },
+  { value: 'LOW_STOCK', labelKey: 'store.dashboard.lowStock' },
+  { value: 'OUT_OF_STOCK', labelKey: 'store.stock.OUT_OF_STOCK' },
+  { value: 'IN_STOCK', labelKey: 'store.stock.IN_STOCK' },
 ];
 
 const STATUS_STYLE: Record<StockStatus, string> = {
   IN_STOCK: 'text-success',
   LOW_STOCK: 'text-secondary',
   OUT_OF_STOCK: 'text-danger',
-};
-
-const STATUS_LABEL: Record<StockStatus, string> = {
-  IN_STOCK: 'In stock',
-  LOW_STOCK: 'Running low',
-  OUT_OF_STOCK: 'Out of stock',
 };
 
 /**
@@ -42,6 +38,7 @@ const STATUS_LABEL: Record<StockStatus, string> = {
  * agree, because both come from the same server-side definition.
  */
 export function InventoryScreen() {
+  const { t, tx } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -80,26 +77,27 @@ export function InventoryScreen() {
   return (
     <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
-        <h1 className="text-text text-xl font-semibold">Inventory</h1>
+        <h1 className="text-text text-xl font-semibold">{t('store.inventory.title')}</h1>
         <p aria-live="polite" className="text-text-muted text-sm">
           {isPending
-            ? 'Loading stock…'
+            ? t('store.inventory.loading')
             : data
-              ? data.pagination.total + ' products tracked · lowest stock first'
+              ? t('store.inventory.summary', { count: data.pagination.total })
               : ''}
         </p>
       </header>
 
       <SearchBar
         defaultValue={searchParam}
-        placeholder="Search by product name or item code"
+        placeholder={t('store.inventory.searchPlaceholder')}
+        label={t('store.inventory.searchLabel')}
         onSearch={(term) => {
           setSearch(term);
           setParam({ page: undefined });
         }}
       />
 
-      <div role="radiogroup" aria-label="Stock status" className="flex flex-wrap gap-2">
+      <div role="radiogroup" aria-label={t('store.inventory.statusLabel')} className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => {
           const active = tab.value === statusParam;
 
@@ -117,7 +115,7 @@ export function InventoryScreen() {
                   : 'border-outline-variant bg-surface text-text hover:bg-surface-muted',
               )}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           );
         })}
@@ -126,7 +124,7 @@ export function InventoryScreen() {
       {isPending ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 w-full" label="Loading stock levels" />
+            <Skeleton key={index} className="h-28 w-full" label={t('store.inventory.loadingLevels')} />
           ))}
         </div>
       ) : null}
@@ -138,15 +136,15 @@ export function InventoryScreen() {
           icon={<Boxes className="size-7" aria-hidden="true" />}
           title={
             statusParam === 'LOW_STOCK'
-              ? 'Everything looks well stocked'
+              ? t('store.inventory.emptyLow')
               : statusParam === 'OUT_OF_STOCK'
-                ? 'Nothing is out of stock'
-                : 'No products match this filter'
+                ? t('store.inventory.emptyOut')
+                : t('store.inventory.emptyDefault')
           }
           description={
             search
-              ? 'Nothing in this store matches “' + search + '”.'
-              : 'Try a different filter to see more.'
+              ? tx('store.inventory.emptyForTerm', { term: <bdi>{search}</bdi> })
+              : t('store.inventory.emptyTryFilter')
           }
           className="bg-surface-muted rounded-lg"
         />
@@ -161,17 +159,17 @@ export function InventoryScreen() {
       ) : null}
 
       {data && data.pagination.totalPages > 1 ? (
-        <nav aria-label="Inventory pages" className="gap-gutter flex items-center justify-center">
+        <nav aria-label={t('store.inventory.pagesLabel')} className="gap-gutter flex items-center justify-center">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
             onClick={() => setParam({ page: String(page - 1) })}
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <span aria-live="polite" className="text-text-muted text-sm">
-            Page {data.pagination.page} of {data.pagination.totalPages}
+            {t('common.page', { page: data.pagination.page, pages: data.pagination.totalPages })}
           </span>
           <Button
             variant="outline"
@@ -179,7 +177,7 @@ export function InventoryScreen() {
             disabled={page >= data.pagination.totalPages}
             onClick={() => setParam({ page: String(page + 1) })}
           >
-            Next
+            {t('common.next')}
           </Button>
         </nav>
       ) : null}
@@ -198,6 +196,7 @@ export function InventoryScreen() {
  * guard in the query, so two people adjusting at once cannot both win.
  */
 function StockRow({ row, onShowHistory }: { row: StoreInventoryRow; onShowHistory: () => void }) {
+  const { t } = useI18n();
   const [isEditing, setEditing] = useState(false);
   const update = useUpdateStock(() => setEditing(false));
 
@@ -205,18 +204,26 @@ function StockRow({ row, onShowHistory }: { row: StoreInventoryRow; onShowHistor
     <li className="border-outline-variant bg-surface p-gutter gap-gutter flex flex-wrap items-center rounded-lg border">
       <div className="flex min-w-48 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-text text-sm font-semibold">{row.productName}</h2>
+          <h2 className="text-text text-sm font-semibold">
+            <bdi>{row.productName}</bdi>
+          </h2>
           {!row.isProductActive ? (
             <span className="bg-surface-sunken text-text-muted rounded-full px-2 py-0.5 text-xs font-semibold">
-              Off sale
+              {t('store.inventory.offSale')}
             </span>
           ) : null}
         </div>
 
-        <p className="text-text-muted text-xs">{row.sku}</p>
+        <p className="text-text-muted text-xs">
+          <Ltr>{row.sku}</Ltr>
+        </p>
 
         <p className={cn('text-xs font-semibold', STATUS_STYLE[row.status])}>
-          {STATUS_LABEL[row.status]} · {row.quantity} on hand · warns at {row.lowStockThreshold}
+          {t('store.inventory.rowSummary', {
+            status: t(('store.stock.' + row.status) as TranslationKey),
+            count: row.quantity,
+            threshold: row.lowStockThreshold,
+          })}
         </p>
       </div>
 
@@ -228,7 +235,7 @@ function StockRow({ row, onShowHistory }: { row: StoreInventoryRow; onShowHistor
           onClick={() =>
             update.mutate({ productId: row.productId, adjustBy: -1, changeReason: 'CORRECTION' })
           }
-          aria-label={'Remove one ' + row.productName}
+          aria-label={t('store.inventory.removeOne', { name: row.productName })}
         >
           −1
         </Button>
@@ -239,20 +246,20 @@ function StockRow({ row, onShowHistory }: { row: StoreInventoryRow; onShowHistor
           onClick={() =>
             update.mutate({ productId: row.productId, adjustBy: 10, changeReason: 'RESTOCK' })
           }
-          aria-label={'Add ten ' + row.productName}
+          aria-label={t('store.inventory.addTen', { name: row.productName })}
         >
           +10
         </Button>
 
         <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-          Set stock
+          {t('store.inventory.setStock')}
         </Button>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={onShowHistory}
-          aria-label={'Stock history for ' + row.productName}
+          aria-label={t('store.inventory.historyAria', { name: row.productName })}
         >
           <History className="size-4" aria-hidden="true" />
         </Button>

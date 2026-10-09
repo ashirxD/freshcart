@@ -2,6 +2,7 @@
 
 import { ButtonLink } from '@/components/ui/button-link';
 import { RouteError } from '@/components/common/route-error';
+import { useT } from '@/i18n';
 
 /**
  * The store console boundary.
@@ -17,15 +18,17 @@ export default function StoreManagerError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   return (
     <RouteError
       error={error}
       reset={reset}
-      title="This screen could not load"
-      description="Something went wrong at our end. No order or stock level has been changed."
+      title={t('store.error.title')}
+      description={t('store.error.body')}
       secondaryAction={
         <ButtonLink href="/store-manager" variant="outline">
-          Back to the dashboard
+          {t('store.error.backToDashboard')}
         </ButtonLink>
       }
     />

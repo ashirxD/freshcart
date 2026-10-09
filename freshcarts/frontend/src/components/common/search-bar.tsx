@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Search, X } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface SearchBarProps {
@@ -44,8 +45,8 @@ export interface SearchBarProps {
  */
 export function SearchBar({
   defaultValue = '',
-  placeholder = 'Search atta, doodh, sabzi…',
-  label = 'Search products',
+  placeholder,
+  label,
   onSearch,
   onSubmit,
   debounceMs = 300,
@@ -53,6 +54,7 @@ export function SearchBar({
   variant = 'bar',
   className,
 }: SearchBarProps) {
+  const t = useT();
   const [term, setTerm] = useState(defaultValue);
 
   // Held in a ref so an inline arrow prop does not restart the timer on every
@@ -107,8 +109,8 @@ export function SearchBar({
         type="search"
         value={term}
         autoFocus={autoFocus}
-        placeholder={placeholder}
-        aria-label={label}
+        placeholder={placeholder ?? t('search.placeholder')}
+        aria-label={label ?? t('nav.searchProducts')}
         enterKeyHint="search"
         onChange={(event) => setTerm(event.target.value)}
         className={cn(
@@ -124,7 +126,7 @@ export function SearchBar({
         <button
           type="button"
           onClick={() => setTerm('')}
-          aria-label="Clear search"
+          aria-label={t('common.clearSearch')}
           className="text-outline hover:bg-surface-muted hover:text-text -me-1 shrink-0 rounded-full p-1.5 transition-colors"
         >
           <X className="size-4" aria-hidden="true" />
@@ -144,7 +146,7 @@ export function SearchBar({
           )}
         >
           <Search className="size-4 sm:hidden" aria-hidden="true" />
-          <span className="max-sm:sr-only">Search</span>
+          <span className="max-sm:sr-only">{t('common.search')}</span>
         </button>
       ) : null}
     </form>

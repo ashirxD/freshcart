@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useId, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 interface RadioCardGroupContext {
@@ -46,6 +47,7 @@ export function RadioCardGroup({
   error,
   className,
 }: RadioCardGroupProps) {
+  const { tm } = useI18n();
   const name = useId();
   const errorId = name + '-error';
 
@@ -68,7 +70,7 @@ export function RadioCardGroup({
 
       {error ? (
         <p id={errorId} role="alert" className="text-danger text-sm">
-          {error}
+          {tm(error)}
         </p>
       ) : null}
     </fieldset>

@@ -1,0 +1,83 @@
+{
+  "orders": {
+    "status": {
+      "PENDING": "Order placed",
+      "CONFIRMED": "Confirmed",
+      "PREPARING": "Preparing",
+      "PACKED": "Packed",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "READY_FOR_PICKUP": "Ready for pickup",
+      "DELIVERED": "Delivered",
+      "COLLECTED": "Collected",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected",
+      "FAILED": "Failed"
+    },
+    "paymentStatus": {
+      "PENDING": "Payment due",
+      "PAID": "Paid",
+      "FAILED": "Not collected",
+      "REFUNDED": "Refunded"
+    },
+    "timeline": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "notYet": "Not yet"
+    },
+    "list": {
+      "title": "Your orders",
+      "eyebrow": "Your shopping history",
+      "loading": "Loading your orders",
+      "signInTitle": "Sign in to see your orders",
+      "signInBody": "Your order history is saved to your account.",
+      "emptyTitle": "No orders yet",
+      "emptyBody": "Your first order will appear here, with its progress and its receipt.",
+      "pagesLabel": "Order history pages",
+      "newer": "Newer",
+      "older": "Older",
+      "andMore": "{names} and {count} more",
+      "delivery": "Delivery",
+      "pickup": "Pickup"
+    },
+    "detail": {
+      "loading": "Loading your order",
+      "loadError": "We could not open this order",
+      "allOrders": "All orders",
+      "placed": "Placed {date}",
+      "progress": "Order progress",
+      "cancelledOn": "Cancelled on {date}.",
+      "cancelledOnReason": "Cancelled on {date} — {reason}",
+      "collectFrom": "Collect from",
+      "deliveringTo": "Delivering to",
+      "fromStore": "{distance} from the store",
+      "fromStoreWithTime": "{distance} from the store · {duration}",
+      "payment": "Payment",
+      "paidOn": "Paid on {date}",
+      "payCashPickup": "Please pay in cash when you collect your order.",
+      "payCashDelivery": "Please have the exact amount ready for the rider.",
+      "paymentSummary": "Payment summary",
+      "deliveryCharge": "Delivery charge",
+      "yourNote": "Your note: ",
+      "cancelThis": "Cancel this order",
+      "cancelTitle": "Cancel this order?",
+      "cancelBody": "Order {number} will be cancelled and nothing will be charged. This cannot be undone.",
+      "keepMyOrder": "Keep my order",
+      "yesCancel": "Yes, cancel it",
+      "whyCancel": "Why are you cancelling?",
+      "whyHint": "Optional. It helps the store improve."
+    },
+    "note": {
+      "PENDING": "Order placed and waiting for the store to confirm.",
+      "CONFIRMED": "The store has confirmed your order.",
+      "PREPARING": "Your order is being prepared.",
+      "PACKED": "Your order has been packed.",
+      "OUT_FOR_DELIVERY": "Your order is on its way.",
+      "READY_FOR_PICKUP": "Your order is ready to collect from the store.",
+      "DELIVERED": "Order completed.",
+      "CANCELLED": "Order cancelled.",
+      "REJECTED": "The store could not accept this order.",
+      "FAILED": "This order could not be completed.",
+      "customerCancelled": "Cancelled by the customer."
+    }
+  }
+}

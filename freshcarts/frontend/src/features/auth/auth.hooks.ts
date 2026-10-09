@@ -2,7 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getActiveLocale, tNow, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-copy';
 import type { LoginValues, RegisterValues } from '@/lib/validation/auth.schema';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
@@ -14,11 +16,15 @@ import { authApi } from './auth.api';
  * clearing caches, routing, error messaging — is handled once, here.
  */
 export function useLogin(redirectTo = '/') {
-  return useSessionMutation(authApi.login, redirectTo, 'Welcome back');
+  return useSessionMutation(authApi.login, redirectTo, 'auth.welcomeBack');
 }
 
 export function useRegister(redirectTo = '/') {
-  return useSessionMutation(authApi.register, redirectTo, 'Your account is ready');
+  return useSessionMutation(
+    (values: RegisterValues) => authApi.register(values, getActiveLocale()),
+    redirectTo,
+    'auth.accountReady',
+  );
 }
 
 export function useLogout() {
@@ -41,7 +47,7 @@ export function useLogout() {
 function useSessionMutation<TValues extends LoginValues | RegisterValues>(
   mutationFn: (values: TValues) => Promise<SessionResponse>,
   redirectTo: string,
-  successMessage: string,
+  successKey: TranslationKey,
 ) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -54,14 +60,14 @@ function useSessionMutation<TValues extends LoginValues | RegisterValues>(
       setSession(session.user, session.accessToken);
       // Anything cached for the previous (anonymous) visitor is now wrong.
       void queryClient.invalidateQueries();
-      toast({ title: successMessage, variant: 'success' });
+      toast({ title: tNow(successKey), variant: 'success' });
       router.push(redirectTo);
     },
     onError: (error: unknown) => {
       toast({
-        title: 'Could not sign you in',
+        title: tNow('auth.signInFailed'),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },

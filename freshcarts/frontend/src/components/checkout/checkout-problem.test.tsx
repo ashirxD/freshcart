@@ -55,7 +55,7 @@ describe('CheckoutProblem', () => {
     it('also offers a route back to the cart, so it is not a dead end', () => {
       renderWithProviders(<CheckoutProblem error={priceChange} onAcceptPrices={vi.fn()} />);
 
-      expect(screen.getByRole('link', { name: /review my cart/i })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: /review my basket/i })).toHaveAttribute(
         'href',
         '/cart',
       );
@@ -109,7 +109,7 @@ describe('CheckoutProblem', () => {
       expect(
         screen.queryByRole('button', { name: /continue at the new prices/i }),
       ).not.toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /go to my cart/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /go to my basket/i })).toBeInTheDocument();
     });
   });
 

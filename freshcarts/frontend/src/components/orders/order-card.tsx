@@ -1,18 +1,13 @@
 import Link from 'next/link';
 import { ChevronRight, Store, Truck } from 'lucide-react';
+import { ProductImage } from '@/components/product/product-image';
+import { Ltr, Money } from '@/components/common/ltr';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
-import { formatPkr } from '@/lib/format';
+import { formatDate } from '@/lib/dates';
+import { formatPkr, productTint } from '@/lib/format';
 import type { OrderSummary } from '@/types/order';
 import { OrderStatusBadge, PaymentStatusBadge } from './order-status-badge';
-
-/** "2 Feb 2026" — a date a shopper recognises, without the noise of a time. */
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-PK', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 /**
  * One row in the order history.
@@ -26,6 +21,7 @@ function formatDate(iso: string): string {
  * no who-did-what history.
  */
 export function OrderCard({ order }: { order: OrderSummary }) {
+  const { t, locale } = useI18n();
   const names = order.previewItems.map((item) => item.productName).join(', ');
   const hiddenCount = order.itemCount - order.previewItems.length;
 
@@ -41,19 +37,52 @@ export function OrderCard({ order }: { order: OrderSummary }) {
       >
         <div className="gap-gutter flex items-start justify-between">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-text font-bold tabular-nums">{order.orderNumber}</span>
+            <span className="text-text font-bold tabular-nums">
+              <Ltr>{order.orderNumber}</Ltr>
+            </span>
             <span className="text-text-muted text-xs font-medium">
-              {formatDate(order.placedAt)}
+              {formatDate(order.placedAt, locale, 'date')}
             </span>
           </div>
 
-          <OrderStatusBadge status={order.status} label={order.statusLabel} size="sm" />
+          <OrderStatusBadge
+            status={order.status}
+            label={order.statusLabel}
+            fulfillmentMethod={order.fulfillmentMethod}
+            size="sm"
+          />
         </div>
 
-        <p className="text-text-muted line-clamp-2 text-sm">
-          {names}
-          {hiddenCount > 0 ? ' and ' + hiddenCount + ' more' : ''}
-        </p>
+        {/* What is in the box, at a glance: a shopper finds "the one with the
+            milk and the atta" faster than they read an order number. The names
+            stay beside it, because the thumbnails are decoration and a screen
+            reader — or a product with no picture yet — still needs the words. */}
+        <div className="gap-snug flex items-center">
+          <ul className="flex shrink-0 -space-x-2.5" aria-hidden="true">
+            {order.previewItems.slice(0, 4).map((item, index) => (
+              <li
+                key={index}
+                className={cn(
+                  'ring-surface relative size-11 overflow-hidden rounded-xl ring-2',
+                  productTint(item.productName),
+                )}
+              >
+                <ProductImage
+                  image={
+                    item.productImage ? { url: item.productImage, alt: item.productName } : null
+                  }
+                  name={item.productName}
+                  sizes="44px"
+                  className="size-full p-0.5"
+                />
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-text-muted line-clamp-2 min-w-0 text-sm">
+            {hiddenCount > 0 ? t('orders.list.andMore', { names, count: hiddenCount }) : names}
+          </p>
+        </div>
 
         <div className="border-outline-variant gap-x-gutter gap-y-tight flex flex-wrap items-center justify-between border-t pt-2.5">
           <span className="text-text-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
@@ -63,11 +92,13 @@ export function OrderCard({ order }: { order: OrderSummary }) {
               ) : (
                 <Store className="text-leaf size-3.5" aria-hidden="true" />
               )}
-              {order.fulfillmentMethod === 'DELIVERY' ? 'Delivery' : 'Pickup'}
+              {order.fulfillmentMethod === 'DELIVERY'
+                ? t('orders.list.delivery')
+                : t('orders.list.pickup')}
             </span>
 
             <span aria-hidden="true">·</span>
-            <span>{order.totalQuantity === 1 ? '1 item' : order.totalQuantity + ' items'}</span>
+            <span>{t('common.itemCount', { count: order.totalQuantity })}</span>
 
             {order.storeName ? (
               <>
@@ -80,7 +111,9 @@ export function OrderCard({ order }: { order: OrderSummary }) {
           </span>
 
           <span className="text-text flex items-center gap-1">
-            <span className="text-price tabular-nums">{formatPkr(order.total)}</span>
+            <span className="text-price tabular-nums">
+              <Money>{formatPkr(order.total)}</Money>
+            </span>
             <ChevronRight
               className="text-outline ease-standard size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180"
               aria-hidden="true"

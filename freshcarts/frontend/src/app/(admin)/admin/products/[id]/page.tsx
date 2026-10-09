@@ -8,9 +8,11 @@ import { AvailabilityBadge } from '@/components/product/badges';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminCategories, useAdminProduct } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import { useProductSubmit } from '@/features/admin/use-product-submit';
 
 export default function Page() {
+  const { t, tx } = useI18n();
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
 
@@ -27,7 +29,9 @@ export default function Page() {
     <Container className="gap-loose flex max-w-2xl flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <h1 className="text-text text-xl font-semibold">
-          {product.data ? 'Edit ' + product.data.name : 'Edit product'}
+          {product.data
+            ? tx('admin.products.editTitle', { name: <bdi>{product.data.name}</bdi> })
+            : t('admin.products.editFallback')}
         </h1>
 
         {product.data ? (
@@ -35,13 +39,13 @@ export default function Page() {
             <AvailabilityBadge stock={product.data.stock} />
             {/* Stock is deliberately not editable here — one screen owns it. */}
             <ButtonLink href="/admin/inventory" variant="outline" size="sm">
-              Manage stock
+              {t('admin.products.manageStock')}
             </ButtonLink>
           </div>
         ) : null}
       </header>
 
-      {product.isPending ? <Skeleton className="h-96 w-full" label="Loading the product" /> : null}
+      {product.isPending ? <Skeleton className="h-96 w-full" label={t('admin.products.loadingProduct')} /> : null}
 
       {product.isError ? (
         <ErrorState error={product.error} onRetry={() => void product.refetch()} />

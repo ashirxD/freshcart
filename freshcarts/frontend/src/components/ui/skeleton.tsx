@@ -1,3 +1,6 @@
+'use client';
+
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface SkeletonProps {
@@ -15,10 +18,12 @@ export interface SkeletonProps {
  * reads as work in progress without the flashing of an opacity pulse.
  */
 export function Skeleton({ className, label }: SkeletonProps) {
+  const t = useT();
+
   return (
     <div
       role="status"
-      aria-label={label ?? 'Loading'}
+      aria-label={label ?? t('states.loading')}
       className={cn('skeleton-sheen rounded-md', className)}
     />
   );

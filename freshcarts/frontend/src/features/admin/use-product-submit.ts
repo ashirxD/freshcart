@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/features/admin/admin.api';
 import { adminKeys } from '@/features/admin/admin.hooks';
 import { catalogKeys } from '@/features/catalog/catalog.hooks';
+import { tNow } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { ApiError } from '@/lib/api/errors';
 import { useToast } from '@/store/toast.store';
 import { toProductInput, type ProductFormValues } from '@/lib/validation/catalog.schema';
@@ -35,6 +37,9 @@ import type { ProductInput } from '@/features/admin/admin.api';
  * straight away — that is the behaviour being asked for, and it is why the
  * combobox warns before the save rather than after.
  */
+/** "Bakery and Dairy" — the joining word is the active language's. */
+const joinNames = (names: string[]) => names.join(' ' + tNow('admin.toast.and') + ' ');
+
 export function useProductSubmit(options: {
   /** Absent when creating. */
   productId?: string;
@@ -93,10 +98,10 @@ export function useProductSubmit(options: {
       await queryClient.invalidateQueries({ queryKey: catalogKeys.all });
 
       toast({
-        title: options.productId ? 'Product updated' : 'Product created',
+        title: tNow(options.productId ? 'admin.toast.productUpdated' : 'admin.toast.productCreated'),
         description:
           createdCategories.length > 0
-            ? 'Added ' + createdCategories.join(' and ') + ' to the categories shoppers see.'
+            ? tNow('admin.toast.addedCategories', { names: joinNames(createdCategories) })
             : undefined,
         variant: 'success',
       });
@@ -104,13 +109,17 @@ export function useProductSubmit(options: {
       options.onDone();
     } catch (error) {
       const message =
-        error instanceof ApiError ? error.message : 'Please check your connection and try again.';
+        error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection');
 
       toast({
-        title: options.productId ? 'Could not save the product' : 'Could not create the product',
+        title: tNow(
+          options.productId ? 'admin.toast.saveProductFailed' : 'admin.toast.createProductFailed',
+        ),
         description:
           createdCategories.length > 0
-            ? message + ' Note: ' + createdCategories.join(' and ') + ' was already created.'
+            ? message +
+              ' ' +
+              tNow('admin.toast.categoriesAlreadyCreated', { names: joinNames(createdCategories) })
             : message,
         variant: 'error',
       });

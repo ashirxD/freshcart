@@ -4,6 +4,8 @@ import { Modal } from '@/components/ui/modal';
 import { ProductImage } from '@/components/product/product-image';
 import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 import { Button } from '@/components/ui/button';
+import { Money } from '@/components/common/ltr';
+import { useI18n } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import { textDirection } from '@/lib/script';
 import type { ScanCandidate } from '@/types/scan';
@@ -38,30 +40,32 @@ export function AlternativesSheet({
   selectedProductId,
   onSelect,
 }: AlternativesSheetProps) {
+  const { t, tx } = useI18n();
   const direction = textDirection(rawText);
 
   return (
-    <Modal open={open} onClose={onClose} title="Which one did you mean?" variant="sheet">
+    <Modal open={open} onClose={onClose} title={t('ocr.sheet.title')} variant="sheet">
       <div className="gap-gutter flex flex-col">
         <p className="text-text-muted text-sm">
-          You wrote{' '}
-          <span lang={direction.lang} dir={direction.dir} className="text-text font-medium">
-            {rawText}
-          </span>
+          {tx('ocr.sheet.wrote', {
+            text: (
+              <span lang={direction.lang} dir={direction.dir} className="text-text font-medium">
+                {rawText}
+              </span>
+            ),
+          })}
         </p>
 
         {candidates.length === 0 ? (
           <div className="gap-tight flex flex-col">
-            <p className="text-text text-sm">
-              We don&rsquo;t have anything matching this in the shop.
-            </p>
+            <p className="text-text text-sm">{t('ocr.sheet.none')}</p>
             <Button variant="outline" onClick={onClose}>
-              Close
+              {t('common.close')}
             </Button>
           </div>
         ) : (
           <RadioCardGroup
-            label="Choose the product you meant"
+            label={t('ocr.sheet.choose')}
             hideLabel
             value={selectedProductId}
             onChange={(productId) => {
@@ -73,10 +77,12 @@ export function AlternativesSheet({
               <RadioCard
                 key={candidate.productId}
                 value={candidate.productId}
-                title={candidate.name}
+                title={<bdi>{candidate.name}</bdi>}
                 description={candidate.unitLabel + (candidate.brand ? ' · ' + candidate.brand : '')}
                 trailing={
-                  <span className="text-text font-semibold">{formatPkr(candidate.price)}</span>
+                  <span className="text-text font-semibold">
+                    <Money>{formatPkr(candidate.price)}</Money>
+                  </span>
                 }
                 icon={
                   <ProductImage
@@ -89,11 +95,11 @@ export function AlternativesSheet({
                 disabled={!candidate.isAvailable}
                 // Disabled options still appear, so the shopper learns we
                 // stock the thing rather than concluding we do not.
-                disabledReason="Out of stock right now"
+                disabledReason={t('ocr.sheet.outOfStockNow')}
               >
                 {candidate.isAvailable && candidate.availableQuantity <= 5 ? (
                   <span className="text-secondary text-xs">
-                    Only {candidate.availableQuantity} left
+                    {t('product.onlyLeft', { count: candidate.availableQuantity })}
                   </span>
                 ) : null}
               </RadioCard>

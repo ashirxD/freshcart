@@ -8,6 +8,8 @@ import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrder } from '@/features/orders/orders.hooks';
+import { Ltr, Money } from '@/components/common/ltr';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { formatPkr, formatPkrLabel } from '@/lib/format';
 
 /**
@@ -31,12 +33,13 @@ import { formatPkr, formatPkrLabel } from '@/lib/format';
  * where to watch it happen.
  */
 export function ConfirmationScreen({ orderId }: { orderId: string }) {
+  const { t, tx } = useI18n();
   const { data: order, isPending, isError, error, refetch } = useOrder(orderId);
 
   if (isPending) {
     return (
       <Container className="gap-gutter py-wide flex flex-col items-center">
-        <Skeleton className="size-20 rounded-full" label="Confirming your order" />
+        <Skeleton className="size-20 rounded-full" label={t('checkout.confirmation.loading')} />
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-48 w-full max-w-md rounded-2xl" />
       </Container>
@@ -49,14 +52,16 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
         <ErrorState
           error={error}
           onRetry={() => void refetch()}
-          title="We could not load your confirmation"
+          title={t('checkout.confirmation.loadError')}
         />
         <p className="mt-gutter text-text-muted text-center text-sm">
-          Your order may still have been placed — check{' '}
-          <Link href="/orders" className="text-primary font-semibold underline">
-            your orders
-          </Link>{' '}
-          before trying again.
+          {tx('checkout.confirmation.maybePlaced', {
+            link: (
+              <Link href="/orders" className="text-primary font-semibold underline">
+                {t('checkout.confirmation.yourOrdersLink')}
+              </Link>
+            ),
+          })}
         </p>
       </Container>
     );
@@ -84,13 +89,13 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
             </span>
 
             <div className="flex flex-col gap-2">
-              <h1 className="text-hero text-primary">
-                {isDelivery ? 'Your groceries are on their way' : 'Your order is being packed'}
-              </h1>
-              <p className="text-text-muted max-w-md text-base">
+              {/* "On their way" would be untrue: a just-placed order has not been
+                  confirmed, let alone picked. The headline says what is so. */}
+              <h1 className="text-hero text-primary">{t('checkout.confirmation.title')}</h1>
+              <p className="text-text-muted mx-auto max-w-md text-base">
                 {isDelivery
-                  ? 'The shop will confirm it shortly and start picking your items.'
-                  : 'The shop will let you know as soon as it is ready to collect.'}
+                  ? t('checkout.confirmation.bodyDelivery')
+                  : t('checkout.confirmation.bodyPickup')}
               </p>
             </div>
           </div>
@@ -100,32 +105,34 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
       <Container className="gap-loose py-wide flex flex-col items-center">
         <div className="ring-outline-variant bg-surface p-gutter gap-gutter shadow-card flex w-full max-w-md flex-col rounded-2xl ring-1">
           <div className="bg-cream ring-sand flex flex-col items-center gap-1 rounded-xl py-4 text-center ring-1">
-            <span className="text-eyebrow text-text-muted uppercase">Your order number</span>
+            <span className="text-eyebrow text-text-muted uppercase">
+              {t('checkout.confirmation.orderNumber')}
+            </span>
             {/* Selectable and tabular: a shopper copies this or reads it aloud. */}
             <span className="text-primary text-price-lg tracking-wide tabular-nums select-all">
-              {order.orderNumber}
+              <Ltr>{order.orderNumber}</Ltr>
             </span>
           </div>
 
           <dl className="gap-snug flex flex-col text-sm">
             <div className="gap-gutter flex items-center justify-between">
-              <dt className="text-text-muted">Total</dt>
+              <dt className="text-text-muted">{t('common.total')}</dt>
               <dd
                 className="text-text text-price tabular-nums"
-                aria-label={'Total ' + formatPkrLabel(order.pricing.total)}
+                aria-label={t('checkout.summary.totalAria', {
+                  amount: formatPkrLabel(order.pricing.total, t),
+                })}
               >
-                {formatPkr(order.pricing.total)}
+                <Money>{formatPkr(order.pricing.total)}</Money>
               </dd>
             </div>
 
             <div className="gap-gutter flex items-center justify-between">
-              <dt className="text-text-muted">Paying with</dt>
+              <dt className="text-text-muted">{t('checkout.review.payingWith')}</dt>
               <dd className="text-text font-semibold">
-                {order.payment.method === 'CASH_ON_DELIVERY'
-                  ? isDelivery
-                    ? 'Cash on delivery'
-                    : 'Cash on collection'
-                  : order.payment.method}
+                {order.payment.method === 'CASH_ON_DELIVERY' && !isDelivery
+                  ? t('checkout.confirmation.cashOnCollection')
+                  : t(('checkout.payment.method.' + order.payment.method) as TranslationKey)}
               </dd>
             </div>
 
@@ -136,20 +143,24 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
                 ) : (
                   <Store className="text-leaf size-4" aria-hidden="true" />
                 )}
-                {isDelivery ? 'Delivering to' : 'Collect from'}
+                {isDelivery
+                  ? t('checkout.review.deliveringTo')
+                  : t('checkout.confirmation.collectFrom')}
               </dt>
               <dd className="text-text max-w-[60%] text-end font-medium">
-                {isDelivery
-                  ? (order.deliveryAddress?.formatted ?? '—')
-                  : (order.pickup?.storeName ?? '—')}
+                <bdi>
+                  {isDelivery
+                    ? (order.deliveryAddress?.formatted ?? '—')
+                    : (order.pickup?.storeName ?? '—')}
+                </bdi>
               </dd>
             </div>
 
             {isDelivery && order.delivery ? (
               <div className="gap-gutter flex items-center justify-between">
-                <dt className="text-text-muted">Distance</dt>
+                <dt className="text-text-muted">{t('checkout.confirmation.distance')}</dt>
                 <dd className="text-text font-medium">
-                  {formatDistance(order.delivery.distanceMeters)}
+                  <Ltr>{formatDistance(order.delivery.distanceMeters, t)}</Ltr>
                 </dd>
               </div>
             ) : null}
@@ -158,22 +169,22 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
           {/* The next step, stated as fact rather than as a promised time. */}
           <p className="bg-surface-muted p-gutter text-text-muted rounded-xl text-sm leading-relaxed">
             {isDelivery
-              ? 'You can follow every step on the tracking page — from confirmed, to packed, to on its way.'
-              : 'Bring your order number with you. We will hold the order at the counter.'}
+              ? t('checkout.confirmation.nextDelivery')
+              : t('checkout.confirmation.nextPickup')}
           </p>
 
           {!isDelivery && order.pickup ? (
             <div className="flex flex-col gap-1 text-sm">
               <p className="text-text-muted flex items-start gap-1.5">
                 <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                {order.pickup.storeAddress}
+                <bdi>{order.pickup.storeAddress}</bdi>
               </p>
               <a
                 href={'tel:' + order.pickup.storePhone}
                 className="text-primary flex min-h-11 items-center gap-1.5 font-semibold"
               >
                 <Phone className="size-4" aria-hidden="true" />
-                {order.pickup.storePhone}
+                <Ltr>{order.pickup.storePhone}</Ltr>
               </a>
             </div>
           ) : null}
@@ -181,10 +192,10 @@ export function ConfirmationScreen({ orderId }: { orderId: string }) {
 
         <div className="gap-snug flex w-full max-w-md flex-col sm:flex-row">
           <ButtonLink href={'/orders/' + order.id} fullWidth size="lg">
-            Track this order
+            {t('checkout.confirmation.track')}
           </ButtonLink>
           <ButtonLink href="/categories" variant="outline" fullWidth size="lg">
-            Keep shopping
+            {t('checkout.confirmation.keepShopping')}
           </ButtonLink>
         </div>
       </Container>

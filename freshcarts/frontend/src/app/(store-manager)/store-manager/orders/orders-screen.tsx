@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreOrders } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { FulfillmentMethod, OrderStatus } from '@/types/order';
 
@@ -21,24 +22,29 @@ import type { FulfillmentMethod, OrderStatus } from '@/types/order';
  * server's own definition of "the store is holding this up", so the tab and the
  * dashboard count can never disagree.
  */
-const STATUS_TABS: Array<{ value: string; label: string }> = [
-  { value: 'NEEDS_ACTION', label: 'Needs action' },
-  { value: 'ALL', label: 'All' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'CONFIRMED', label: 'Confirmed' },
-  { value: 'PREPARING', label: 'Preparing' },
-  { value: 'PACKED', label: 'Packed' },
-  { value: 'READY_FOR_PICKUP', label: 'Ready for pickup' },
-  { value: 'OUT_FOR_DELIVERY', label: 'Out for delivery' },
-  { value: 'DELIVERED', label: 'Completed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'REJECTED', label: 'Rejected' },
+interface FilterOption {
+  value: string;
+  labelKey: TranslationKey;
+}
+
+const STATUS_TABS: FilterOption[] = [
+  { value: 'NEEDS_ACTION', labelKey: 'store.filter.NEEDS_ACTION' },
+  { value: 'ALL', labelKey: 'common.all' },
+  { value: 'PENDING', labelKey: 'store.filter.PENDING' },
+  { value: 'CONFIRMED', labelKey: 'store.filter.CONFIRMED' },
+  { value: 'PREPARING', labelKey: 'store.filter.PREPARING' },
+  { value: 'PACKED', labelKey: 'store.filter.PACKED' },
+  { value: 'READY_FOR_PICKUP', labelKey: 'store.filter.READY_FOR_PICKUP' },
+  { value: 'OUT_FOR_DELIVERY', labelKey: 'store.filter.OUT_FOR_DELIVERY' },
+  { value: 'DELIVERED', labelKey: 'store.filter.DELIVERED' },
+  { value: 'CANCELLED', labelKey: 'store.filter.CANCELLED' },
+  { value: 'REJECTED', labelKey: 'store.filter.REJECTED' },
 ];
 
-const FULFILLMENT_TABS: Array<{ value: string; label: string }> = [
-  { value: 'ALL', label: 'All' },
-  { value: 'DELIVERY', label: 'Delivery' },
-  { value: 'PICKUP', label: 'Pickup' },
+const FULFILLMENT_TABS: FilterOption[] = [
+  { value: 'ALL', labelKey: 'common.all' },
+  { value: 'DELIVERY', labelKey: 'store.fulfillment.DELIVERY' },
+  { value: 'PICKUP', labelKey: 'store.fulfillment.PICKUP' },
 ];
 
 /**
@@ -49,6 +55,7 @@ const FULFILLMENT_TABS: Array<{ value: string; label: string }> = [
  * derived from the same place, so the address bar and the cache cannot drift.
  */
 export function OrdersScreen() {
+  const { t, ltr } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -104,14 +111,12 @@ export function OrdersScreen() {
     <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-end justify-between">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-text text-xl font-semibold">Orders</h1>
+          <h1 className="text-text text-xl font-semibold">{t('store.orders.title')}</h1>
           <p aria-live="polite" className="text-text-muted text-sm">
             {isPending
-              ? 'Loading orders…'
+              ? t('store.orders.loading')
               : pagination
-                ? pagination.total === 1
-                  ? '1 order'
-                  : pagination.total + ' orders'
+                ? t('store.orders.count', { count: pagination.total })
                 : ''}
           </p>
         </div>
@@ -125,8 +130,9 @@ export function OrdersScreen() {
           className="gap-tight flex items-end"
         >
           <Input
-            label="Order number"
-            placeholder="FC-2026-…"
+            label={t('store.orders.orderNumber')}
+            placeholder={t('store.orders.orderNumberPlaceholder')}
+            ltr
             value={orderNumberInput}
             onChange={(event) => setOrderNumberInput(event.target.value)}
             className="max-w-44"
@@ -136,20 +142,20 @@ export function OrdersScreen() {
             variant="outline"
             leadingIcon={<Search className="size-4" aria-hidden="true" />}
           >
-            Find
+            {t('store.orders.find')}
           </Button>
         </form>
       </header>
 
       <FilterRow
-        legend="Status"
+        legend={t('store.orders.statusLegend')}
         options={STATUS_TABS}
         selected={statusParam}
         onSelect={(value) => setParam({ status: value === 'NEEDS_ACTION' ? undefined : value })}
       />
 
       <FilterRow
-        legend="Fulfilment"
+        legend={t('store.fulfillment.label')}
         options={FULFILLMENT_TABS}
         selected={fulfillmentParam}
         onSelect={(value) => setParam({ fulfillment: value })}
@@ -158,7 +164,7 @@ export function OrdersScreen() {
       {isPending ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-24 w-full" label="Loading orders" />
+            <Skeleton key={index} className="h-24 w-full" label={t('store.dashboard.loadingOrders')} />
           ))}
         </div>
       ) : null}
@@ -168,11 +174,11 @@ export function OrdersScreen() {
       {data?.items.length === 0 ? (
         <EmptyState
           icon={<ClipboardList className="size-7" aria-hidden="true" />}
-          title="No orders found"
+          title={t('store.orders.emptyTitle')}
           description={
             orderNumberParam
-              ? 'No order in this store matches “' + orderNumberParam + '”.'
-              : 'Nothing matches these filters. Try widening them.'
+              ? t('store.orders.emptyForNumber', { term: ltr(orderNumberParam) })
+              : t('store.orders.emptyForFilters')
           }
           className="bg-surface-muted rounded-lg"
         />
@@ -193,18 +199,18 @@ export function OrdersScreen() {
       ) : null}
 
       {pagination && pagination.totalPages > 1 ? (
-        <nav aria-label="Order pages" className="gap-gutter flex items-center justify-center">
+        <nav aria-label={t('store.orders.pagesLabel')} className="gap-gutter flex items-center justify-center">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
             onClick={() => setParam({ page: String(page - 1) })}
           >
-            Previous
+            {t('common.previous')}
           </Button>
 
           <span aria-live="polite" className="text-text-muted text-sm">
-            Page {pagination.page} of {pagination.totalPages}
+            {t('common.page', { page: pagination.page, pages: pagination.totalPages })}
           </span>
 
           <Button
@@ -213,7 +219,7 @@ export function OrdersScreen() {
             disabled={page >= pagination.totalPages}
             onClick={() => setParam({ page: String(page + 1) })}
           >
-            Next
+            {t('common.next')}
           </Button>
         </nav>
       ) : null}
@@ -235,10 +241,12 @@ function FilterRow({
   onSelect,
 }: {
   legend: string;
-  options: Array<{ value: string; label: string }>;
+  options: FilterOption[];
   selected: string;
   onSelect: (value: string) => void;
 }) {
+  const t = useT();
+
   return (
     <div className="gap-tight flex flex-col">
       <span className="text-text-muted text-xs font-semibold tracking-wide uppercase">
@@ -263,7 +271,7 @@ function FilterRow({
                   : 'border-outline-variant bg-surface text-text hover:bg-surface-muted',
               )}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           );
         })}

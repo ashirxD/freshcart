@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import { useFavoriteIds, useToggleFavorite } from '@/features/favorites/favorites.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
@@ -28,6 +29,7 @@ export function FavoriteButton({
   size = 'md',
   className,
 }: FavoriteButtonProps) {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
   const favoriteIds = useFavoriteIds();
@@ -37,12 +39,12 @@ export function FavoriteButton({
   const isFavorite = favoriteIds.has(productId);
 
   const label = isFavorite
-    ? 'Remove ' + productName + ' from favourites'
-    : 'Add ' + productName + ' to favourites';
+    ? t('product.removeFromFavourites', { name: productName })
+    : t('product.addToFavourites', { name: productName });
 
   const handleClick = () => {
     if (status !== 'authenticated') {
-      toast({ title: 'Sign in to save your favourites', variant: 'info' });
+      toast({ title: t('product.signInToSave'), variant: 'info' });
       router.push('/login?next=' + encodeURIComponent(window.location.pathname));
       return;
     }

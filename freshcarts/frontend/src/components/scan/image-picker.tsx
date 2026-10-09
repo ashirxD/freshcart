@@ -3,6 +3,7 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { Camera, ImagePlus, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/i18n';
 
 /** Mirrors the API's own allowlist. The server checks the bytes regardless. */
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
@@ -34,6 +35,7 @@ export interface ImagePickerProps {
  * should understand this screen without knowing what OCR is (§2, §79).
  */
 export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePickerProps) {
+  const t = useT();
   const cameraInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -44,16 +46,12 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
     // A first, friendly check. The server repeats both of these on the bytes,
     // because everything here is under the shopper's control.
     if (!ACCEPTED_TYPES.split(',').includes(file.type)) {
-      onReject('Please choose a photo — a JPG, PNG or WEBP image.');
+      onReject(t('ocr.picker.rejectType'));
       return;
     }
 
     if (file.size > maxBytes) {
-      onReject(
-        'That photo is larger than ' +
-          Math.round(maxBytes / (1024 * 1024)) +
-          ' MB. Try taking it again at a smaller size.',
-      );
+      onReject(t('ocr.picker.rejectSize', { mb: Math.round(maxBytes / (1024 * 1024)) }));
       return;
     }
 
@@ -78,12 +76,11 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
         </span>
 
         <h1 id="scan-intro-heading" className="text-display text-primary">
-          Turn your grocery list into a basket
+          {t('ocr.picker.title')}
         </h1>
 
         <p className="text-text-muted mx-auto max-w-md text-base leading-relaxed">
-          Take a photo of your list, or upload one. We will find each item in the shop and show you
-          what we found before anything is added.
+          {t('ocr.picker.body')}
         </p>
       </header>
 
@@ -115,7 +112,7 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           capture="environment"
           onChange={onInputChange}
           className="sr-only"
-          aria-label="Take a photo of your grocery list"
+          aria-label={t('ocr.picker.takeAria')}
         />
         <input
           ref={libraryInput}
@@ -123,7 +120,7 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           accept={ACCEPTED_TYPES}
           onChange={onInputChange}
           className="sr-only"
-          aria-label="Upload an image of your grocery list"
+          aria-label={t('ocr.picker.uploadAria')}
         />
 
         <Button
@@ -132,7 +129,7 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           onClick={() => cameraInput.current?.click()}
           leadingIcon={<Camera className="size-5" />}
         >
-          Take Photo
+          {t('ocr.picker.take')}
         </Button>
 
         <Button
@@ -142,11 +139,11 @@ export function ImagePicker({ onSelect, maxBytes, onReject, rejection }: ImagePi
           onClick={() => libraryInput.current?.click()}
           leadingIcon={<ImagePlus className="size-5" />}
         >
-          Upload Image
+          {t('ocr.picker.upload')}
         </Button>
 
         <p className="text-text-muted text-center text-xs font-medium">
-          Handwritten or printed, in English or Urdu. JPG, PNG or WEBP.
+          {t('ocr.picker.hint')}
         </p>
 
         {rejection ? (

@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface ModalProps {
@@ -31,6 +32,7 @@ export function Modal({
   footer,
   variant = 'sheet',
 }: ModalProps) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
@@ -114,7 +116,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common.close')}
             className="size-touch text-outline hover:bg-surface-muted -me-2 -mt-1 flex shrink-0 items-center justify-center rounded-full transition-colors"
           >
             <X className="size-5" aria-hidden="true" />

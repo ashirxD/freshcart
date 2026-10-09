@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Phone, ShoppingBasket, Truck } from 'lucide-react';
+import { Phone, Search, ShoppingBasket, Truck } from 'lucide-react';
 import { LogoLink } from '@/components/brand/logo';
 import { SearchBar } from '@/components/common/search-bar';
 import { IconLink } from '@/components/ui/icon-button';
 import { useCartCount } from '@/features/cart/cart.hooks';
 import { useCurrentStore } from '@/features/catalog/catalog.hooks';
+import { Ltr } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { AccountMenu } from './account-menu';
 import { CartCountBadge } from './cart-count-badge';
@@ -38,6 +40,7 @@ export function DesktopNavigation() {
   const router = useRouter();
   const cartCount = useCartCount();
   const { data: store } = useCurrentStore();
+  const t = useT();
 
   return (
     <div className="hidden md:block">
@@ -48,7 +51,7 @@ export function DesktopNavigation() {
 
           <span className="text-cream/75 flex items-center gap-1.5">
             <Truck className="size-3.5" aria-hidden="true" />
-            Delivery or collect in store
+            {t('nav.deliveryOrCollect')}
           </span>
 
           {store?.phone ? (
@@ -57,7 +60,7 @@ export function DesktopNavigation() {
               className="text-cream/75 hover:text-cream -my-1 ms-auto flex min-h-8 items-center gap-1.5 rounded px-1.5 transition-colors"
             >
               <Phone className="size-3.5" aria-hidden="true" />
-              {store.phone}
+              <Ltr>{store.phone}</Ltr>
             </a>
           ) : null}
         </div>
@@ -69,10 +72,10 @@ export function DesktopNavigation() {
           'border-outline-variant bg-surface/95 sticky top-0 z-40 border-b backdrop-blur-md',
         )}
       >
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-5 px-8 py-2.5">
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-8 py-2.5 lg:gap-5">
           <LogoLink />
 
-          <nav aria-label="Primary" className="flex items-center gap-0.5">
+          <nav aria-label={t('nav.primary')} className="flex items-center gap-0.5">
             {DESKTOP_NAV.map((item) => {
               const active = isActiveRoute(pathname, item.href);
 
@@ -86,7 +89,7 @@ export function DesktopNavigation() {
                     active ? 'text-primary' : 'text-text-muted hover:text-text',
                   )}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
 
                   {/*
                     A leaf-green underline for the current section rather than a
@@ -104,14 +107,27 @@ export function DesktopNavigation() {
             })}
           </nav>
 
-          <div className="min-w-0 flex-1">
+          {/* The field needs about 280px to be a search box rather than a
+              sliver. Between `md` and `lg` the logo, nav and actions leave it
+              roughly 35, so it is an icon there and a field from `lg`. */}
+          <div className="hidden min-w-0 flex-1 lg:block">
             <SearchBar
               onSubmit={(term) => router.push('/search?q=' + encodeURIComponent(term))}
               className="mx-auto max-w-md"
             />
           </div>
+          <div className="flex-1 lg:hidden" aria-hidden="true" />
 
           <div className="flex shrink-0 items-center gap-1">
+            <IconLink
+              href="/search"
+              label={t('nav.searchProducts')}
+              isCurrent={isActiveRoute(pathname, '/search')}
+              className="lg:hidden"
+            >
+              <Search className="size-5" aria-hidden="true" />
+            </IconLink>
+
             {HEADER_ACTIONS.map((item) => {
               const Icon = item.icon;
 
@@ -119,7 +135,7 @@ export function DesktopNavigation() {
                 <IconLink
                   key={item.href}
                   href={item.href}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   isCurrent={isActiveRoute(pathname, item.href)}
                 >
                   <Icon className="size-5" aria-hidden="true" />
@@ -129,7 +145,10 @@ export function DesktopNavigation() {
 
             <IconLink
               href="/cart"
-              label={'Basket, ' + (cartCount === 1 ? '1 item' : cartCount + ' items')}
+              label={t('nav.navItemWithCount', {
+                label: t('nav.basket'),
+                items: t('common.itemCount', { count: cartCount }),
+              })}
               isCurrent={isActiveRoute(pathname, '/cart')}
             >
               <ShoppingBasket className="size-5" aria-hidden="true" />

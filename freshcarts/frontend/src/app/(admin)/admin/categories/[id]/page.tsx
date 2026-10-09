@@ -10,9 +10,11 @@ import {
   useAdminCategory,
   useUpdateCategory,
 } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import { toCategoryInput } from '@/lib/validation/catalog.schema';
 
 export default function Page() {
+  const { t, tx } = useI18n();
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
 
@@ -23,11 +25,13 @@ export default function Page() {
   return (
     <Container className="gap-loose flex max-w-2xl flex-col">
       <h1 className="text-text text-xl font-semibold">
-        {category.data ? 'Edit ' + category.data.name : 'Edit category'}
+        {category.data
+          ? tx('admin.categories.editTitle', { name: <bdi>{category.data.name}</bdi> })
+          : t('admin.categories.editFallback')}
       </h1>
 
       {category.isPending ? (
-        <Skeleton className="h-96 w-full" label="Loading the category" />
+        <Skeleton className="h-96 w-full" label={t('admin.categories.loadingCategory')} />
       ) : null}
 
       {category.isError ? (

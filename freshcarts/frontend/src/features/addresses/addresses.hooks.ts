@@ -1,8 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { apiFetch } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
+import { tNow, type TranslationKey } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import type { Address, AddressInput } from '@/types/address';
@@ -56,7 +59,7 @@ export function useAddresses() {
  */
 function useAddressMutation<TInput, TResult>(
   mutationFn: (input: TInput) => Promise<TResult>,
-  options: { successMessage?: string; errorTitle: string },
+  options: { successMessage?: TranslationKey; errorTitle: TranslationKey },
 ) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -65,13 +68,13 @@ function useAddressMutation<TInput, TResult>(
     mutationFn,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: addressKeys.all });
-      if (options.successMessage) toast({ title: options.successMessage, variant: 'success' });
+      if (options.successMessage) toast({ title: tNow(options.successMessage), variant: 'success' });
     },
     onError: (error: unknown) => {
       toast({
-        title: options.errorTitle,
+        title: tNow(options.errorTitle),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },
@@ -80,27 +83,27 @@ function useAddressMutation<TInput, TResult>(
 
 export function useCreateAddress() {
   return useAddressMutation(addressesApi.create, {
-    successMessage: 'Address saved',
-    errorTitle: 'Could not save this address',
+    successMessage: 'toast.addressSaved',
+    errorTitle: 'toast.addressSaveFailed',
   });
 }
 
 export function useUpdateAddress() {
   return useAddressMutation(addressesApi.update, {
-    successMessage: 'Address updated',
-    errorTitle: 'Could not update this address',
+    successMessage: 'toast.addressUpdated',
+    errorTitle: 'toast.addressUpdateFailed',
   });
 }
 
 export function useSetDefaultAddress() {
   return useAddressMutation(addressesApi.setDefault, {
-    errorTitle: 'Could not set your default address',
+    errorTitle: 'toast.addressDefaultFailed',
   });
 }
 
 export function useDeleteAddress() {
   return useAddressMutation(addressesApi.remove, {
-    successMessage: 'Address removed',
-    errorTitle: 'Could not remove this address',
+    successMessage: 'toast.addressRemoved',
+    errorTitle: 'toast.addressRemoveFailed',
   });
 }

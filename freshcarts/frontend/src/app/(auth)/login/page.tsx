@@ -7,9 +7,11 @@ import { AuthLink, AuthPanel } from '@/components/layout/auth-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLogin } from '@/features/auth/auth.hooks';
+import { useT } from '@/i18n';
 import { loginSchema, type LoginInput, type LoginValues } from '@/lib/validation/auth.schema';
 
 export default function LoginPage() {
+  const t = useT();
   const login = useLogin('/');
 
   const {
@@ -23,11 +25,12 @@ export default function LoginPage() {
 
   return (
     <AuthPanel
-      title="Welcome back"
-      subtitle="Sign in with the mobile number you shop with."
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
       footer={
         <>
-          New to FreshCarts? <AuthLink href="/register">Create an account</AuthLink>
+          {t('auth.login.footerNew')}{' '}
+          <AuthLink href="/register">{t('auth.login.createLink')}</AuthLink>
         </>
       }
     >
@@ -37,7 +40,7 @@ export default function LoginPage() {
         noValidate
       >
         <Input
-          label="Mobile number"
+          label={t('auth.login.mobile')}
           type="tel"
           inputMode="numeric"
           autoComplete="tel"
@@ -48,17 +51,17 @@ export default function LoginPage() {
         />
 
         <Input
-          label="Password"
+          label={t('auth.login.password')}
           type="password"
           autoComplete="current-password"
-          placeholder="Your password"
+          placeholder={t('auth.login.passwordPlaceholder')}
           leadingIcon={<Lock className="size-5" />}
           error={errors.password?.message}
           {...register('password')}
         />
 
         <Button type="submit" size="lg" fullWidth isLoading={login.isPending} className="mt-tight">
-          Sign in
+          {t('auth.login.submit')}
         </Button>
       </form>
     </AuthPanel>

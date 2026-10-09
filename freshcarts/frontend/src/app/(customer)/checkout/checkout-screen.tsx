@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ShoppingBasket, UserRound } from 'lucide-react';
 import { AddressPicker } from '@/components/address/address-picker';
+import { BasketPeek } from '@/components/checkout/basket-peek';
 import { CheckoutProblem } from '@/components/checkout/checkout-problem';
 import { CheckoutSteps } from '@/components/checkout/checkout-steps';
 import { FulfillmentSelector } from '@/components/checkout/fulfillment-selector';
@@ -23,6 +24,8 @@ import {
   usePlaceOrder,
 } from '@/features/checkout/checkout.hooks';
 import { useIdempotencyKey } from '@/features/checkout/use-idempotency-key';
+import { Money } from '@/components/common/ltr';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import { useAuthStore } from '@/store/auth.store';
 import type { CheckoutPreviewInput, FulfillmentMethod, PaymentMethod } from '@/types/order';
@@ -32,11 +35,11 @@ type Step = 'fulfillment' | 'address' | 'payment' | 'review';
 const DELIVERY_STEPS: Step[] = ['fulfillment', 'address', 'payment', 'review'];
 const PICKUP_STEPS: Step[] = ['fulfillment', 'payment', 'review'];
 
-const STEP_LABEL: Record<Step, string> = {
-  fulfillment: 'Method',
-  address: 'Address',
-  payment: 'Payment',
-  review: 'Review',
+const STEP_LABEL: Record<Step, TranslationKey> = {
+  fulfillment: 'checkout.steps.method',
+  address: 'checkout.steps.address',
+  payment: 'checkout.steps.payment',
+  review: 'checkout.steps.review',
 };
 
 /**
@@ -62,6 +65,7 @@ const STEP_LABEL: Record<Step, string> = {
  * id to send.
  */
 export function CheckoutScreen() {
+  const { t, ltr } = useI18n();
   const router = useRouter();
   const sessionStatus = useAuthStore((state) => state.status);
 
@@ -100,7 +104,7 @@ export function CheckoutScreen() {
   if (sessionStatus === 'loading' || isCartPending) {
     return (
       <Container className="gap-gutter py-loose flex flex-col">
-        <Skeleton className="h-8 w-40" label="Opening checkout" />
+        <Skeleton className="h-8 w-40" label={t('checkout.screen.loading')} />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-48 w-full" />
       </Container>
@@ -110,14 +114,14 @@ export function CheckoutScreen() {
   if (sessionStatus !== 'authenticated') {
     return (
       <Container className="py-loose">
-        <h1 className="text-display text-primary">Checkout</h1>
+        <h1 className="text-display text-primary">{t('checkout.screen.title')}</h1>
         <EmptyState
           icon={<UserRound aria-hidden="true" />}
-          title="Sign in to place your order"
-          description="Your cart is saved to your account and will be waiting for you."
+          title={t('checkout.screen.signInTitle')}
+          description={t('checkout.screen.signInBody')}
           action={
             <ButtonLink href="/login?next=%2Fcheckout" variant="primary">
-              Sign in
+              {t('nav.signIn')}
             </ButtonLink>
           }
           className="mt-loose bg-surface-muted rounded-2xl"
@@ -129,14 +133,14 @@ export function CheckoutScreen() {
   if (!cart || cart.itemCount === 0) {
     return (
       <Container className="py-loose">
-        <h1 className="text-display text-primary">Checkout</h1>
+        <h1 className="text-display text-primary">{t('checkout.screen.title')}</h1>
         <EmptyState
           icon={<ShoppingBasket aria-hidden="true" />}
-          title="Your cart is empty"
-          description="Add a few things to your cart, then come back to check out."
+          title={t('checkout.screen.emptyTitle')}
+          description={t('checkout.screen.emptyBody')}
           action={
             <ButtonLink href="/categories" variant="primary">
-              Start shopping
+              {t('cart.startShopping')}
             </ButtonLink>
           }
           className="mt-loose bg-surface-muted rounded-2xl"
@@ -157,7 +161,7 @@ export function CheckoutScreen() {
 
     if (step === 'address') {
       if (!addressId) {
-        setValidationError('Choose a delivery address to continue.');
+        setValidationError('validation.chooseAddress');
         return;
       }
       setStep('payment');
@@ -166,7 +170,7 @@ export function CheckoutScreen() {
 
     if (step === 'payment') {
       if (!paymentMethod) {
-        setValidationError('Choose how you would like to pay.');
+        setValidationError('validation.choosePayment');
         return;
       }
       setStep('review');
@@ -230,7 +234,7 @@ export function CheckoutScreen() {
               <button
                 type="button"
                 onClick={goBack}
-                aria-label="Go back to the previous step"
+                aria-label={t('checkout.screen.back')}
                 className="text-text hover:bg-surface/70 -ms-2 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors"
               >
                 <ArrowLeft className="size-5 rtl:rotate-180" aria-hidden="true" />
@@ -239,13 +243,13 @@ export function CheckoutScreen() {
 
             <div className="flex flex-col">
               <p className="text-eyebrow text-leaf uppercase">
-                Step {stepIndex + 1} of {steps.length}
+                {t('checkout.screen.stepOf', { step: stepIndex + 1, total: steps.length })}
               </p>
-              <h1 className="text-display text-primary">Checkout</h1>
+              <h1 className="text-display text-primary">{t('checkout.screen.title')}</h1>
             </div>
           </div>
 
-          <CheckoutSteps steps={steps.map((value) => STEP_LABEL[value])} current={stepIndex} />
+          <CheckoutSteps steps={steps.map((value) => t(STEP_LABEL[value]))} current={stepIndex} />
         </Container>
       </div>
 
@@ -259,7 +263,7 @@ export function CheckoutScreen() {
           {step === 'address' ? (
             <section aria-labelledby="address-step-heading" className="gap-gutter flex flex-col">
               <h2 id="address-step-heading" className="text-text text-base font-semibold">
-                Where should we deliver this order?
+                {t('checkout.screen.addressQuestion')}
               </h2>
 
               <AddressPicker
@@ -280,8 +284,8 @@ export function CheckoutScreen() {
               />
 
               <Textarea
-                label="Anything the store should know?"
-                hint="Optional. For example: please pack the eggs separately."
+                label={t('checkout.screen.noteLabel')}
+                hint={t('checkout.screen.noteHint')}
                 maxLength={500}
                 value={customerNote}
                 onChange={(event) => setCustomerNote(event.target.value)}
@@ -327,10 +331,9 @@ export function CheckoutScreen() {
               isLoading={preview.isFetching && !preview.data}
             />
           ) : (
-            <div className="ring-outline-variant bg-surface-muted p-gutter text-text-muted rounded-2xl text-sm ring-1">
-              Choose a delivery address and we will work out your total, including the delivery
-              charge, before you place the order.
-            </div>
+            // No address yet, so no delivery charge and no total to show — but
+            // there is a basket, and the shopper should see it.
+            <BasketPeek cart={cart} />
           )}
 
           {/*
@@ -348,12 +351,15 @@ export function CheckoutScreen() {
                 disabled={!canPlaceOrder}
                 isLoading={isPlacing}
               >
-                Place order
-                {preview.data ? ' · ' + formatPkr(preview.data.total) : ''}
+                {preview.data
+                  ? t('checkout.screen.placeOrderWithTotal', {
+                      total: ltr(formatPkr(preview.data.total)),
+                    })
+                  : t('checkout.screen.placeOrder')}
               </Button>
             ) : (
               <Button fullWidth size="lg" onClick={goNext}>
-                Continue
+                {t('common.continue')}
               </Button>
             )}
           </div>
@@ -371,9 +377,9 @@ export function CheckoutScreen() {
           <div className="gap-gutter flex items-center">
             {preview.data ? (
               <div className="flex flex-col">
-                <span className="text-text-muted text-xs font-medium">Total</span>
+                <span className="text-text-muted text-xs font-medium">{t('common.total')}</span>
                 <span className="text-primary text-price tabular-nums">
-                  {formatPkr(preview.data.total)}
+                  <Money>{formatPkr(preview.data.total)}</Money>
                 </span>
               </div>
             ) : null}
@@ -385,12 +391,12 @@ export function CheckoutScreen() {
               isLoading={isPlacing}
               className="flex-1"
             >
-              Place order
+              {t('checkout.screen.placeOrder')}
             </Button>
           </div>
         ) : (
           <Button fullWidth size="lg" onClick={goNext}>
-            Continue
+            {t('common.continue')}
           </Button>
         )}
       </div>

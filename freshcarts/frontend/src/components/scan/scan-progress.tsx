@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /**
@@ -12,11 +13,11 @@ import { cn } from '@/lib/cn';
  * list does not need to know our architecture, and telling them makes a simple
  * thing feel complicated.
  */
-const STAGES = [
-  { id: 'reading', label: 'Reading your list…' },
-  { id: 'finding', label: 'Finding your groceries…' },
-  { id: 'matching', label: 'Matching what the shop has…' },
-] as const;
+const STAGES: ReadonlyArray<{ id: string; label: TranslationKey }> = [
+  { id: 'reading', label: 'ocr.progress.stageReading' },
+  { id: 'finding', label: 'ocr.progress.stageFinding' },
+  { id: 'matching', label: 'ocr.progress.stageMatching' },
+];
 
 /**
  * Roughly how long each stage takes, from measured OCR runs on phone photos.
@@ -28,8 +29,10 @@ const STAGES = [
  */
 const STAGE_DURATIONS_MS = [2_000, 2_500];
 
-export function ScanProgress() {
+export function ScanProgress({ file }: { file?: File }) {
+  const t = useT();
   const [stage, setStage] = useState(0);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (stage >= STAGES.length - 1) return;
@@ -37,6 +40,17 @@ export function ScanProgress() {
     const timer = setTimeout(() => setStage((current) => current + 1), STAGE_DURATIONS_MS[stage]);
     return () => clearTimeout(timer);
   }, [stage]);
+
+  // The shopper's own photo, from an object URL that is revoked when the screen
+  // goes away — the same care `ImagePreview` takes, for the same reason.
+  useEffect(() => {
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setPhotoUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   return (
     <div
@@ -47,32 +61,38 @@ export function ScanProgress() {
       aria-live="polite"
     >
       {/*
-        A sheet of paper with a reading line travelling down it, rather than a
-        spinner. A spinner says "something is happening"; this says "we are
-        reading your list", which is the one thing worth communicating while a
-        shopper waits (§32, §77).
+        The shopper's own list with a reading line travelling down it, rather
+        than a spinner. A spinner says "something is happening"; this says "we
+        are reading YOUR list", which is the one thing worth communicating while
+        a shopper waits (§32, §77) — and it is their photograph, so nothing
+        pretends to be their handwriting. Before the photo is ready, or when
+        there is none, it is a sheet of abstract lines instead.
       */}
       <div
         aria-hidden="true"
-        className="ring-sand bg-surface shadow-card relative h-36 w-28 overflow-hidden rounded-xl ring-1"
+        className="ring-sand bg-surface shadow-card relative h-48 w-36 overflow-hidden rounded-xl ring-1"
       >
-        <div className="flex flex-col gap-2.5 p-3.5 pt-5">
-          {/* The written lines of the list, as bars — deliberately abstract, so
-              nothing here pretends to be the shopper's actual handwriting. */}
-          {[10, 8, 11, 7, 9, 6].map((width, index) => (
-            <span
-              key={index}
-              className="bg-sand h-1.5 rounded-full"
-              style={{ width: width * 8 + '%' }}
-            />
-          ))}
-        </div>
+        {photoUrl ? (
+          // A local blob: nothing for the Next image optimiser to do.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="" className="size-full object-cover" />
+        ) : (
+          <div className="flex flex-col gap-2.5 p-3.5 pt-5">
+            {[10, 8, 11, 7, 9, 6].map((width, index) => (
+              <span
+                key={index}
+                className="bg-sand h-1.5 rounded-full"
+                style={{ width: width * 8 + '%' }}
+              />
+            ))}
+          </div>
+        )}
 
         <span
-          className="animate-sweep absolute inset-x-0 top-0 h-12"
+          className="animate-sweep absolute inset-x-0 top-0 h-14"
           style={{
             backgroundImage:
-              'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--color-leaf) 18%, transparent))',
+              'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--color-leaf) 28%, transparent))',
             borderBottom: '2px solid var(--color-leaf)',
           }}
         />
@@ -113,14 +133,14 @@ export function ScanProgress() {
                 ) : null}
               </span>
 
-              {entry.label}
+              {t(entry.label)}
             </li>
           );
         })}
       </ol>
 
       <p className="text-text-muted px-page max-w-sm text-center text-sm">
-        This usually takes a few seconds. Please keep this page open.
+        {t('ocr.progress.takes')}
       </p>
     </div>
   );

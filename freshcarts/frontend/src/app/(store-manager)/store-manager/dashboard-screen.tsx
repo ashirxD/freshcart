@@ -9,6 +9,7 @@ import { StoreOrderRow } from '@/components/store-manager/store-order-row';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreDashboard, useStoreOrders } from '@/features/store-manager/store-manager.hooks';
+import { useI18n } from '@/i18n';
 
 /**
  * The operations dashboard.
@@ -19,6 +20,7 @@ import { useStoreDashboard, useStoreOrders } from '@/features/store-manager/stor
  * at a counter is asking.
  */
 export function DashboardScreen() {
+  const { t, tx } = useI18n();
   const dashboard = useStoreDashboard();
 
   // The same "needs action" definition the tiles count, so the list under them
@@ -28,7 +30,7 @@ export function DashboardScreen() {
   if (dashboard.isPending) {
     return (
       <Container className="gap-loose flex flex-col">
-        <Skeleton className="h-7 w-48" label="Loading the dashboard" />
+        <Skeleton className="h-7 w-48" label={t('store.dashboard.loading')} />
         <div className="gap-gutter grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton key={index} className="h-24 w-full" />
@@ -45,7 +47,7 @@ export function DashboardScreen() {
         <ErrorState
           error={dashboard.error}
           onRetry={() => void dashboard.refetch()}
-          title="We could not load your dashboard"
+          title={t('store.dashboard.loadFailed')}
         />
       </Container>
     );
@@ -56,41 +58,41 @@ export function DashboardScreen() {
   return (
     <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
-        <h1 className="text-text text-xl font-semibold">Today at {dashboard.data.store.name}</h1>
+        <h1 className="text-text text-xl font-semibold">
+          {tx('store.dashboard.today', { store: <bdi>{dashboard.data.store.name}</bdi> })}
+        </h1>
         <p className="text-text-muted text-sm">
           {orders.needsAction === 0
-            ? 'Nothing is waiting on you right now.'
-            : orders.needsAction === 1
-              ? '1 order needs your attention.'
-              : orders.needsAction + ' orders need your attention.'}
+            ? t('store.dashboard.nothingWaiting')
+            : t('store.dashboard.attention', { count: orders.needsAction })}
         </p>
       </header>
 
       {/* 1. Orders requiring action — the most important thing on the screen. */}
       <section className="gap-gutter flex flex-col" aria-labelledby="orders-heading">
         <h2 id="orders-heading" className="text-text text-base font-semibold">
-          Orders needing attention
+          {t('store.dashboard.ordersNeedingAttention')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 sm:grid-cols-4">
           <StatTile
-            label="Pending"
+            label={t('store.dashboard.pending')}
             value={orders.pending}
             tone={orders.pending > 0 ? 'ATTENTION' : 'DEFAULT'}
             href="/store-manager/orders?status=PENDING"
           />
           <StatTile
-            label="Confirmed"
+            label={t('store.dashboard.confirmed')}
             value={orders.confirmed}
             href="/store-manager/orders?status=CONFIRMED"
           />
           <StatTile
-            label="Preparing"
+            label={t('store.dashboard.preparing')}
             value={orders.preparing}
             href="/store-manager/orders?status=PREPARING"
           />
           <StatTile
-            label="Packed"
+            label={t('store.dashboard.packed')}
             value={orders.packed}
             tone={orders.packed > 0 ? 'ATTENTION' : 'DEFAULT'}
             href="/store-manager/orders?status=PACKED"
@@ -100,22 +102,22 @@ export function DashboardScreen() {
 
       <section className="gap-gutter flex flex-col" aria-labelledby="progress-heading">
         <h2 id="progress-heading" className="text-text text-base font-semibold">
-          On the way
+          {t('store.dashboard.onTheWay')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 sm:grid-cols-3">
           <StatTile
-            label="Ready for pickup"
+            label={t('store.dashboard.readyForPickup')}
             value={orders.readyForPickup}
             href="/store-manager/orders?status=READY_FOR_PICKUP"
           />
           <StatTile
-            label="Out for delivery"
+            label={t('store.dashboard.outForDelivery')}
             value={orders.outForDelivery}
             href="/store-manager/orders?status=OUT_FOR_DELIVERY"
           />
           <StatTile
-            label="Completed today"
+            label={t('store.dashboard.completedToday')}
             value={orders.completedToday}
             href="/store-manager/orders?status=DELIVERED"
           />
@@ -125,24 +127,24 @@ export function DashboardScreen() {
       {/* 2. Inventory alerts. */}
       <section className="gap-gutter flex flex-col" aria-labelledby="inventory-heading">
         <h2 id="inventory-heading" className="text-text text-base font-semibold">
-          Inventory alerts
+          {t('store.dashboard.inventoryAlerts')}
         </h2>
 
         <div className="gap-gutter grid grid-cols-2 sm:grid-cols-3">
           <StatTile
-            label="Low stock"
+            label={t('store.dashboard.lowStock')}
             value={inventory.lowStock}
             tone={inventory.lowStock > 0 ? 'WARNING' : 'DEFAULT'}
             href="/store-manager/inventory?status=LOW_STOCK"
           />
           <StatTile
-            label="Out of stock"
+            label={t('store.dashboard.outOfStock')}
             value={inventory.outOfStock}
             tone={inventory.outOfStock > 0 ? 'DANGER' : 'DEFAULT'}
             href="/store-manager/inventory?status=OUT_OF_STOCK"
           />
           <StatTile
-            label="Well stocked"
+            label={t('store.dashboard.wellStocked')}
             value={inventory.inStock}
             href="/store-manager/inventory?status=IN_STOCK"
           />
@@ -151,7 +153,7 @@ export function DashboardScreen() {
         {inventory.lowStock === 0 && inventory.outOfStock === 0 ? (
           <p className="text-success flex items-center gap-1.5 text-sm">
             <CheckCircle2 className="size-4" aria-hidden="true" />
-            Everything looks well stocked.
+            {t('store.dashboard.allWellStocked')}
           </p>
         ) : null}
       </section>
@@ -159,14 +161,12 @@ export function DashboardScreen() {
       {substitutions.awaitingCustomer > 0 ? (
         <section className="gap-gutter flex flex-col" aria-labelledby="substitutions-heading">
           <h2 id="substitutions-heading" className="text-text text-base font-semibold">
-            Replacements
+            {t('store.dashboard.replacements')}
           </h2>
           <StatTile
-            label={
-              substitutions.awaitingCustomer === 1
-                ? 'Replacement waiting on a customer'
-                : 'Replacements waiting on customers'
-            }
+            label={t('store.dashboard.replacementWaiting', {
+              count: substitutions.awaitingCustomer,
+            })}
             value={substitutions.awaitingCustomer}
             tone="WARNING"
             className="sm:max-w-xs"
@@ -178,17 +178,17 @@ export function DashboardScreen() {
       <section className="gap-gutter flex flex-col" aria-labelledby="queue-heading">
         <div className="gap-gutter flex flex-wrap items-center justify-between">
           <h2 id="queue-heading" className="text-text text-base font-semibold">
-            Next up
+            {t('store.dashboard.nextUp')}
           </h2>
           <ButtonLink href="/store-manager/orders" variant="outline" size="sm">
-            All orders
+            {t('store.dashboard.allOrders')}
           </ButtonLink>
         </div>
 
         {queue.isPending ? (
           <div className="flex flex-col gap-2">
             {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 w-full" label="Loading orders" />
+              <Skeleton key={index} className="h-24 w-full" label={t('store.dashboard.loadingOrders')} />
             ))}
           </div>
         ) : null}
@@ -200,8 +200,8 @@ export function DashboardScreen() {
         {queue.data?.items.length === 0 ? (
           <EmptyState
             icon={<ClipboardCheck className="size-7" aria-hidden="true" />}
-            title="No orders need your attention"
-            description="New orders will appear here as soon as they are placed."
+            title={t('store.dashboard.noOrdersTitle')}
+            description={t('store.dashboard.noOrdersBody')}
             className="bg-surface-muted rounded-2xl"
           />
         ) : null}

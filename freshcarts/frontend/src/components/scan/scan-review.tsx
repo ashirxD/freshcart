@@ -4,7 +4,10 @@ import { useState } from 'react';
 import { AlertTriangle, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
+import { Money } from '@/components/common/ltr';
+import { useI18n } from '@/i18n';
 import { formatPkr } from '@/lib/format';
+import { describeScanWarnings } from '@/lib/scan-copy';
 import type { ScanSelection } from '@/features/scan/use-scan-selection';
 import type { ScanResult } from '@/types/scan';
 import { AlternativesSheet } from './alternatives-sheet';
@@ -26,6 +29,7 @@ export interface ScanReviewProps {
  * and it adds nothing to a cart until the shopper presses the button (§60).
  */
 export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: ScanReviewProps) {
+  const { t, locale } = useI18n();
   const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const editing = selection.lines.find((line) => line.lineId === editingLineId) ?? null;
 
@@ -35,7 +39,7 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
     <section aria-labelledby="scan-review-heading" className="gap-loose flex flex-col">
       <header className="gap-tight flex flex-col">
         <h1 id="scan-review-heading" className="text-text text-xl font-bold">
-          We found your groceries
+          {t('ocr.review.title')}
         </h1>
 
         <ScanSummaryLine
@@ -47,7 +51,7 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
 
       {result.warnings.length > 0 ? (
         <ul className="ring-apricot/40 bg-apricot/12 p-gutter flex flex-col gap-1 rounded-xl text-sm ring-1">
-          {result.warnings.map((warning) => (
+          {describeScanWarnings(result.warnings, t, locale).map((warning) => (
             <li key={warning} className="text-text gap-tight flex items-start">
               <AlertTriangle className="text-secondary mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {warning}
@@ -77,15 +81,15 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
       <div className="bg-background border-outline-variant py-gutter -mx-page px-page sticky bottom-16 z-10 border-t lg:static lg:mx-0 lg:border-0 lg:px-0">
         <div className="gap-tight flex flex-col">
           <div className="flex items-baseline justify-between text-sm">
-            <span className="text-text-muted">Estimated total</span>
+            <span className="text-text-muted">{t('ocr.review.estimatedTotal')}</span>
             <span className="text-text text-lg font-bold">
-              {formatPkr(selection.estimatedTotal)}
+              <Money>{formatPkr(selection.estimatedTotal)}</Money>
             </span>
           </div>
 
           <p className="text-text-muted text-xs">
-            {/* Never a promise: the cart re-prices everything when it is added. */}
-            Final prices are confirmed when the items reach your cart.
+            {/* Never a promise: the basket re-prices everything when it is added. */}
+            {t('ocr.review.finalPrices')}
           </p>
 
           <Button
@@ -97,22 +101,22 @@ export function ScanReview({ result, selection, isAdding, onAddAll, onRescan }: 
             leadingIcon={<ShoppingCart className="size-5" />}
           >
             {readyCount === 0
-              ? 'Nothing ready to add'
-              : 'Add ' + readyCount + (readyCount === 1 ? ' item' : ' items') + ' to cart'}
+              ? t('ocr.review.nothingReady')
+              : t('ocr.review.addToBasket', { count: readyCount })}
           </Button>
 
           {readyCount === 0 ? (
             <p className="text-text-muted text-center text-xs">
-              Choose a product for the items above, or scan a different list.
+              {t('ocr.review.chooseProduct')}
             </p>
           ) : null}
 
           <div className="gap-tight flex">
             <Button variant="ghost" fullWidth onClick={onRescan}>
-              Scan another list
+              {t('ocr.review.scanAnother')}
             </Button>
             <ButtonLink href="/cart" variant="ghost" fullWidth>
-              Go to cart
+              {t('ocr.review.goToBasket')}
             </ButtonLink>
           </div>
         </div>
@@ -159,17 +163,19 @@ function ScanSummaryLine({
   ready: number;
   needsAttention: number;
 }) {
+  const { tx } = useI18n();
+  const count = (value: number) => <strong className="text-text">{value}</strong>;
+
+  // Three short sentences rather than one long one: each carries its own plural
+  // and its own full stop, which differ by language ("." and "۔"), and a single
+  // sentence with two counts in it cannot be inflected correctly in both.
   return (
     <p className="text-text-muted text-sm">
-      We read <strong className="text-text">{detected}</strong> {detected === 1 ? 'item' : 'items'}.{' '}
-      <strong className="text-text">{ready}</strong> {ready === 1 ? 'is' : 'are'} ready to add
-      {needsAttention > 0 ? (
-        <>
-          , and <strong className="text-text">{needsAttention}</strong>{' '}
-          {needsAttention === 1 ? 'needs' : 'need'} your help
-        </>
-      ) : null}
-      .
+      {tx('ocr.review.summaryRead', { count: count(detected) }, detected)}{' '}
+      {tx('ocr.review.summaryReady', { count: count(ready) }, ready)}
+      {needsAttention > 0
+        ? <> {tx('ocr.review.summaryHelp', { count: count(needsAttention) }, needsAttention)}</>
+        : null}
     </p>
   );
 }

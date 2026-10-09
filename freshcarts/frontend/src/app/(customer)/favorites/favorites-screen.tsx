@@ -9,9 +9,11 @@ import { ProductGrid, ProductGridSkeleton } from '@/components/product/product-g
 import { ButtonLink } from '@/components/ui/button-link';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/features/favorites/favorites.hooks';
+import { useT } from '@/i18n';
 import { useAuthStore } from '@/store/auth.store';
 
 export function FavoritesScreen() {
+  const t = useT();
   const [page, setPage] = useState(1);
   const status = useAuthStore((state) => state.status);
   const { data, isPending, isError, error, refetch } = useFavorites(page);
@@ -19,15 +21,15 @@ export function FavoritesScreen() {
   if (status !== 'authenticated' && status !== 'loading') {
     return (
       <Container className="py-wide">
-        <h1 className="text-display text-primary">Saved items</h1>
+        <h1 className="text-display text-primary">{t('favorites.title')}</h1>
 
         <EmptyState
           icon={<UserRound aria-hidden="true" />}
-          title="Sign in to see your saved items"
-          description="Tap the heart on any product to keep it here for next time."
+          title={t('favorites.signInTitle')}
+          description={t('favorites.signInBody')}
           action={
             <ButtonLink href="/login?next=%2Ffavorites" variant="primary">
-              Sign in
+              {t('nav.signIn')}
             </ButtonLink>
           }
           className="mt-loose bg-surface-muted rounded-2xl"
@@ -48,11 +50,9 @@ export function FavoritesScreen() {
     <div className="flex flex-col">
       <div className="bg-cream py-loose">
         <Container className="flex flex-col gap-1">
-          <p className="text-eyebrow text-leaf uppercase">Kept for later</p>
-          <h1 className="text-display text-primary">Saved items</h1>
-          <p className="text-text-muted text-sm">
-            Everything you tapped the heart on, ready to add to your basket.
-          </p>
+          <p className="text-eyebrow text-leaf uppercase">{t('favorites.eyebrow')}</p>
+          <h1 className="text-display text-primary">{t('favorites.title')}</h1>
+          <p className="text-text-muted text-sm">{t('favorites.subtitle')}</p>
         </Container>
       </div>
 
@@ -64,11 +64,11 @@ export function FavoritesScreen() {
         {!isPending && !isError && products.length === 0 ? (
           <EmptyState
             icon={<Heart aria-hidden="true" />}
-            title="Nothing saved yet"
-            description="Tap the heart on any product and it will wait for you here."
+            title={t('favorites.emptyTitle')}
+            description={t('favorites.emptyBody')}
             action={
               <ButtonLink href="/categories" variant="primary" size="lg">
-                Browse the aisles
+                {t('common.browseAisles')}
               </ButtonLink>
             }
             className="bg-surface-muted rounded-2xl"
@@ -79,7 +79,7 @@ export function FavoritesScreen() {
 
         {pagination && pagination.totalPages > 1 ? (
           <nav
-            aria-label="Saved items pages"
+            aria-label={t('favorites.pagesLabel')}
             className="gap-gutter flex items-center justify-center"
           >
             <Button
@@ -88,11 +88,11 @@ export function FavoritesScreen() {
               disabled={page <= 1}
               onClick={() => setPage((current) => current - 1)}
             >
-              Previous
+              {t('common.previous')}
             </Button>
 
             <span aria-live="polite" className="text-text-muted text-sm">
-              Page {pagination.page} of {pagination.totalPages}
+              {t('common.page', { page: pagination.page, pages: pagination.totalPages })}
             </span>
 
             <Button
@@ -101,7 +101,7 @@ export function FavoritesScreen() {
               disabled={page >= pagination.totalPages}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              {t('common.next')}
             </Button>
           </nav>
         ) : null}

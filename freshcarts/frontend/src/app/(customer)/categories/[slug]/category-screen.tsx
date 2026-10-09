@@ -12,6 +12,7 @@ import { ProductGridSkeleton } from '@/components/product/product-grid';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCategory } from '@/features/catalog/catalog.hooks';
+import { useI18n, useT } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 
@@ -26,6 +27,7 @@ import { cn } from '@/lib/cn';
  * they have arrived somewhere rather than at another white page (§57).
  */
 export function CategoryScreen({ slug }: { slug: string }) {
+  const { t } = useI18n();
   const { data: category, isPending, isError, error, refetch } = useCategory(slug);
 
   if (isPending) {
@@ -33,7 +35,7 @@ export function CategoryScreen({ slug }: { slug: string }) {
       <div className="flex flex-col">
         <div className="bg-surface-muted py-wide">
           <Container className="gap-snug flex flex-col">
-            <Skeleton className="h-4 w-48" label="Loading category" />
+            <Skeleton className="h-4 w-48" label={t('categories.loading')} />
             <Skeleton className="h-9 w-64" />
           </Container>
         </div>
@@ -52,12 +54,12 @@ export function CategoryScreen({ slug }: { slug: string }) {
         {isMissing ? (
           <EmptyState
             icon={<PackageSearch aria-hidden="true" />}
-            title="We could not find that aisle"
-            description="It may have been renamed, or the shop may no longer stock it."
+            title={t('categories.missingTitle')}
+            description={t('categories.missingBody')}
             action={
               // Never a dead end: the shopper always gets somewhere to go next.
               <ButtonLink href="/categories" variant="primary">
-                Browse all aisles
+                {t('categories.browseAll')}
               </ButtonLink>
             }
             className="bg-surface-muted rounded-2xl"
@@ -106,10 +108,8 @@ export function CategoryScreen({ slug }: { slug: string }) {
           emptyState={
             <EmptyState
               icon={<PackageSearch aria-hidden="true" />}
-              title="Nothing matches those filters"
-              description={
-                'There is nothing in ' + category.name + ' with those options. Try clearing one.'
-              }
+              title={t('categories.noMatchTitle')}
+              description={t('categories.noMatchBody', { name: category.name })}
               className="bg-surface-muted rounded-2xl"
             />
           }
@@ -125,12 +125,14 @@ function Breadcrumb({
 }: {
   category: { name: string; ancestors: Array<{ id: string; name: string; slug: string }> };
 }) {
+  const t = useT();
+
   return (
-    <nav aria-label="Breadcrumb">
+    <nav aria-label={t('categories.breadcrumbLabel')}>
       <ol className="text-text-muted flex flex-wrap items-center gap-1 text-sm">
         <li>
           <Link href="/categories" className="hover:text-primary transition-colors">
-            Aisles
+            {t('categories.breadcrumbRoot')}
           </Link>
         </li>
 

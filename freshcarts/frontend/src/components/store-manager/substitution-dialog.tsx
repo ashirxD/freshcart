@@ -6,10 +6,12 @@ import { SelectField, TextareaField } from '@/components/admin/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { Money } from '@/components/common/ltr';
 import {
   useProposeSubstitution,
   useStoreProducts,
 } from '@/features/store-manager/store-manager.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import { SUBSTITUTION_REASONS } from '@/types/store-manager';
 import type { StoreOrderItem, SubstitutionReason } from '@/types/store-manager';
@@ -32,6 +34,7 @@ export interface SubstitutionDialogProps {
  * and the charged total comes from the order line; the server re-reads both.
  */
 export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialogProps) {
+  const { t, tx } = useI18n();
   const [search, setSearch] = useState('');
   const [replacementId, setReplacementId] = useState('');
   const [quantity, setQuantity] = useState<string>('');
@@ -67,8 +70,11 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
     <Modal
       open
       onClose={onClose}
-      title="Offer a replacement"
-      description={'Replacing ' + item.productName + ' (× ' + item.quantity + ')'}
+      title={t('store.substitution.title')}
+      description={t('store.substitution.description', {
+        name: item.productName,
+        quantity: item.quantity,
+      })}
       footer={
         <div className="gap-gutter flex">
           <Button
@@ -87,31 +93,35 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
               })
             }
           >
-            Send to customer
+            {t('store.substitution.send')}
           </Button>
           <Button variant="outline" fullWidth onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <p className="bg-surface-muted text-text-muted p-tight rounded-md text-sm">
-          The customer keeps paying{' '}
-          <span className="text-text font-semibold">{formatPkr(chargedLineTotal)}</span> for this
-          line. A replacement may cost the same or less — never more.
+          {tx('store.substitution.priceRule', {
+            amount: (
+              <span className="text-text font-semibold">
+                <Money>{formatPkr(chargedLineTotal)}</Money>
+              </span>
+            ),
+          })}
         </p>
 
         <Input
-          label="Find a replacement"
-          placeholder="Search by name or item code"
+          label={t('store.substitution.find')}
+          placeholder={t('store.substitution.findPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
 
         <SelectField
-          label="Replacement product"
-          placeholder={isPending ? 'Loading…' : 'Choose a product'}
+          label={t('store.substitution.product')}
+          placeholder={isPending ? t('common.loading') : t('store.substitution.choose')}
           options={candidates.map((product) => ({
             value: product.id,
             label:
@@ -121,33 +131,35 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
               ' · ' +
               formatPkr(product.sellingPrice) +
               ' · ' +
-              product.stock.quantity +
-              ' in stock',
+              t('store.substitution.optionStock', { count: product.stock.quantity }),
           }))}
           value={replacementId}
           onChange={(event) => setReplacementId(event.target.value)}
         />
 
         <Input
-          label="Quantity"
+          label={t('common.quantity')}
           type="number"
           inputMode="numeric"
           min={1}
           placeholder={String(item.quantity)}
-          hint={'Defaults to ' + item.quantity + ', the quantity ordered.'}
+          hint={t('store.substitution.quantityHint', { quantity: item.quantity })}
           value={quantity}
           onChange={(event) => setQuantity(event.target.value)}
         />
 
         <SelectField
-          label="Why is the original unavailable?"
-          options={SUBSTITUTION_REASONS.map((option) => ({ ...option }))}
+          label={t('store.substitution.why')}
+          options={SUBSTITUTION_REASONS.map((option) => ({
+            value: option.value,
+            label: t(('store.substitutionReason.' + option.value) as TranslationKey),
+          }))}
           value={reason}
           onChange={(event) => setReason(event.target.value as SubstitutionReason)}
         />
 
         <TextareaField
-          label="Note to the customer (optional)"
+          label={t('store.substitution.note')}
           rows={2}
           value={note}
           onChange={(event) => setNote(event.target.value)}
@@ -161,34 +173,49 @@ export function SubstitutionDialog({ orderId, item, onClose }: SubstitutionDialo
         {selected ? (
           <div className="gap-tight flex flex-col text-sm">
             <p className="text-text-muted">
-              Catalogue price for {replacementQuantity} ×{' '}
-              <span className="text-text font-medium">{formatPkr(catalogueLineTotal)}</span>
+              {tx('store.substitution.cataloguePrice', {
+                quantity: replacementQuantity,
+                price: (
+                  <span className="text-text font-medium">
+                    <Money>{formatPkr(catalogueLineTotal)}</Money>
+                  </span>
+                ),
+              })}
               {catalogueLineTotal < chargedLineTotal ? (
                 <span className="text-text-muted">
-                  {' '}
-                  · store absorbs {formatPkr(chargedLineTotal - catalogueLineTotal)}
+                  {' · '}
+                  {tx('store.substitution.absorbs', {
+                    amount: <Money>{formatPkr(chargedLineTotal - catalogueLineTotal)}</Money>,
+                  })}
                 </span>
               ) : null}
             </p>
 
             {tooExpensive ? (
               <Blocker>
-                {selected.name} costs {formatPkr(catalogueLineTotal)}, more than the{' '}
-                {formatPkr(chargedLineTotal)} the customer agreed to. Choose something at the same
-                price or less, or reject the order.
+                {tx('store.substitution.tooExpensive', {
+                  name: <bdi>{selected.name}</bdi>,
+                  price: <Money>{formatPkr(catalogueLineTotal)}</Money>,
+                  charged: <Money>{formatPkr(chargedLineTotal)}</Money>,
+                })}
               </Blocker>
             ) : null}
 
             {!dividesEvenly ? (
               <Blocker>
-                {formatPkr(chargedLineTotal)} does not divide evenly into {replacementQuantity}{' '}
-                units, so the line total would not add up. Try another quantity.
+                {tx('store.substitution.notDivisible', {
+                  charged: <Money>{formatPkr(chargedLineTotal)}</Money>,
+                  quantity: replacementQuantity,
+                })}
               </Blocker>
             ) : null}
 
             {notEnoughStock ? (
               <Blocker>
-                Only {selected.stock.quantity} of {selected.name} in stock.
+                {tx('store.substitution.notEnoughStock', {
+                  available: selected.stock.quantity,
+                  name: <bdi>{selected.name}</bdi>,
+                })}
               </Blocker>
             ) : null}
           </div>

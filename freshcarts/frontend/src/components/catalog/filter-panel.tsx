@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT, type TFunction } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { CatalogFilters } from '@/features/catalog/use-catalog-filters';
 import type { Category } from '@/types/catalog';
@@ -13,12 +14,31 @@ import type { Category } from '@/types/catalog';
  * Two-handled sliders are hard to operate on a phone and harder still for
  * someone new to apps. Named bands are one tap, and read as plain money.
  */
-const PRICE_BANDS: Array<{ label: string; min?: number; max?: number }> = [
-  { label: 'Under Rs. 200', max: 200 },
-  { label: 'Rs. 200 – 500', min: 200, max: 500 },
-  { label: 'Rs. 500 – 1,000', min: 500, max: 1000 },
-  { label: 'Over Rs. 1,000', min: 1000 },
+const PRICE_BANDS: Array<{ min?: number; max?: number }> = [
+  { max: 200 },
+  { min: 200, max: 500 },
+  { min: 500, max: 1000 },
+  { min: 1000 },
 ];
+
+const AMOUNT = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 });
+
+/**
+ * The band's name, built from its edges so the figures never drift from the
+ * numbers the filter actually applies. Rupees stay "Rs." in both languages.
+ */
+function bandLabel(band: { min?: number; max?: number }, t: TFunction): string {
+  if (band.min === undefined && band.max !== undefined) {
+    return t('catalog.priceUnder', { max: AMOUNT.format(band.max) });
+  }
+  if (band.min !== undefined && band.max === undefined) {
+    return t('catalog.priceOver', { min: AMOUNT.format(band.min) });
+  }
+  return t('catalog.priceBetween', {
+    min: AMOUNT.format(band.min ?? 0),
+    max: AMOUNT.format(band.max ?? 0),
+  });
+}
 
 /**
  * How many brands to show before the list is collapsed.
@@ -64,17 +84,19 @@ export function FilterPanel({
   subcategories = [],
   className,
 }: FilterPanelProps) {
+  const t = useT();
+
   return (
     <div className={cn('gap-loose flex flex-col', className)}>
-      <FilterGroup label="Show me">
+      <FilterGroup label={t('catalog.showMe')}>
         <Chip
-          label="Available now"
+          label={t('catalog.availableNow')}
           tone="fresh"
           active={filters.inStock === true}
           onClick={() => onChange({ inStock: filters.inStock ? undefined : true })}
         />
         <Chip
-          label="On sale"
+          label={t('catalog.onSale')}
           tone="sale"
           active={filters.discounted === true}
           onClick={() => onChange({ discounted: filters.discounted ? undefined : true })}
@@ -82,7 +104,7 @@ export function FilterPanel({
       </FilterGroup>
 
       {subcategories.length > 0 ? (
-        <FilterGroup label="Type">
+        <FilterGroup label={t('catalog.type')}>
           {subcategories.map((subcategory) => (
             <Chip
               key={subcategory.id}
@@ -99,11 +121,11 @@ export function FilterPanel({
         </FilterGroup>
       ) : null}
 
-      <FilterGroup label="Price">
+      <FilterGroup label={t('catalog.price')}>
         {PRICE_BANDS.map((band) => (
           <Chip
-            key={band.label}
-            label={band.label}
+            key={band.min + '-' + band.max}
+            label={bandLabel(band, t)}
             active={isBandActive(filters, band)}
             onClick={() =>
               onChange(
@@ -127,7 +149,7 @@ export function FilterPanel({
         leadingIcon={<RotateCcw className="size-4" aria-hidden="true" />}
         className="self-start"
       >
-        Clear all filters
+        {t('catalog.clearAll')}
       </Button>
     </div>
   );
@@ -149,6 +171,7 @@ function BrandGroup({
   filters: CatalogFilters;
   onChange: (next: Partial<CatalogFilters>) => void;
 }) {
+  const t = useT();
   const [isExpanded, setExpanded] = useState(false);
 
   const visible = isExpanded ? brands : brands.slice(0, BRANDS_SHOWN);
@@ -157,7 +180,7 @@ function BrandGroup({
   const hiddenCount = brands.length - visible.length;
 
   return (
-    <FilterGroup label="Brand">
+    <FilterGroup label={t('catalog.brand')}>
       {shown.map((brand) => (
         <Chip
           key={brand}
@@ -174,7 +197,7 @@ function BrandGroup({
           aria-expanded={isExpanded}
           className="text-primary hover:bg-primary/8 min-h-touch inline-flex items-center gap-1 rounded-full px-3 text-sm font-semibold transition-colors lg:min-h-10"
         >
-          {isExpanded ? 'Show fewer' : hiddenCount + ' more'}
+          {isExpanded ? t('catalog.showFewer') : t('catalog.more', { count: hiddenCount })}
           <ChevronDown
             className={cn(
               'ease-standard size-4 transition-transform duration-200',
@@ -225,7 +248,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'min-h-touch inline-flex items-center rounded-full border px-4 text-sm font-semibold lg:min-h-10',
+        'min-h-touch inline-flex items-center rounded-full border px-4 text-sm font-semibold lg:min-h-9 lg:px-3.5',
         'ease-standard transition-[background-color,border-color,color,transform] duration-150',
         'active:scale-[0.97]',
         active

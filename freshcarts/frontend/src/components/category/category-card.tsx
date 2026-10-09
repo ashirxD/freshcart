@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { Category } from '@/types/catalog';
 import { CategoryIcon } from './category-icon';
@@ -29,6 +30,7 @@ export interface CategoryCardProps {
  * eight tiles growing under the cursor is noise, not delight.
  */
 export function CategoryCard({ category, className }: CategoryCardProps) {
+  const t = useT();
   const tone = categoryTone(category.slug);
 
   return (
@@ -64,7 +66,7 @@ export function CategoryCard({ category, className }: CategoryCardProps) {
 
         {category.productCount !== undefined ? (
           <span className="text-text-muted text-xs font-medium">
-            {category.productCount === 1 ? '1 item' : category.productCount + ' items'}
+            {t('common.itemCount', { count: category.productCount })}
           </span>
         ) : null}
       </span>

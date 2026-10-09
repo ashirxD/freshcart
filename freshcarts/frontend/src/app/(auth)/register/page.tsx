@@ -7,6 +7,7 @@ import { AuthLink, AuthPanel } from '@/components/layout/auth-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRegister } from '@/features/auth/auth.hooks';
+import { useT } from '@/i18n';
 import {
   registerSchema,
   type RegisterInput,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/validation/auth.schema';
 
 export default function RegisterPage() {
+  const t = useT();
   const createAccount = useRegister('/');
 
   const {
@@ -27,11 +29,12 @@ export default function RegisterPage() {
 
   return (
     <AuthPanel
-      title="Create your account"
-      subtitle="It takes a minute. You only need a mobile number."
+      title={t('auth.register.title')}
+      subtitle={t('auth.register.subtitle')}
       footer={
         <>
-          Already have an account? <AuthLink href="/login">Sign in</AuthLink>
+          {t('auth.register.footerHave')}{' '}
+          <AuthLink href="/login">{t('auth.login.submit')}</AuthLink>
         </>
       }
     >
@@ -41,28 +44,28 @@ export default function RegisterPage() {
         noValidate
       >
         <Input
-          label="Full name"
+          label={t('auth.register.fullName')}
           autoComplete="name"
-          placeholder="Ayesha Khan"
+          placeholder={t('auth.register.namePlaceholder')}
           leadingIcon={<User className="size-5" />}
           error={errors.fullName?.message}
           {...register('fullName')}
         />
 
         <Input
-          label="Mobile number"
+          label={t('auth.login.mobile')}
           type="tel"
           inputMode="numeric"
           autoComplete="tel"
           placeholder="0300 1234567"
-          hint="We use this to confirm your orders."
+          hint={t('auth.register.mobileHint')}
           leadingIcon={<Phone className="size-5" />}
           error={errors.phone?.message}
           {...register('phone')}
         />
 
         <Input
-          label="Email (optional)"
+          label={t('auth.register.email')}
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
@@ -72,11 +75,11 @@ export default function RegisterPage() {
         />
 
         <Input
-          label="Password"
+          label={t('auth.login.password')}
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
-          hint="Use at least 8 characters with a letter and a number."
+          placeholder={t('auth.register.passwordPlaceholder')}
+          hint={t('auth.register.passwordHint')}
           leadingIcon={<Lock className="size-5" />}
           error={errors.password?.message}
           {...register('password')}
@@ -89,7 +92,7 @@ export default function RegisterPage() {
           isLoading={createAccount.isPending}
           className="mt-tight"
         >
-          Create account
+          {t('auth.register.submit')}
         </Button>
       </form>
     </AuthPanel>

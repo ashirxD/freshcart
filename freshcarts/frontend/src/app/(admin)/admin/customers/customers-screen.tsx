@@ -10,14 +10,17 @@ import {
   TableScroller,
 } from '@/components/admin/admin-page';
 import { SearchBar } from '@/components/common/search-bar';
+import { Ltr } from '@/components/common/ltr';
+import { useI18n, useT, type TranslationKey } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 import { useAdminCustomers } from '@/features/admin/admin.hooks';
 import type { AdminCustomerSummary } from '@/types/admin';
 
 const ACCOUNT_FILTERS = [
-  { value: '' as const, label: 'All' },
-  { value: 'active' as const, label: 'Active' },
-  { value: 'inactive' as const, label: 'Deactivated' },
+  { value: '' as const, labelKey: 'common.all' as TranslationKey },
+  { value: 'active' as const, labelKey: 'admin.pill.active' as TranslationKey },
+  { value: 'inactive' as const, labelKey: 'admin.pill.deactivated' as TranslationKey },
 ] as const;
 
 type AccountFilter = (typeof ACCOUNT_FILTERS)[number]['value'];
@@ -35,6 +38,7 @@ type AccountFilter = (typeof ACCOUNT_FILTERS)[number]['value'];
  * fastest.
  */
 export function AdminCustomersScreen() {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [account, setAccount] = useState<AccountFilter>('');
   const [page, setPage] = useState(1);
@@ -48,14 +52,18 @@ export function AdminCustomersScreen() {
   return (
     <>
       <AdminPageHeader
-        title="Customers"
-        description={data ? data.pagination.total + ' accounts' : 'Everyone who has registered'}
+        title={t('admin.customers.title')}
+        description={
+          data
+            ? t('admin.customers.accounts', { count: data.pagination.total })
+            : t('admin.customers.everyone')
+        }
       />
 
       <div className="gap-gutter mb-gutter flex flex-wrap items-center">
         <SearchBar
-          label="Search customers"
-          placeholder="Name, phone or email"
+          label={t('admin.customers.searchLabel')}
+          placeholder={t('admin.customers.searchPlaceholder')}
           className="min-w-64 flex-1"
           onSearch={(term) => {
             setSearch(term);
@@ -64,8 +72,11 @@ export function AdminCustomersScreen() {
         />
 
         <FilterChips
-          label="Filter by account status"
-          options={ACCOUNT_FILTERS}
+          label={t('admin.customers.filterLabel')}
+          options={ACCOUNT_FILTERS.map((filter) => ({
+            value: filter.value,
+            label: t(filter.labelKey),
+          }))}
           value={account}
           onChange={(next) => {
             setAccount(next);
@@ -80,26 +91,36 @@ export function AdminCustomersScreen() {
         error={error}
         onRetry={() => void refetch()}
         isEmpty={data?.items.length === 0}
-        emptyTitle="No customers match this search"
+        emptyTitle={t('admin.customers.emptyTitle')}
         emptyDescription={
           search || account
-            ? 'Try a different name, phone number or status.'
-            : 'Customers appear here as soon as they register.'
+            ? t('admin.customers.emptyFiltered')
+            : t('admin.customers.emptyNone')
         }
       >
         <TableScroller>
           <table className="w-full min-w-[42rem] text-sm">
             <caption className="sr-only">
-              Registered customers, newest first. Each row links to that customer.
+              {t('admin.customers.caption')}
             </caption>
 
-            <thead className="border-outline-variant text-text-muted border-b text-left">
+            <thead className="border-outline-variant text-text-muted border-b text-start">
               <tr>
-                <th scope="col" className="p-gutter font-semibold">Name</th>
-                <th scope="col" className="p-gutter font-semibold">Phone</th>
-                <th scope="col" className="p-gutter font-semibold">Email</th>
-                <th scope="col" className="p-gutter font-semibold">Account</th>
-                <th scope="col" className="p-gutter font-semibold">Joined</th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.customers.colName')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.customers.colPhone')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.customers.colEmail')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.customers.colAccount')}
+                </th>
+                <th scope="col" className="p-gutter font-semibold">
+                  {t('admin.customers.colJoined')}
+                </th>
               </tr>
             </thead>
 
@@ -112,7 +133,7 @@ export function AdminCustomersScreen() {
         </TableScroller>
 
         <Pagination
-          label="Customer pages"
+          label={t('admin.customers.pagesLabel')}
           page={data?.pagination.page ?? 1}
           totalPages={data?.pagination.totalPages ?? 1}
           onPageChange={setPage}
@@ -123,6 +144,8 @@ export function AdminCustomersScreen() {
 }
 
 function CustomerRow({ customer }: { customer: AdminCustomerSummary }) {
+  const { locale } = useI18n();
+
   return (
     <tr className="border-outline-variant hover:bg-surface-muted border-b last:border-0">
       <td className="p-gutter">
@@ -130,24 +153,24 @@ function CustomerRow({ customer }: { customer: AdminCustomerSummary }) {
           href={'/admin/customers/' + customer.id}
           className="text-primary font-medium underline-offset-2 hover:underline"
         >
-          {customer.fullName}
+          <bdi>{customer.fullName}</bdi>
         </Link>
       </td>
 
-      <td className="p-gutter text-text tabular-nums">{customer.phone}</td>
+      <td className="p-gutter text-text tabular-nums">
+        <Ltr>{customer.phone}</Ltr>
+      </td>
 
-      <td className="p-gutter text-text-muted">{customer.email ?? '—'}</td>
+      <td className="p-gutter text-text-muted">
+        {customer.email ? <Ltr>{customer.email}</Ltr> : '—'}
+      </td>
 
       <td className="p-gutter">
         <AccountPill isActive={customer.isActive} />
       </td>
 
       <td className="p-gutter text-text-muted whitespace-nowrap">
-        {new Date(customer.createdAt).toLocaleDateString('en-PK', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })}
+        {formatDate(customer.createdAt, locale, 'date')}
       </td>
     </tr>
   );
@@ -159,6 +182,8 @@ function CustomerRow({ customer }: { customer: AdminCustomerSummary }) {
  * The word carries the meaning; the colour only reinforces it (section 44).
  */
 export function AccountPill({ isActive }: { isActive: boolean }) {
+  const t = useT();
+
   return (
     <span
       className={cn(
@@ -166,7 +191,7 @@ export function AccountPill({ isActive }: { isActive: boolean }) {
         isActive ? 'bg-success/10 text-success' : 'bg-surface-sunken text-text-muted',
       )}
     >
-      {isActive ? 'Active' : 'Deactivated'}
+      {isActive ? t('admin.pill.active') : t('admin.pill.deactivated')}
     </span>
   );
 }

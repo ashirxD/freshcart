@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 import { Textarea } from '@/components/ui/textarea';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import {
   addressFormSchema,
@@ -28,19 +29,28 @@ export interface AddressFormProps {
 }
 
 const LABEL_OPTIONS = [
-  { value: 'HOME', title: 'Home', icon: <Home className="size-5" /> },
-  { value: 'WORK', title: 'Work', icon: <Building2 className="size-5" /> },
-  { value: 'OTHER', title: 'Other', icon: <MapPin className="size-5" /> },
+  { value: 'HOME', titleKey: 'addresses.label.HOME', icon: <Home className="size-5" /> },
+  { value: 'WORK', titleKey: 'addresses.label.WORK', icon: <Building2 className="size-5" /> },
+  { value: 'OTHER', titleKey: 'addresses.label.OTHER', icon: <MapPin className="size-5" /> },
 ] as const;
 
 /** How precise a browser fix has to be before it is worth saving. */
 const ACCEPTABLE_ACCURACY_METRES = 500;
 
+/**
+ * `failed` carries a message KEY (plus the one figure some messages mention),
+ * not prose, so the sentence is chosen at render time and follows the language
+ * if it is switched while the message is on screen.
+ */
 type LocationState =
   | { kind: 'idle' }
   | { kind: 'locating' }
   | { kind: 'found'; accuracy: number }
-  | { kind: 'failed'; message: string };
+  | {
+      kind: 'failed';
+      message: 'addresses.form.noGeolocation' | 'addresses.form.tooVague' | 'addresses.form.permissionDenied' | 'addresses.form.locationFailed';
+      metres?: number;
+    };
 
 /**
  * The address form.
@@ -63,9 +73,10 @@ export function AddressForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
-  submitLabel = 'Save address',
+  submitLabel,
   showDefaultToggle = true,
 }: AddressFormProps) {
+  const t = useT();
   const [location, setLocation] = useState<LocationState>({ kind: 'idle' });
 
   const {
@@ -87,10 +98,7 @@ export function AddressForm({
 
   const useCurrentLocation = () => {
     if (!('geolocation' in navigator)) {
-      setLocation({
-        kind: 'failed',
-        message: 'This browser cannot share your location. Please enter it below.',
-      });
+      setLocation({ kind: 'failed', message: 'addresses.form.noGeolocation' });
       return;
     }
 
@@ -105,10 +113,8 @@ export function AddressForm({
           // it is reported rather than silently used.
           setLocation({
             kind: 'failed',
-            message:
-              'We could only place you within about ' +
-              Math.round(accuracy) +
-              ' m. Move outdoors and try again, or enter the location below.',
+            message: 'addresses.form.tooVague',
+            metres: Math.round(accuracy),
           });
           return;
         }
@@ -124,8 +130,8 @@ export function AddressForm({
           kind: 'failed',
           message:
             error.code === error.PERMISSION_DENIED
-              ? 'Location access was blocked. You can enter the coordinates below instead.'
-              : 'We could not find your location. Please enter it below.',
+              ? 'addresses.form.permissionDenied'
+              : 'addresses.form.locationFailed',
         });
       },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
@@ -139,7 +145,7 @@ export function AddressForm({
       noValidate
     >
       <RadioCardGroup
-        label="What kind of address is this?"
+        label={t('addresses.form.kindQuestion')}
         value={label}
         onChange={(value) => setValue('label', value as AddressFormValues['label'])}
         className="gap-tight"
@@ -149,7 +155,7 @@ export function AddressForm({
             <RadioCard
               key={option.value}
               value={option.value}
-              title={option.title}
+              title={t(option.titleKey)}
               icon={option.icon}
             />
           ))}
@@ -158,32 +164,32 @@ export function AddressForm({
 
       <div className="gap-gutter flex flex-col">
         <Input
-          label="Who is receiving this order?"
+          label={t('addresses.form.recipient')}
           autoComplete="name"
           error={errors.recipientName?.message}
           {...register('recipientName')}
         />
 
         <Input
-          label="Mobile number"
+          label={t('addresses.form.mobile')}
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           placeholder="0300 1234567"
-          hint="The rider will call this number."
+          hint={t('addresses.form.mobileHint')}
           error={errors.phone?.message}
           {...register('phone')}
         />
 
         <Input
-          label="House, flat or shop number"
+          label={t('addresses.form.house')}
           autoComplete="address-line1"
           error={errors.houseNumber?.message}
           {...register('houseNumber')}
         />
 
         <Input
-          label="Street"
+          label={t('addresses.form.street')}
           autoComplete="address-line2"
           error={errors.street?.message}
           {...register('street')}
@@ -191,13 +197,13 @@ export function AddressForm({
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="Area"
+            label={t('addresses.form.area')}
             autoComplete="address-level2"
             error={errors.area?.message}
             {...register('area')}
           />
           <Input
-            label="City"
+            label={t('addresses.form.city')}
             autoComplete="address-level1"
             error={errors.city?.message}
             {...register('city')}
@@ -205,23 +211,23 @@ export function AddressForm({
         </div>
 
         <Input
-          label="Nearby landmark"
-          hint="Optional, but it is often how a rider actually finds the door."
-          placeholder="Opposite Al-Fatah"
+          label={t('addresses.form.landmark')}
+          hint={t('addresses.form.landmarkHint')}
+          placeholder={t('addresses.form.landmarkPlaceholder')}
           error={errors.landmark?.message}
           {...register('landmark')}
         />
 
         <Textarea
-          label="Delivery instructions"
-          hint="Optional. For example: ring the bell twice, gate code 1234."
+          label={t('addresses.form.instructions')}
+          hint={t('addresses.form.instructionsHint')}
           error={errors.deliveryInstructions?.message}
           {...register('deliveryInstructions')}
         />
 
         <Input
-          label="Nickname for this address"
-          hint="Optional. For example: Ammi's house."
+          label={t('addresses.form.nickname')}
+          hint={t('addresses.form.nicknameHint')}
           error={errors.nickname?.message}
           {...register('nickname')}
         />
@@ -234,11 +240,10 @@ export function AddressForm({
       >
         <div className="flex flex-col gap-1">
           <h3 id="address-location-heading" className="text-text text-base font-semibold">
-            Map location
+            {t('addresses.form.mapTitle')}
           </h3>
           <p className="text-text-muted text-sm">
-            We use this to work out the distance and your delivery charge. Without it you can still
-            save the address and collect your order from the store.
+            {t('addresses.form.mapBody')}
           </p>
         </div>
 
@@ -250,7 +255,7 @@ export function AddressForm({
           leadingIcon={<LocateFixed className="size-4" aria-hidden="true" />}
           className="self-start"
         >
-          Use my current location
+          {t('addresses.form.useLocation')}
         </Button>
 
         {/* Announced, not just shown: the result of a location request is the
@@ -264,23 +269,25 @@ export function AddressForm({
             location.kind === 'idle' && 'sr-only',
           )}
         >
-          {location.kind === 'locating' ? 'Finding your location…' : null}
+          {location.kind === 'locating' ? t('addresses.form.finding') : null}
           {location.kind === 'found'
-            ? 'Location set (accurate to about ' + Math.round(location.accuracy) + ' m).'
+            ? t('addresses.form.locationSet', { metres: Math.round(location.accuracy) })
             : null}
-          {location.kind === 'failed' ? location.message : null}
+          {location.kind === 'failed'
+            ? t(location.message, location.metres === undefined ? undefined : { metres: location.metres })
+            : null}
         </p>
 
         <div className="gap-gutter grid sm:grid-cols-2">
           <Input
-            label="Latitude"
+            label={t('addresses.form.latitude')}
             inputMode="decimal"
             placeholder="31.545000"
             error={errors.latitude?.message}
             {...register('latitude')}
           />
           <Input
-            label="Longitude"
+            label={t('addresses.form.longitude')}
             inputMode="decimal"
             placeholder="74.372000"
             error={errors.longitude?.message}
@@ -291,7 +298,7 @@ export function AddressForm({
         {hasCoordinates ? (
           <p className="text-success flex items-center gap-1.5 text-sm">
             <MapPin className="size-4" aria-hidden="true" />
-            Delivery to this address can be calculated.
+            {t('addresses.form.canCalculate')}
           </p>
         ) : null}
       </section>
@@ -304,7 +311,7 @@ export function AddressForm({
             {...register('isDefault')}
           />
           <span className="text-text text-sm font-medium">
-            Use this as my default delivery address
+            {t('addresses.form.makeDefaultCheckbox')}
           </span>
         </label>
       ) : null}
@@ -318,12 +325,12 @@ export function AddressForm({
             fullWidth
             className="sm:w-auto"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
         ) : null}
 
         <Button type="submit" isLoading={isSubmitting} fullWidth className="sm:w-auto">
-          {submitLabel}
+          {submitLabel ?? t('addresses.form.saveAddress')}
         </Button>
       </div>
     </form>

@@ -2,6 +2,7 @@
 
 import { ButtonLink } from '@/components/ui/button-link';
 import { RouteError } from '@/components/common/route-error';
+import { useT } from '@/i18n';
 
 /**
  * The back office boundary. A failure here leaves the storefront untouched —
@@ -14,15 +15,17 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   return (
     <RouteError
       error={error}
       reset={reset}
-      title="This admin screen could not load"
-      description="Something went wrong at our end. Nothing you were viewing has been changed."
+      title={t('admin.error.title')}
+      description={t('admin.error.body')}
       secondaryAction={
         <ButtonLink href="/admin" variant="outline">
-          Back to the dashboard
+          {t('admin.error.backToDashboard')}
         </ButtonLink>
       }
     />

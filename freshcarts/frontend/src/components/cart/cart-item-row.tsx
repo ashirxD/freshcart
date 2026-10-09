@@ -6,15 +6,17 @@ import { QuantitySelector } from '@/components/common/quantity-selector';
 import { PriceDisplay } from '@/components/product/price-display';
 import { ProductImage } from '@/components/product/product-image';
 import { useRemoveCartItem, useUpdateCartItem } from '@/features/cart/cart.hooks';
+import { Money } from '@/components/common/ltr';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr, productTint } from '@/lib/format';
 import type { CartItem, CartItemIssue } from '@/types/cart';
 
 /** Plain-language explanation for each thing that can go wrong with a line. */
-const ISSUE_MESSAGES: Record<CartItemIssue, string> = {
-  UNAVAILABLE: 'No longer available. Remove it to continue.',
-  OUT_OF_STOCK: 'Out of stock right now. Remove it or try again later.',
-  QUANTITY_REDUCED: 'Not enough left in stock — lower the quantity to continue.',
+const ISSUE_MESSAGES: Record<CartItemIssue, TranslationKey> = {
+  UNAVAILABLE: 'cart.issueUnavailable',
+  OUT_OF_STOCK: 'cart.issueOutOfStock',
+  QUANTITY_REDUCED: 'cart.issueReduced',
 };
 
 /**
@@ -26,11 +28,12 @@ const ISSUE_MESSAGES: Record<CartItemIssue, string> = {
  * message is what carries the meaning.
  */
 export function CartItemRow({ item }: { item: CartItem }) {
+  const t = useT();
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
 
   const isPending = updateItem.isPending || removeItem.isPending;
-  const name = item.product?.name ?? 'This product';
+  const name = item.product?.name ?? t('cart.thisProduct');
   const hasIssue = Boolean(item.issue);
 
   return (
@@ -82,7 +85,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
             type="button"
             onClick={() => removeItem.mutate(item.productId)}
             disabled={isPending}
-            aria-label={'Remove ' + name + ' from your basket'}
+            aria-label={t('cart.removeFromBasket', { name })}
             className="text-outline hover:bg-danger/8 hover:text-danger -me-1 -mt-1 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-50"
           >
             <Trash2 className="size-4" aria-hidden="true" />
@@ -92,7 +95,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
         {item.issue ? (
           <p className="text-danger flex items-start gap-1.5 text-xs font-semibold">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            {ISSUE_MESSAGES[item.issue]}
+            {t(ISSUE_MESSAGES[item.issue])}
           </p>
         ) : null}
 
@@ -103,7 +106,6 @@ export function CartItemRow({ item }: { item: CartItem }) {
             size="sm"
             removable
             disabled={isPending || item.issue === 'UNAVAILABLE'}
-            label={'quantity of ' + name}
             itemName={name}
             onChange={(quantity) => {
               if (quantity <= 0) {
@@ -121,7 +123,9 @@ export function CartItemRow({ item }: { item: CartItem }) {
                     multiplication, so it always matches the subtotal. It is
                     also the biggest number on the row: it is what this line
                     costs, and the unit price is the supporting detail. */}
-                <p className="text-text text-price tabular-nums">{formatPkr(item.lineTotal)}</p>
+                <p className="text-text text-price tabular-nums">
+                  <Money>{formatPkr(item.lineTotal)}</Money>
+                </p>
 
                 {item.quantity > 1 ? (
                   <PriceDisplay

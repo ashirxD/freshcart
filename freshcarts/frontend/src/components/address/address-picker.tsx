@@ -10,6 +10,8 @@ import { Modal } from '@/components/ui/modal';
 import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAddresses, useCreateAddress } from '@/features/addresses/addresses.hooks';
+import { Ltr } from '@/components/common/ltr';
+import { useT, type TFunction, type TranslationKey } from '@/i18n';
 import type { Address, AddressLabel } from '@/types/address';
 
 export interface AddressPickerProps {
@@ -24,8 +26,8 @@ const LABEL_ICON: Record<AddressLabel, typeof Home> = {
   OTHER: MapPin,
 };
 
-function addressTitle(address: Address): string {
-  const kind = address.label.charAt(0) + address.label.slice(1).toLowerCase();
+function addressTitle(address: Address, t: TFunction): string {
+  const kind = t(('addresses.label.' + address.label) as TranslationKey);
   return address.nickname ? kind + ' · ' + address.nickname : kind;
 }
 
@@ -38,6 +40,7 @@ function addressTitle(address: Address): string {
  * that they can fix it.
  */
 export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProps) {
+  const t = useT();
   const [isAdding, setIsAdding] = useState(false);
   const { data: addresses, isPending, isError, error: loadError, refetch } = useAddresses();
   const createAddress = useCreateAddress();
@@ -45,7 +48,7 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
   if (isPending) {
     return (
       <div className="gap-tight flex flex-col">
-        <Skeleton className="h-24 w-full" label="Loading your addresses" />
+        <Skeleton className="h-24 w-full" label={t('addresses.loading')} />
         <Skeleton className="h-24 w-full" />
       </div>
     );
@@ -62,14 +65,14 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
       {addresses.length === 0 ? (
         <EmptyState
           icon={<MapPin className="size-7" aria-hidden="true" />}
-          title="No saved addresses yet"
-          description="Add where you would like this order delivered."
+          title={t('addresses.emptyTitle')}
+          description={t('addresses.picker.emptyBody')}
           action={
             <Button
               onClick={openAddForm}
               leadingIcon={<Plus className="size-4" aria-hidden="true" />}
             >
-              Add an address
+              {t('addresses.addAnAddress')}
             </Button>
           }
           className="bg-surface-muted rounded-lg"
@@ -77,7 +80,7 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
       ) : (
         <>
           <RadioCardGroup
-            label="Where should we deliver this order?"
+            label={t('addresses.picker.question')}
             hideLabel
             value={selectedId}
             onChange={onSelect}
@@ -91,22 +94,24 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
                   <RadioCard
                     key={address.id}
                     value={address.id}
-                    title={addressTitle(address)}
+                    title={addressTitle(address, t)}
                     icon={<Icon className="size-5" />}
                     disabled={!address.hasCoordinates}
-                    disabledReason="This address has no map location, so we cannot work out a delivery charge. Edit it to add one."
+                    disabledReason={t('addresses.picker.noMapReason')}
                     trailing={
                       address.isDefault ? (
                         <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
-                          Default
+                          {t('addresses.default')}
                         </span>
                       ) : null
                     }
                   >
                     <span className="text-text-muted mt-0.5 flex flex-col gap-0.5 text-sm">
-                      <span>{address.formatted}</span>
                       <span>
-                        {address.recipientName} · {address.phone}
+                        <bdi>{address.formatted}</bdi>
+                      </span>
+                      <span>
+                        <bdi>{address.recipientName}</bdi> · <Ltr>{address.phone}</Ltr>
                       </span>
                     </span>
                   </RadioCard>
@@ -121,7 +126,7 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
             leadingIcon={<Plus className="size-4" aria-hidden="true" />}
             className="self-start"
           >
-            Add a new address
+            {t('addresses.picker.addNew')}
           </Button>
         </>
       )}
@@ -129,8 +134,8 @@ export function AddressPicker({ selectedId, onSelect, error }: AddressPickerProp
       <Modal
         open={isAdding}
         onClose={() => setIsAdding(false)}
-        title="Add a delivery address"
-        description="We will use this to calculate your delivery charge."
+        title={t('addresses.picker.addTitle')}
+        description={t('addresses.picker.addBody')}
       >
         <AddressForm
           isSubmitting={createAddress.isPending}

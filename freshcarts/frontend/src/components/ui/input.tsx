@@ -1,4 +1,7 @@
+'use client';
+
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
@@ -10,7 +13,17 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   trailingSlot?: ReactNode;
   /** Hides the label visually while keeping it available to screen readers. */
   hideLabel?: boolean;
+  /**
+   * Forces left-to-right entry. Inferred for phone, email, URL and numeric
+   * fields; set it for anything else that is a code rather than a sentence
+   * (a SKU, a barcode).
+   */
+  ltr?: boolean;
 }
+
+/** The kinds of field whose content is read left-to-right whatever the page language is. */
+const LTR_TYPES = new Set(['tel', 'email', 'url', 'number']);
+const LTR_INPUT_MODES = new Set(['tel', 'email', 'url', 'numeric', 'decimal']);
 
 /**
  * A label is mandatory, not optional: placeholder-only fields are one of the
@@ -18,9 +31,15 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
  * the prompt disappears the moment they start typing.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, leadingIcon, trailingSlot, hideLabel = false, className, ...props },
+  { label, hint, error, leadingIcon, trailingSlot, hideLabel = false, ltr, className, ...props },
   ref,
 ) {
+  const { tm, isRtl } = useI18n();
+  // A phone number typed into an Urdu form is still 0300 1234567, left to right.
+  // It keeps that order, and in a right-to-left layout it sits against the
+  // right-hand edge like every other field instead of floating at the left.
+  const isLtrField =
+    ltr ?? (LTR_TYPES.has(props.type ?? '') || LTR_INPUT_MODES.has(props.inputMode ?? ''));
   const generatedId = useId();
   const inputId = props.name ? props.name + '-' + generatedId : generatedId;
   const messageId = inputId + '-message';
@@ -58,9 +77,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           id={inputId}
           aria-invalid={hasError || undefined}
           aria-describedby={error || hint ? messageId : undefined}
+          dir={isLtrField ? 'ltr' : undefined}
           className={cn(
             'text-text w-full bg-transparent py-3 text-base outline-none',
             'placeholder:text-outline',
+            isLtrField && isRtl && 'text-right',
             className,
           )}
           {...props}
@@ -71,11 +92,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
       {error ? (
         <p id={messageId} role="alert" className="text-danger text-sm font-medium">
-          {error}
+          {tm(error)}
         </p>
       ) : hint ? (
         <p id={messageId} className="text-text-muted text-sm">
-          {hint}
+          {tm(hint)}
         </p>
       ) : null}
     </div>

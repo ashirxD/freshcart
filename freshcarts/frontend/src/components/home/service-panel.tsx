@@ -6,6 +6,8 @@ import { SectionHeader } from '@/components/common/section-header';
 import { Container } from '@/components/layout/container';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrentStore } from '@/features/catalog/catalog.hooks';
+import { Ltr } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { describeHours, hoursForDay, useTodayIndex } from '@/lib/hours';
 
@@ -28,17 +30,18 @@ import { describeHours, hoursForDay, useTodayIndex } from '@/lib/hours';
  * cannot actually make (§71).
  */
 export function ServicePanel() {
+  const t = useT();
   const { data: store, isPending } = useCurrentStore();
   const today = useTodayIndex();
-  const openToday = describeHours(hoursForDay(store?.openingHours, today));
+  const openToday = describeHours(hoursForDay(store?.openingHours, today), t('common.closed'));
 
   return (
     <section className="bg-surface-muted py-wide md:py-section">
       <Container className="gap-loose flex flex-col">
         <SectionHeader
-          eyebrow="How it works"
-          title="Two ways to get your groceries"
-          subtitle="Whichever you choose, you see the full cost before you place the order."
+          eyebrow={t('home.service.eyebrow')}
+          title={t('home.service.title')}
+          subtitle={t('home.service.subtitle')}
           accent="teal"
           className="max-w-2xl"
         />
@@ -46,39 +49,42 @@ export function ServicePanel() {
         <div className="gap-gutter grid sm:grid-cols-2 lg:grid-cols-4">
           <ServiceCard
             icon={<Truck className="size-5" />}
-            title="Delivered to your door"
+            title={t('home.service.deliveredTitle')}
             tone="leaf"
           >
-            The charge is worked out from the road distance between the shop and your address, and
-            shown to you before you place the order — never added afterwards.
+            {t('home.service.deliveredBody')}
           </ServiceCard>
 
-          <ServiceCard icon={<Store className="size-5" />} title="Collect in store" tone="teal">
-            {store ? (
-              <>
-                Pack it up and pick it up from {store.name}, {store.address.area}. No delivery
-                charge at all.
-              </>
-            ) : (
-              <>Pick your order up from the shop yourself. No delivery charge at all.</>
-            )}
+          <ServiceCard
+            icon={<Store className="size-5" />}
+            title={t('home.service.collectTitle')}
+            tone="teal"
+          >
+            {store
+              ? t('home.service.collectBodyStore', { store: store.name, area: store.address.area })
+              : t('home.service.collectBodyGeneric')}
           </ServiceCard>
 
           <ServiceCard
             icon={<ReceiptText className="size-5" />}
-            title="Pay cash on arrival"
+            title={t('home.service.payTitle')}
             tone="offer"
           >
-            Pay the rider when your order reaches you, or pay at the counter when you collect it.
-            Nothing is taken up front.
+            {t('home.service.payBody')}
           </ServiceCard>
 
-          <ServiceCard icon={<Clock className="size-5" />} title="Open today" tone="berry">
+          <ServiceCard
+            icon={<Clock className="size-5" />}
+            title={t('home.service.openTitle')}
+            tone="berry"
+          >
             {isPending ? (
-              <Skeleton className="h-10 w-full" label="Loading opening hours" />
+              <Skeleton className="h-10 w-full" label={t('home.service.loadingHours')} />
             ) : store ? (
               <span className="flex flex-col gap-1.5">
-                {openToday ? <span className="text-text font-semibold">{openToday}</span> : null}
+                {openToday ? (
+                  <Ltr className="text-text font-semibold">{openToday}</Ltr>
+                ) : null}
 
                 <span className="flex items-start gap-1.5">
                   <MapPin className="text-outline mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -92,7 +98,7 @@ export function ServicePanel() {
                   className="text-primary flex min-h-11 items-center gap-1.5 font-semibold"
                 >
                   <Phone className="size-3.5 shrink-0" aria-hidden="true" />
-                  {store.phone}
+                  <Ltr>{store.phone}</Ltr>
                 </a>
               </span>
             ) : null}
@@ -131,7 +137,10 @@ function ServiceCard({
       </span>
 
       <h3 className="text-text text-card">{title}</h3>
-      <p className="text-text-muted text-sm leading-relaxed">{children}</p>
+      {/* A div, not a p: the hours card holds a skeleton and block content, and
+          a div inside a p is invalid HTML that browsers re-parent, which then
+          fails hydration against the server markup. */}
+      <div className="text-text-muted text-sm leading-relaxed">{children}</div>
     </article>
   );
 }

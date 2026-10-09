@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import type { Metadata } from 'next';
+import { getT } from '@/i18n/server';
 import { StoreShell } from './store-manager/store-shell';
 
 /**
@@ -8,9 +10,13 @@ import { StoreShell } from './store-manager/store-shell';
  * chrome (staff are not platform administrators). Same design tokens, same
  * components — a different composition for a different job (§39).
  */
-export const metadata = {
-  title: { default: 'Store operations', template: '%s · FreshCarts store' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+
+  return {
+    title: { default: t('store.meta.title'), template: '%s · ' + t('store.meta.suffix') },
+  };
+}
 
 export default function StoreManagerLayout({ children }: { children: ReactNode }) {
   return <StoreShell>{children}</StoreShell>;

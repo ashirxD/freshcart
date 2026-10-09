@@ -4,6 +4,9 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, MapPinOff, Store, TrendingDown, TrendingUp, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
+import { Money } from '@/components/common/ltr';
+import { useI18n } from '@/i18n';
+import { describeError, describeIssue } from '@/lib/api/error-copy';
 import { ApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 import { formatPkr } from '@/lib/format';
@@ -37,14 +40,17 @@ export function CheckoutProblem({
   onRetry,
   className,
 }: CheckoutProblemProps) {
+  const { t, locale } = useI18n();
+  const messageFor = () => describeError(error, t, locale);
+
   if (!(error instanceof ApiError)) {
     return (
       <ProblemShell
         className={className}
         icon={<AlertTriangle className="size-5" aria-hidden="true" />}
-        title="Something went wrong"
-        message="Please try again in a moment."
-        action={onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined}
+        title={t('checkout.problem.genericTitle')}
+        message={t('checkout.problem.genericMessage')}
+        action={onRetry ? <Button onClick={onRetry}>{t('common.tryAgain')}</Button> : undefined}
       />
     );
   }
@@ -54,9 +60,9 @@ export function CheckoutProblem({
       <ProblemShell
         className={className}
         icon={<WifiOff className="size-5" aria-hidden="true" />}
-        title="You appear to be offline"
-        message={error.message}
-        action={onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined}
+        title={t('checkout.problem.offlineTitle')}
+        message={messageFor()}
+        action={onRetry ? <Button onClick={onRetry}>{t('common.tryAgain')}</Button> : undefined}
       />
     );
   }
@@ -72,15 +78,15 @@ export function CheckoutProblem({
           <ProblemShell
             className={className}
             icon={<TrendingUp className="size-5" aria-hidden="true" />}
-            title="Some prices changed"
-            message={error.message}
+            title={t('checkout.problem.pricesTitle')}
+            message={messageFor()}
             action={
               <div className="gap-tight flex flex-col sm:flex-row">
                 <Button onClick={onAcceptPrices} isLoading={isAcceptingPrices}>
-                  Continue at the new prices
+                  {t('checkout.problem.continueNewPrices')}
                 </Button>
                 <ButtonLink href="/cart" variant="outline">
-                  Review my cart
+                  {t('checkout.problem.reviewBasket')}
                 </ButtonLink>
               </div>
             }
@@ -98,13 +104,13 @@ export function CheckoutProblem({
                     className="gap-gutter bg-surface px-gutter flex items-center justify-between rounded-md py-2 text-sm"
                   >
                     <span className="text-text min-w-0 truncate font-medium">
-                      {issue.productName}
+                      <bdi>{issue.productName}</bdi>
                     </span>
 
                     <span className="flex shrink-0 items-center gap-2 tabular-nums">
                       {issue.previousPrice !== undefined ? (
                         <span className="text-text-muted line-through">
-                          {formatPkr(issue.previousPrice)}
+                          <Money>{formatPkr(issue.previousPrice)}</Money>
                         </span>
                       ) : null}
                       {issue.currentPrice !== undefined ? (
@@ -119,7 +125,9 @@ export function CheckoutProblem({
                           ) : (
                             <TrendingUp className="size-3.5" aria-hidden="true" />
                           )}
-                          {formatPkr(issue.currentPrice)}
+                          <Money className={isCheaper ? 'text-success' : 'text-danger'}>
+                            {formatPkr(issue.currentPrice)}
+                          </Money>
                         </span>
                       ) : null}
                     </span>
@@ -136,14 +144,14 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
-          title="Your cart needs a change"
-          message={error.message}
-          action={<ButtonLink href="/cart">Go to my cart</ButtonLink>}
+          title={t('checkout.problem.basketNeeds')}
+          message={messageFor()}
+          action={<ButtonLink href="/cart">{t('checkout.problem.goToBasket')}</ButtonLink>}
         >
           {issues.length > 1 ? (
             <ul className="text-text flex list-none flex-col gap-1 text-sm">
               {issues.map((issue) => (
-                <li key={issue.productId}>• {issue.message}</li>
+                <li key={issue.productId}>• {describeIssue(issue, t, locale, formatPkr)}</li>
               ))}
             </ul>
           ) : null}
@@ -158,13 +166,15 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<MapPinOff className="size-5" aria-hidden="true" />}
-          title="We cannot deliver there"
-          message={error.message}
+          title={t('checkout.problem.cannotDeliver')}
+          message={messageFor()}
         >
           {details ? (
             <p className="text-text-muted text-sm">
-              That address is {formatDistance(details.distanceMeters)} from the store. We deliver up
-              to {formatDistance(details.maxDistanceMeters)}.
+              {t('checkout.problem.distanceNote', {
+                distance: formatDistance(details.distanceMeters, t),
+                max: formatDistance(details.maxDistanceMeters, t),
+              })}
             </p>
           ) : null}
         </ProblemShell>
@@ -176,11 +186,11 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<MapPinOff className="size-5" aria-hidden="true" />}
-          title="This address needs a map location"
-          message={error.message}
+          title={t('checkout.problem.needsMapTitle')}
+          message={messageFor()}
           action={
             <ButtonLink href="/addresses" variant="outline">
-              Manage my addresses
+              {t('checkout.problem.manageAddresses')}
             </ButtonLink>
           }
         />
@@ -191,11 +201,11 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<Store className="size-5" aria-hidden="true" />}
-          title="The store is not taking orders"
-          message={error.message}
+          title={t('checkout.problem.storeClosedTitle')}
+          message={messageFor()}
           action={
             <ButtonLink href="/" variant="outline">
-              Keep browsing
+              {t('checkout.problem.keepBrowsing')}
             </ButtonLink>
           }
         />
@@ -206,9 +216,9 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
-          title="Your cart is empty"
-          message={error.message}
-          action={<ButtonLink href="/categories">Start shopping</ButtonLink>}
+          title={t('checkout.problem.basketEmpty')}
+          message={messageFor()}
+          action={<ButtonLink href="/categories">{t('cart.startShopping')}</ButtonLink>}
         />
       );
 
@@ -217,11 +227,11 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
-          title="This order is already being placed"
-          message={error.message}
+          title={t('checkout.problem.duplicateTitle')}
+          message={messageFor()}
           action={
             <ButtonLink href="/orders" variant="outline">
-              Check my orders
+              {t('checkout.problem.checkOrders')}
             </ButtonLink>
           }
         />
@@ -233,9 +243,9 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<MapPinOff className="size-5" aria-hidden="true" />}
-          title="We cannot work out delivery right now"
-          message={error.message}
-          action={onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined}
+          title={t('checkout.problem.cannotWork')}
+          message={messageFor()}
+          action={onRetry ? <Button onClick={onRetry}>{t('common.tryAgain')}</Button> : undefined}
         />
       );
 
@@ -244,14 +254,12 @@ export function CheckoutProblem({
         <ProblemShell
           className={className}
           icon={<AlertTriangle className="size-5" aria-hidden="true" />}
-          title="We could not continue"
+          title={t('checkout.problem.cannotContinue')}
           message={
             // A 5xx message is written for an engineer, not a shopper.
-            error.status >= 500
-              ? 'Something went wrong at our end. Nothing has been charged — please try again.'
-              : error.message
+            error.status >= 500 ? t('checkout.problem.serverFault') : messageFor()
           }
-          action={onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined}
+          action={onRetry ? <Button onClick={onRetry}>{t('common.tryAgain')}</Button> : undefined}
         />
       );
   }

@@ -4,7 +4,10 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Clock, MapPin, Phone, Store, Truck } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
+import { LanguageToggle } from '@/components/common/language-toggle';
+import { Ltr } from '@/components/common/ltr';
 import { useCategories, useCurrentStore } from '@/features/catalog/catalog.hooks';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { describeHours, hoursForDay, useTodayIndex } from '@/lib/hours';
 
@@ -29,11 +32,12 @@ import { describeHours, hoursForDay, useTodayIndex } from '@/lib/hours';
 export function SiteFooter() {
   const { data: store } = useCurrentStore();
   const { data: categories } = useCategories();
+  const { t, ltr } = useI18n();
 
   const aisles = (categories ?? []).slice(0, 6);
 
   const today = useTodayIndex();
-  const openToday = describeHours(hoursForDay(store?.openingHours, today));
+  const openToday = describeHours(hoursForDay(store?.openingHours, today), t('common.closed'));
 
   return (
     <footer className="bg-primary text-cream mt-auto hidden md:block">
@@ -43,27 +47,26 @@ export function SiteFooter() {
           <Logo tone="onDark" />
 
           <p className="text-cream/70 max-w-xs text-sm leading-relaxed">
-            {store?.description ??
-              'Your neighbourhood grocery, with fresh produce and daily staples brought to your door.'}
+            {store?.description ?? t('footer.defaultAbout')}
           </p>
 
           <div className="mt-1 flex flex-wrap gap-2">
-            <FooterFlag icon={<Truck className="size-3.5" />}>Home delivery</FooterFlag>
-            <FooterFlag icon={<Store className="size-3.5" />}>Collect in store</FooterFlag>
+            <FooterFlag icon={<Truck className="size-3.5" />}>{t('footer.homeDelivery')}</FooterFlag>
+            <FooterFlag icon={<Store className="size-3.5" />}>{t('footer.collectInStore')}</FooterFlag>
           </div>
         </div>
 
         {/* --- Shopping ------------------------------------------------ */}
-        <FooterColumn title="Shopping">
-          <FooterLink href="/categories">All categories</FooterLink>
-          <FooterLink href="/search?sale=true&sort=discount">On offer</FooterLink>
-          <FooterLink href="/search?sort=newest">New in store</FooterLink>
-          <FooterLink href="/scan">Scan a grocery list</FooterLink>
+        <FooterColumn title={t('footer.shopping')}>
+          <FooterLink href="/categories">{t('footer.allCategories')}</FooterLink>
+          <FooterLink href="/search?sale=true&sort=discount">{t('footer.onOffer')}</FooterLink>
+          <FooterLink href="/search?sort=newest">{t('footer.newInStore')}</FooterLink>
+          <FooterLink href="/scan">{t('footer.scanList')}</FooterLink>
         </FooterColumn>
 
         {/* --- Aisles, from the catalogue ------------------------------ */}
         {aisles.length > 0 ? (
-          <FooterColumn title="Aisles">
+          <FooterColumn title={t('footer.aisles')}>
             {aisles.map((category) => (
               <FooterLink key={category.id} href={'/categories/' + category.slug}>
                 {category.name}
@@ -71,17 +74,17 @@ export function SiteFooter() {
             ))}
           </FooterColumn>
         ) : (
-          <FooterColumn title="Your account">
-            <FooterLink href="/orders">Your orders</FooterLink>
-            <FooterLink href="/favorites">Saved items</FooterLink>
-            <FooterLink href="/addresses">Delivery addresses</FooterLink>
-            <FooterLink href="/cart">Your basket</FooterLink>
+          <FooterColumn title={t('footer.yourAccount')}>
+            <FooterLink href="/orders">{t('footer.yourOrders')}</FooterLink>
+            <FooterLink href="/favorites">{t('footer.savedItems')}</FooterLink>
+            <FooterLink href="/addresses">{t('footer.deliveryAddresses')}</FooterLink>
+            <FooterLink href="/cart">{t('footer.yourBasket')}</FooterLink>
           </FooterColumn>
         )}
 
         {/* --- The shop itself ----------------------------------------- */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-eyebrow text-apricot uppercase">Visit the shop</h2>
+          <h2 className="text-eyebrow text-apricot uppercase">{t('footer.visitTheShop')}</h2>
 
           {store ? (
             <address className="text-cream/75 flex flex-col gap-2.5 text-sm not-italic">
@@ -99,13 +102,13 @@ export function SiteFooter() {
                 className="hover:text-cream flex min-h-11 items-center gap-2 transition-colors"
               >
                 <Phone className="text-apricot size-4 shrink-0" aria-hidden="true" />
-                {store.phone}
+                <Ltr>{store.phone}</Ltr>
               </a>
 
               {openToday ? (
                 <span className="flex items-center gap-2">
                   <Clock className="text-apricot size-4 shrink-0" aria-hidden="true" />
-                  Open today {openToday}
+                  {t('footer.openToday', { hours: ltr(openToday) })}
                 </span>
               ) : null}
             </address>
@@ -115,8 +118,9 @@ export function SiteFooter() {
 
       <div className="border-cream/15 border-t">
         <div className="text-cream/55 mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-8 py-4 text-xs">
-          <p>© {FOUNDED_YEAR} FreshCarts. Prices in Pakistani rupees.</p>
-          <p>You will always see the delivery charge before you place an order.</p>
+          <p>{t('footer.copyright', { year: FOUNDED_YEAR })}</p>
+          <p>{t('footer.deliveryChargeNote')}</p>
+          <LanguageToggle tone="onDark" size="sm" />
         </div>
       </div>
     </footer>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { apiFetch } from '@/lib/api/client';
 import { cartKeys } from '@/features/cart/cart.hooks';
 import { useAuthStore } from '@/store/auth.store';

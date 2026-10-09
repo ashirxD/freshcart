@@ -3,8 +3,10 @@
 import { AlertTriangle, Check, HelpCircle, PackageX, Search, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { QuantitySelector } from '@/components/common/quantity-selector';
+import { Money } from '@/components/common/ltr';
 import { Button } from '@/components/ui/button';
 import { ProductImage } from '@/components/product/product-image';
+import { useI18n, useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr } from '@/lib/format';
 import { textDirection } from '@/lib/script';
@@ -38,6 +40,7 @@ export function OcrItemCard({
   onRemove,
   onRestore,
 }: OcrItemCardProps) {
+  const { t, tx } = useI18n();
   const { item, chosen, quantity, removed, addedToCart } = line;
   const status = chosen ? 'MATCHED' : item.match.status;
   const soldOut = chosen !== null && !chosen.isAvailable;
@@ -46,8 +49,11 @@ export function OcrItemCard({
     return (
       <li className="ring-leaf/30 bg-leaf/8 gap-gutter p-gutter flex items-center justify-between rounded-xl ring-1">
         <p className="text-text-muted text-sm">
-          <Check className="text-primary mr-1 inline size-4" aria-hidden="true" />
-          Added <span className="text-text font-medium">{chosen?.name}</span> ×{quantity}
+          <Check className="text-primary me-1 inline size-4" aria-hidden="true" />
+          {tx('ocr.card.added', {
+            name: <bdi className="text-text font-medium">{chosen?.name}</bdi>,
+            quantity,
+          })}
         </p>
       </li>
     );
@@ -57,16 +63,18 @@ export function OcrItemCard({
     return (
       <li className="border-outline-variant bg-surface-muted gap-gutter p-gutter flex items-center justify-between rounded-xl border border-dashed">
         <p className="text-text-muted text-sm">
-          Removed <RawText text={item.source.rawText} className="font-medium" />
+          {tx('ocr.card.removed', {
+            text: <RawText text={item.source.rawText} className="font-medium" />,
+          })}
         </p>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={onRestore}
-          leadingIcon={<Undo2 className="size-4" />}
+          leadingIcon={<Undo2 className="size-4 rtl:-scale-x-100" />}
         >
-          Undo
+          {t('ocr.card.undo')}
         </Button>
       </li>
     );
@@ -81,7 +89,7 @@ export function OcrItemCard({
     >
       <div className="gap-tight flex items-start justify-between">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="text-text-muted text-xs">You wrote</p>
+          <p className="text-text-muted text-xs">{t('ocr.card.wrote')}</p>
           <RawText text={item.source.rawText} className="text-text truncate text-sm font-medium" />
         </div>
 
@@ -98,17 +106,22 @@ export function OcrItemCard({
           />
 
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <p className="text-text truncate text-base font-semibold">{chosen.name}</p>
+            <p className="text-text truncate text-base font-semibold">
+              <bdi>{chosen.name}</bdi>
+            </p>
             <p className="text-text-muted text-sm">
               {chosen.unitLabel}
-              {chosen.brand ? ' · ' + chosen.brand : ''}
+              {chosen.brand ? ' · ' : ''}
+              {chosen.brand ? <bdi>{chosen.brand}</bdi> : null}
             </p>
             <p className="text-text text-sm font-semibold">
-              {formatPkr(chosen.price)}
+              <Money>{formatPkr(chosen.price)}</Money>
               {quantity > 1 ? (
                 <span className="text-text-muted font-normal">
                   {' '}
-                  × {quantity} = {formatPkr(chosen.price * quantity)}
+                  <Money>
+                    × {quantity} = {formatPkr(chosen.price * quantity)}
+                  </Money>
                 </span>
               ) : null}
             </p>
@@ -127,7 +140,7 @@ export function OcrItemCard({
             onChange={onQuantityChange}
             max={chosen.availableQuantity}
             size="sm"
-            label={'quantity of ' + chosen.name}
+            itemName={chosen.name}
           />
         ) : (
           <span />
@@ -137,12 +150,12 @@ export function OcrItemCard({
           {/* §49: a word, never only a pencil icon. */}
           {chosen || item.alternatives.length > 0 ? (
             <Button variant="outline" size="sm" onClick={onChangeProduct}>
-              {chosen ? 'Change product' : 'Choose a product'}
+              {chosen ? t('ocr.card.changeProduct') : t('ocr.card.chooseProduct')}
             </Button>
           ) : null}
 
           <Button variant="ghost" size="sm" onClick={onRemove}>
-            Remove
+            {t('ocr.card.remove')}
           </Button>
         </div>
       </div>
@@ -172,20 +185,30 @@ function StatusChip({
 }: {
   status: 'MATCHED' | 'AMBIGUOUS' | 'NOT_FOUND' | 'INVALID' | 'SOLD_OUT';
 }) {
+  const t = useT();
+
   const config = {
-    MATCHED: { label: 'Found', icon: Check, className: 'bg-primary/10 text-primary' },
+    MATCHED: { label: t('ocr.card.found'), icon: Check, className: 'bg-primary/10 text-primary' },
     AMBIGUOUS: {
-      label: 'Needs a choice',
+      label: t('ocr.card.needsChoice'),
       icon: HelpCircle,
       className: 'bg-secondary-container/40 text-secondary',
     },
-    NOT_FOUND: { label: 'Not found', icon: Search, className: 'bg-surface-sunken text-text-muted' },
+    NOT_FOUND: {
+      label: t('ocr.card.notFound'),
+      icon: Search,
+      className: 'bg-surface-sunken text-text-muted',
+    },
     INVALID: {
-      label: 'Not clear',
+      label: t('ocr.card.notClear'),
       icon: AlertTriangle,
       className: 'bg-surface-sunken text-text-muted',
     },
-    SOLD_OUT: { label: 'Out of stock', icon: PackageX, className: 'bg-danger/10 text-danger' },
+    SOLD_OUT: {
+      label: t('ocr.card.soldOut'),
+      icon: PackageX,
+      className: 'bg-danger/10 text-danger',
+    },
   }[status];
 
   const Icon = config.icon;
@@ -204,20 +227,22 @@ function StatusChip({
 }
 
 function UndecidedBody({ status, rawText }: { status: string; rawText: string }) {
+  const t = useT();
+
   if (status === 'AMBIGUOUS') {
     // §27's exact wording. Honest about the uncertainty rather than guessing.
-    return <p className="text-text text-sm">We&rsquo;re not sure which product you mean.</p>;
+    return <p className="text-text text-sm">{t('ocr.card.ambiguous')}</p>;
   }
 
   return (
     <div className="gap-tight flex flex-col">
-      <p className="text-text text-sm">We couldn&rsquo;t find this item.</p>
+      <p className="text-text text-sm">{t('ocr.card.notFoundBody')}</p>
       {/* §28: give them somewhere to go rather than a dead end. */}
       <Link
         href={'/search?q=' + encodeURIComponent(rawText)}
         className="text-primary text-sm font-medium underline underline-offset-2"
       >
-        Search for it yourself
+        {t('ocr.card.searchYourself')}
       </Link>
     </div>
   );
@@ -225,39 +250,35 @@ function UndecidedBody({ status, rawText }: { status: string; rawText: string })
 
 /** Things the shopper needs to know about this line, in plain words. */
 function Notices({ line, soldOut }: { line: SelectionLine; soldOut: boolean }) {
+  const t = useT();
   const notices: string[] = [];
 
   if (soldOut) {
-    notices.push('This is out of stock right now, so it will not be added.');
+    notices.push(t('ocr.card.noticeOutOfStock'));
   } else if (line.cappedByStock && line.chosen) {
     // §33: say how many there are, so the number can be changed rather than
     // merely refused.
     notices.push(
-      'You asked for ' +
-        line.item.source.quantity +
-        ', but only ' +
-        line.chosen.availableQuantity +
-        ' ' +
-        (line.chosen.availableQuantity === 1 ? 'is' : 'are') +
-        ' available.',
+      t('ocr.card.noticeCapped', {
+        asked: line.item.source.quantity,
+        available: line.chosen.availableQuantity,
+        count: line.chosen.availableQuantity,
+      }),
     );
   }
 
   if (line.item.source.quantityAdjusted) {
-    notices.push('We could not read the quantity clearly, so we set it to ' + line.quantity + '.');
+    notices.push(t('ocr.card.noticeQuantityAdjusted', { quantity: line.quantity }));
   }
 
   // §22: when the shopper named a size we could not match exactly, say so
   // rather than quietly buying a different pack.
   if (line.chosen && line.item.source.unit && !line.chosen.unitMatches) {
     notices.push(
-      'You wrote ' +
-        (line.item.source.unitValue ?? '') +
-        ' ' +
-        line.item.source.unit +
-        '. This comes as ' +
-        line.chosen.unitLabel +
-        '.',
+      t('ocr.card.noticeUnitMismatch', {
+        size: (line.item.source.unitValue ?? '') + ' ' + line.item.source.unit,
+        pack: line.chosen.unitLabel,
+      }),
     );
   }
 

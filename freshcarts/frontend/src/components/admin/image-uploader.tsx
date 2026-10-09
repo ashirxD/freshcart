@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, ImagePlus, Loader2, Star, Trash2 } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { adminApi } from '@/features/admin/admin.api';
+import { useI18n } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { ApiError } from '@/lib/api/errors';
 import { env } from '@/lib/env';
 import { prepareImageForUpload, resolveImageUrl } from '@/lib/image';
@@ -41,6 +43,7 @@ export function ImageUploader({
   onChange: (images: ProductImage[]) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +86,7 @@ export function ImageUploader({
       onChange([...images, ...added]);
     } catch (cause) {
       setError(
-        cause instanceof ApiError
-          ? cause.message
-          : 'That photo could not be uploaded. Please check your connection and try again.',
+        cause instanceof ApiError ? describeError(cause) : t('admin.uploader.failed'),
       );
     } finally {
       setUploading(false);
@@ -137,19 +138,18 @@ export function ImageUploader({
           onClick={() => inputRef.current?.click()}
           leadingIcon={<ImagePlus className="size-4" aria-hidden="true" />}
         >
-          {images.length === 0 ? 'Add photos' : 'Add more'}
+          {images.length === 0 ? t('admin.uploader.addPhotos') : t('admin.uploader.addMore')}
         </Button>
 
         <p className="text-text-muted text-sm">
           {remaining > 0
-            ? 'JPG, PNG or WEBP · up to ' + remaining + ' more'
-            : 'Maximum of ' + MAX_PRODUCT_IMAGES + ' photos reached'}
+            ? t('admin.uploader.upTo', { count: remaining })
+            : t('admin.uploader.maxReached', { max: MAX_PRODUCT_IMAGES })}
         </p>
       </div>
 
       <p className="text-text-muted text-xs">
-        Large photos are shrunk automatically before uploading, so a picture straight from a phone
-        camera is fine.
+        {t('admin.uploader.shrinkNote')}
       </p>
 
       {error ? (
@@ -161,14 +161,13 @@ export function ImageUploader({
       {isUploading ? (
         <p aria-live="polite" className="text-text-muted flex items-center gap-2 text-sm">
           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          Uploading…
+          {t('admin.uploader.uploading')}
         </p>
       ) : null}
 
       {images.length === 0 ? (
         <p className="border-sand text-text-muted p-gutter rounded-xl border-2 border-dashed text-center text-sm">
-          No photos yet. A product without one still sells — it shows a tile with its initials
-          instead.
+          {t('admin.uploader.none')}
         </p>
       ) : (
         <ul className="gap-gutter flex flex-col">
@@ -188,14 +187,14 @@ export function ImageUploader({
 
               <div className="flex min-w-48 flex-1 flex-col gap-1">
                 <Input
-                  label={'Description for photo ' + (index + 1)}
-                  placeholder="e.g. 1 litre carton of Olper's full cream milk"
+                  label={t('admin.uploader.descriptionFor', { n: index + 1 })}
+                  placeholder={t('admin.uploader.altPlaceholder')}
                   value={image.alt}
                   maxLength={160}
                   onChange={(event) => update(index, { alt: event.target.value })}
                   hint={
                     index === 0
-                      ? 'Read aloud to shoppers using a screen reader. Required.'
+                      ? t('admin.uploader.altHint')
                       : undefined
                   }
                 />
@@ -203,7 +202,7 @@ export function ImageUploader({
                 {index === 0 ? (
                   <p className="text-primary flex items-center gap-1 text-xs font-semibold">
                     <Star className="size-3.5" aria-hidden="true" />
-                    Main photo — shown on cards and in search
+                    {t('admin.uploader.mainPhoto')}
                   </p>
                 ) : null}
               </div>
@@ -215,7 +214,7 @@ export function ImageUploader({
                   size="sm"
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
-                  aria-label={'Move photo ' + (index + 1) + ' earlier'}
+                  aria-label={t('admin.uploader.moveEarlier', { n: index + 1 })}
                 >
                   <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
                 </Button>
@@ -226,7 +225,7 @@ export function ImageUploader({
                   size="sm"
                   disabled={index === images.length - 1}
                   onClick={() => move(index, 1)}
-                  aria-label={'Move photo ' + (index + 1) + ' later'}
+                  aria-label={t('admin.uploader.moveLater', { n: index + 1 })}
                 >
                   <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
                 </Button>
@@ -236,7 +235,7 @@ export function ImageUploader({
                   variant="ghost"
                   size="sm"
                   onClick={() => remove(index)}
-                  aria-label={'Remove photo ' + (index + 1)}
+                  aria-label={t('admin.uploader.remove', { n: index + 1 })}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
                 </Button>

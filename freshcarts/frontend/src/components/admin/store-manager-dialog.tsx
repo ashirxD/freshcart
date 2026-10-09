@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { useCreateStoreManager, useUpdateStoreManager } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import { isValidPkMobile, normalisePkPhone } from '@/lib/phone';
 import type { AdminStore, AdminStoreManager } from '@/types/admin';
 
@@ -47,6 +48,7 @@ export function StoreManagerDialog({
   stores: AdminStore[];
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const isEditing = manager !== null;
 
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -77,17 +79,17 @@ export function StoreManagerDialog({
     setForm((current) => ({ ...current, [field]: value }));
 
   const errors = {
-    fullName: form.fullName.trim().length < 2 ? 'Enter their full name' : undefined,
+    fullName: form.fullName.trim().length < 2 ? t('admin.managerDialog.errName') : undefined,
     phone:
       isEditing || isValidPkMobile(form.phone)
         ? undefined
-        : 'Enter a valid Pakistani mobile number, for example 03001234567',
+        : t('admin.managerDialog.errPhone'),
     password:
       isEditing ||
       (form.password.length >= 8 && /[A-Za-z]/.test(form.password) && /\d/.test(form.password))
         ? undefined
-        : 'At least 8 characters, with a letter and a number',
-    storeId: form.storeId ? undefined : 'Choose the store they will run',
+        : t('admin.managerDialog.errPassword'),
+    storeId: form.storeId ? undefined : t('admin.managerDialog.errStore'),
   };
 
   const hasErrors = Object.values(errors).some(Boolean);
@@ -123,27 +125,29 @@ export function StoreManagerDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEditing ? 'Edit ' + manager.fullName : 'Add a store manager'}
-      description={
+      title={
         isEditing
-          ? 'Moving them to another store signs them out of the old one immediately.'
-          : 'They will sign in with this phone number and password.'
+          ? t('admin.managerDialog.editTitle', { name: manager.fullName })
+          : t('admin.managerDialog.addTitle')
+      }
+      description={
+        isEditing ? t('admin.managerDialog.editDesc') : t('admin.managerDialog.addDesc')
       }
       variant="centered"
       footer={
         <div className="gap-gutter flex justify-end">
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" onClick={submit} isLoading={isPending}>
-            {isEditing ? 'Save changes' : 'Create manager'}
+            {isEditing ? t('admin.managerDialog.saveChanges') : t('admin.managerDialog.create')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <Input
-          label="Full name"
+          label={t('admin.managerDialog.fullName')}
           value={form.fullName}
           onChange={(event) => set('fullName')(event.target.value)}
           error={showErrors ? errors.fullName : undefined}
@@ -151,7 +155,7 @@ export function StoreManagerDialog({
         />
 
         <Input
-          label="Phone number"
+          label={t('admin.managerDialog.phone')}
           type="tel"
           inputMode="tel"
           value={form.phone}
@@ -160,12 +164,12 @@ export function StoreManagerDialog({
           // The login identifier. Changing it would change who the account is,
           // which is an account recovery operation, not an edit.
           disabled={isEditing}
-          hint={isEditing ? 'The sign-in number cannot be changed here.' : '03001234567'}
+          hint={isEditing ? t('admin.managerDialog.phoneHintEdit') : '03001234567'}
           autoComplete="tel"
         />
 
         <Input
-          label="Email (optional)"
+          label={t('admin.managerDialog.email')}
           type="email"
           value={form.email}
           onChange={(event) => set('email')(event.target.value)}
@@ -174,27 +178,29 @@ export function StoreManagerDialog({
 
         {!isEditing ? (
           <Input
-            label="Password"
+            label={t('admin.managerDialog.password')}
             type="password"
             value={form.password}
             onChange={(event) => set('password')(event.target.value)}
             error={showErrors ? errors.password : undefined}
-            hint="At least 8 characters, with a letter and a number."
+            hint={t('admin.managerDialog.passwordHint')}
             autoComplete="new-password"
           />
         ) : null}
 
         <SelectField
-          label="Store"
-          placeholder="Choose a store"
+          label={t('admin.managerDialog.store')}
+          placeholder={t('admin.managerDialog.chooseStore')}
           value={form.storeId}
           onChange={(event) => set('storeId')(event.target.value)}
           error={showErrors ? errors.storeId : undefined}
           options={stores.map((store) => ({
             value: store.id,
-            label: store.isActive ? store.name : store.name + ' (inactive)',
+            label: store.isActive
+              ? store.name
+              : t('admin.managerDialog.inactiveOption', { name: store.name }),
           }))}
-          hint="They will only ever see this store's orders and stock."
+          hint={t('admin.managerDialog.storeHint')}
         />
       </div>
     </Modal>

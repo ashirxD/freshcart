@@ -9,10 +9,12 @@ import {
   ShoppingBasket,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { TranslationKey } from '@/i18n';
 
 export interface NavItem {
   href: string;
-  label: string;
+  /** A translation key, not prose: the label is chosen when it is rendered. */
+  labelKey: TranslationKey;
   icon: LucideIcon;
   /** Marks the cart entry so a badge can be attached without hardcoding a route. */
   showsCartCount?: boolean;
@@ -31,11 +33,11 @@ export interface NavItem {
  * no route on a phone at all before.
  */
 export const MOBILE_NAV: NavItem[] = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/categories', label: 'Aisles', icon: Grid3x3 },
-  { href: '/cart', label: 'Basket', icon: ShoppingBasket, showsCartCount: true },
-  { href: '/orders', label: 'Orders', icon: Receipt },
-  { href: '/favorites', label: 'Saved', icon: Heart },
+  { href: '/', labelKey: 'nav.home', icon: Home },
+  { href: '/categories', labelKey: 'nav.aisles', icon: Grid3x3 },
+  { href: '/cart', labelKey: 'nav.basket', icon: ShoppingBasket, showsCartCount: true },
+  { href: '/orders', labelKey: 'nav.orders', icon: Receipt },
+  { href: '/favorites', labelKey: 'nav.saved', icon: Heart },
 ];
 
 /**
@@ -44,9 +46,9 @@ export const MOBILE_NAV: NavItem[] = [
  * the header and should not compete for link space.
  */
 export const DESKTOP_NAV: NavItem[] = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/categories', label: 'Categories', icon: Grid3x3 },
-  { href: '/orders', label: 'Orders', icon: Receipt },
+  { href: '/', labelKey: 'nav.home', icon: Home },
+  { href: '/categories', labelKey: 'nav.categories', icon: Grid3x3 },
+  { href: '/orders', labelKey: 'nav.orders', icon: Receipt },
 ];
 
 /**
@@ -57,19 +59,19 @@ export const DESKTOP_NAV: NavItem[] = [
  * menu is also the fix for a dead end in the old navigation.
  */
 export const ACCOUNT_NAV: NavItem[] = [
-  { href: '/orders', label: 'Your orders', icon: Receipt },
-  { href: '/favorites', label: 'Saved items', icon: Heart },
-  { href: '/addresses', label: 'Delivery addresses', icon: MapPin },
-  { href: '/scan', label: 'Scan a grocery list', icon: ScanLine },
+  { href: '/orders', labelKey: 'nav.yourOrders', icon: Receipt },
+  { href: '/favorites', labelKey: 'nav.savedItems', icon: Heart },
+  { href: '/addresses', labelKey: 'nav.deliveryAddresses', icon: MapPin },
+  { href: '/scan', labelKey: 'nav.scanList', icon: ScanLine },
 ];
 
 /** Header affordances that are icons rather than links with labels. */
 export const HEADER_ACTIONS: NavItem[] = [
-  { href: '/scan', label: 'Scan a grocery list', icon: ScanLine },
-  { href: '/favorites', label: 'Saved items', icon: Heart },
+  { href: '/scan', labelKey: 'nav.scanList', icon: ScanLine },
+  { href: '/favorites', labelKey: 'nav.savedItems', icon: Heart },
 ];
 
-export const SEARCH_NAV: NavItem = { href: '/search', label: 'Search', icon: Search };
+export const SEARCH_NAV: NavItem = { href: '/search', labelKey: 'nav.search', icon: Search };
 
 /** Treats nested routes as "inside" their section without matching everything on "/". */
 export function isActiveRoute(pathname: string, href: string): boolean {

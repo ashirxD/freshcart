@@ -16,6 +16,8 @@ import {
   useSetProductAvailability,
   useStoreProducts,
 } from '@/features/store-manager/store-manager.hooks';
+import { Ltr, Money } from '@/components/common/ltr';
+import { useI18n } from '@/i18n';
 import { formatPkr } from '@/lib/format';
 import type { Product } from '@/types/catalog';
 
@@ -29,6 +31,7 @@ import type { Product } from '@/types/catalog';
  * to hide the controls.
  */
 export function ProductsScreen() {
+  const { t, tx } = useI18n();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [confirming, setConfirming] = useState<Product | null>(null);
@@ -42,18 +45,19 @@ export function ProductsScreen() {
   return (
     <Container className="gap-loose flex flex-col">
       <header className="flex flex-col gap-0.5">
-        <h1 className="text-text text-xl font-semibold">Products</h1>
+        <h1 className="text-text text-xl font-semibold">{t('store.products.title')}</h1>
         <p aria-live="polite" className="text-text-muted text-sm">
           {isPending
-            ? 'Loading products…'
+            ? t('store.products.loading')
             : data
-              ? data.pagination.total + ' products in your store'
+              ? t('store.products.count', { count: data.pagination.total })
               : ''}
         </p>
       </header>
 
       <SearchBar
-        placeholder="Search by name, brand or item code"
+        placeholder={t('store.products.searchPlaceholder')}
+        label={t('store.products.searchLabel')}
         onSearch={(term) => {
           setSearch(term);
           setPage(1);
@@ -63,7 +67,7 @@ export function ProductsScreen() {
       {isPending ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-20 w-full" label="Loading products" />
+            <Skeleton key={index} className="h-20 w-full" label={t('store.products.loadingRows')} />
           ))}
         </div>
       ) : null}
@@ -73,9 +77,11 @@ export function ProductsScreen() {
       {data?.items.length === 0 ? (
         <EmptyState
           icon={<PackageSearch className="size-7" aria-hidden="true" />}
-          title="No products found"
+          title={t('store.products.emptyTitle')}
           description={
-            search ? 'Nothing matches “' + search + '”.' : 'Your store has no products yet.'
+            search
+              ? tx('store.products.emptyForTerm', { term: <bdi>{search}</bdi> })
+              : t('store.products.emptyNone')
           }
           className="bg-surface-muted rounded-lg"
         />
@@ -94,17 +100,17 @@ export function ProductsScreen() {
       ) : null}
 
       {data && data.pagination.totalPages > 1 ? (
-        <nav aria-label="Product pages" className="gap-gutter flex items-center justify-center">
+        <nav aria-label={t('store.products.pagesLabel')} className="gap-gutter flex items-center justify-center">
           <Button
             variant="outline"
             size="sm"
             disabled={page <= 1}
             onClick={() => setPage((current) => current - 1)}
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <span aria-live="polite" className="text-text-muted text-sm">
-            Page {data.pagination.page} of {data.pagination.totalPages}
+            {t('common.page', { page: data.pagination.page, pages: data.pagination.totalPages })}
           </span>
           <Button
             variant="outline"
@@ -112,7 +118,7 @@ export function ProductsScreen() {
             disabled={page >= data.pagination.totalPages}
             onClick={() => setPage((current) => current + 1)}
           >
-            Next
+            {t('common.next')}
           </Button>
         </nav>
       ) : null}
@@ -123,6 +129,7 @@ export function ProductsScreen() {
 }
 
 function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSale: () => void }) {
+  const { t } = useI18n();
   const setAvailability = useSetProductAvailability();
 
   return (
@@ -138,24 +145,31 @@ function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSal
 
       <div className="flex min-w-40 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-text text-sm font-semibold">{product.name}</h2>
+          <h2 className="text-text text-sm font-semibold">
+            <bdi>{product.name}</bdi>
+          </h2>
           {!product.isActive ? (
             <span className="bg-surface-sunken text-text-muted rounded-full px-2 py-0.5 text-xs font-semibold">
-              Off sale
+              {t('store.inventory.offSale')}
             </span>
           ) : null}
         </div>
 
         <p className="text-text-muted text-xs">
-          {product.sku} · {product.unitLabel}
-          {product.brand ? ' · ' + product.brand : ''}
+          <Ltr>{product.sku}</Ltr> · {product.unitLabel}
+          {product.brand ? (
+            <>
+              {' · '}
+              <bdi>{product.brand}</bdi>
+            </>
+          ) : null}
         </p>
 
         <AvailabilityBadge stock={product.stock} />
       </div>
 
       <p className="text-text shrink-0 font-semibold tabular-nums">
-        {formatPkr(product.sellingPrice)}
+        <Money>{formatPkr(product.sellingPrice)}</Money>
       </p>
 
       <div className="flex shrink-0 items-center gap-2">
@@ -168,16 +182,16 @@ function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSal
           href={'/store-manager/inventory?search=' + encodeURIComponent(product.sku)}
           variant="ghost"
           size="sm"
-          aria-label={'Stock for ' + product.name}
+          aria-label={t('store.products.stockAria', { name: product.name })}
         >
-          Stock
+          {t('store.products.stock')}
         </ButtonLink>
 
         {product.isActive ? (
           // Taking a product off sale removes it from the customer catalogue
           // immediately, so it confirms first (§43).
           <Button variant="outline" size="sm" onClick={onTakeOffSale}>
-            Take off sale
+            {t('store.products.takeOffSale')}
           </Button>
         ) : (
           <Button
@@ -186,7 +200,7 @@ function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSal
             isLoading={setAvailability.isPending}
             onClick={() => setAvailability.mutate({ id: product.id, availability: 'AVAILABLE' })}
           >
-            Put on sale
+            {t('store.products.putOnSale')}
           </Button>
         )}
       </div>
@@ -195,6 +209,7 @@ function ProductRow({ product, onTakeOffSale }: { product: Product; onTakeOffSal
 }
 
 function TakeOffSaleDialog({ product, onClose }: { product: Product | null; onClose: () => void }) {
+  const { t } = useI18n();
   const setAvailability = useSetProductAvailability();
 
   if (!product) return null;
@@ -203,7 +218,7 @@ function TakeOffSaleDialog({ product, onClose }: { product: Product | null; onCl
     <Modal
       open
       onClose={onClose}
-      title="Take off sale"
+      title={t('store.products.takeOffSale')}
       description={product.name}
       footer={
         <div className="gap-gutter flex">
@@ -218,18 +233,15 @@ function TakeOffSaleDialog({ product, onClose }: { product: Product | null; onCl
               )
             }
           >
-            Take off sale
+            {t('store.products.takeOffSale')}
           </Button>
           <Button variant="outline" fullWidth onClick={onClose}>
-            Keep on sale
+            {t('store.products.keepOnSale')}
           </Button>
         </div>
       }
     >
-      <p className="text-text-muted text-sm">
-        Customers will stop seeing this product straight away. It is not deleted — its stock,
-        history and past orders are untouched, and you can put it back on sale at any time.
-      </p>
+      <p className="text-text-muted text-sm">{t('store.products.takeOffBody')}</p>
     </Modal>
   );
 }

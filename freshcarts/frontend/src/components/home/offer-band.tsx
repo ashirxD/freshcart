@@ -4,6 +4,7 @@ import { ArrowRight, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { Container } from '@/components/layout/container';
 import { useProducts } from '@/features/catalog/catalog.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /**
@@ -22,6 +23,7 @@ import { cn } from '@/lib/cn';
  * nothing here knows what the biggest saving is.
  */
 export function OfferBand() {
+  const t = useT();
   // `limit: 1` because only the count is wanted: the shelf of discounted
   // products is a separate section, and this must not fetch it twice.
   const { data } = useProducts({ discounted: true, limit: 1 });
@@ -60,18 +62,18 @@ export function OfferBand() {
           </span>
 
           <div className="flex flex-col gap-1">
-            <p className="text-eyebrow text-apricot uppercase">Reduced today</p>
+            <p className="text-eyebrow text-apricot uppercase">{t('home.offer.eyebrow')}</p>
             <p className="text-display text-cream">
-              {count === 1 ? '1 item is on offer' : count + ' items are on offer'}
+              {t('home.offer.count', { count })}
             </p>
             <p className="text-cream/70 text-sm">
-              Stock up while the price is down — the saving is shown on every one.
+              {t('home.offer.body')}
             </p>
           </div>
         </div>
 
         <span className="bg-cream text-primary relative flex min-h-12 shrink-0 items-center gap-2 rounded-lg px-5 text-sm font-bold">
-          See what is reduced
+          {t('home.offer.cta')}
           <ArrowRight
             className="size-4 transition-transform duration-200 ease-standard group-hover:translate-x-0.5 rtl:rotate-180"
             aria-hidden="true"

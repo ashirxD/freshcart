@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n, type TranslationKey } from '@/i18n';
 import {
   UNIT_TYPES,
   productFormSchema,
@@ -38,6 +39,7 @@ export function ProductForm({
   isSubmitting,
   onCancel,
 }: ProductFormProps) {
+  const { t, tm } = useI18n();
   const {
     register,
     handleSubmit,
@@ -87,42 +89,42 @@ export function ProductForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="gap-gutter flex flex-col">
-      <FormSection title="Product" description="What a shopper sees on the card and page.">
+      <FormSection title={t('admin.productForm.productTitle')} description={t('admin.productForm.productDesc')}>
         <Input
-          label="Name"
-          placeholder="e.g. Olper's Full Cream Milk"
+          label={t('admin.productForm.name')}
+          placeholder={t('admin.productForm.namePlaceholder')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <Input
-          label="Brand"
-          hint="Optional — leave blank for unbranded items like loose vegetables."
+          label={t('admin.productForm.brand')}
+          hint={t('admin.productForm.brandHint')}
           error={errors.brand?.message}
           {...register('brand')}
         />
 
         <Input
-          label="Short description"
-          hint="One line, shown on the product card."
+          label={t('admin.productForm.shortDescription')}
+          hint={t('admin.productForm.shortDescriptionHint')}
           error={errors.shortDescription?.message}
           {...register('shortDescription')}
         />
 
         <TextareaField
-          label="Full description"
+          label={t('admin.productForm.fullDescription')}
           error={errors.description?.message}
           {...register('description')}
         />
       </FormSection>
 
       <FormSection
-        title="Placement"
-        description="Where this product is found in the store. Type a new name to add a category."
+        title={t('admin.productForm.placementTitle')}
+        description={t('admin.productForm.placementDesc')}
       >
         <CategoryCombobox
-          label="Category"
-          placeholder="Search, or type a new category"
+          label={t('admin.productForm.category')}
+          placeholder={t('admin.productForm.categoryPlaceholder')}
           options={categories.map((category) => ({ id: category.id, name: category.name }))}
           error={errors.categoryId?.message}
           value={categoryId ? { id: categoryId } : { createName: categoryCreateName }}
@@ -137,17 +139,17 @@ export function ProductForm({
         />
 
         <CategoryCombobox
-          label="Subcategory"
-          hint="Optional, but it makes the product much easier to find."
+          label={t('admin.productForm.subcategory')}
+          hint={t('admin.productForm.subcategoryHint')}
           placeholder={
             categoryId || categoryCreateName
-              ? 'Search, or type a new one'
-              : 'Choose a category first'
+              ? t('admin.productForm.subcategoryPlaceholder')
+              : t('admin.productForm.subcategoryChooseFirst')
           }
           emptyHint={
             categoryCreateName
-              ? 'This category is new, so it has no subcategories yet — type one to create it too.'
-              : 'This category has no subcategories yet. Type a name to create one.'
+              ? t('admin.productForm.subcategoryEmptyNew')
+              : t('admin.productForm.subcategoryEmptyNone')
           }
           disabled={!categoryId && !categoryCreateName}
           options={subcategories.map((subcategory) => ({
@@ -164,8 +166,8 @@ export function ProductForm({
       </FormSection>
 
       <FormSection
-        title="Photos"
-        description="The first photo is what shoppers see on the product card."
+        title={t('admin.productForm.photosTitle')}
+        description={t('admin.productForm.photosDesc')}
       >
         <ImageUploader
           images={images}
@@ -174,7 +176,7 @@ export function ProductForm({
 
         {errors.images?.message ? (
           <p role="alert" className="text-danger text-sm">
-            {errors.images.message}
+            {tm(errors.images.message)}
           </p>
         ) : null}
 
@@ -182,14 +184,14 @@ export function ProductForm({
             uploader renders the fields, so the summary lives here. */}
         {Array.isArray(errors.images) && errors.images.some(Boolean) ? (
           <p role="alert" className="text-danger text-sm">
-            Every photo needs a short description.
+            {t('admin.productForm.photoNeedsDescription')}
           </p>
         ) : null}
       </FormSection>
 
-      <FormSection title="Price" description="Whole rupees. There is no paisa in this catalogue.">
+      <FormSection title={t('admin.productForm.priceTitle')} description={t('admin.productForm.priceDesc')}>
         <Input
-          label="Selling price (Rs.)"
+          label={t('admin.productForm.sellingPrice')}
           type="number"
           inputMode="numeric"
           min={1}
@@ -198,8 +200,8 @@ export function ProductForm({
         />
 
         <Input
-          label="Was price (Rs.)"
-          hint="Optional. Shown struck through — leave blank when there is no discount."
+          label={t('admin.productForm.wasPrice')}
+          hint={t('admin.productForm.wasPriceHint')}
           type="number"
           inputMode="numeric"
           min={1}
@@ -208,17 +210,20 @@ export function ProductForm({
         />
       </FormSection>
 
-      <FormSection title="Pack size" description="How the product is sold.">
+      <FormSection title={t('admin.productForm.packTitle')} description={t('admin.productForm.packDesc')}>
         <SelectField
-          label="Unit"
-          options={UNIT_TYPES.map((unit) => ({ value: unit.value, label: unit.label }))}
+          label={t('admin.productForm.unit')}
+          options={UNIT_TYPES.map((unit) => ({
+            value: unit.value,
+            label: t(('admin.unit.' + unit.value) as TranslationKey),
+          }))}
           error={errors.unitType?.message}
           {...register('unitType')}
         />
 
         <Input
-          label="Size"
-          hint="1 for a 1 L bottle, 500 for a 500 g pack, 5 for a 5 kg bag."
+          label={t('admin.productForm.size')}
+          hint={t('admin.productForm.sizeHint')}
           type="number"
           inputMode="decimal"
           step="any"
@@ -228,27 +233,31 @@ export function ProductForm({
         />
       </FormSection>
 
-      <FormSection title="Identifiers" description="Used by staff and, later, by scanning.">
+      <FormSection
+        title={t('admin.productForm.identifiersTitle')}
+        description={t('admin.productForm.identifiersDesc')}
+      >
         <Input
-          label="Item code (SKU)"
-          hint="Unique within this store. Letters, digits and hyphens."
-          placeholder="FC-DAI-001"
+          label={t('admin.productForm.sku')}
+          hint={t('admin.productForm.skuHint')}
+          placeholder={t('admin.productForm.skuPlaceholder')}
+          ltr
           error={errors.sku?.message}
           {...register('sku')}
         />
 
         <Input
-          label="Barcode"
-          hint="Optional — many local products do not have one."
+          label={t('admin.productForm.barcode')}
+          hint={t('admin.productForm.barcodeHint')}
           inputMode="numeric"
           error={errors.barcode?.message}
           {...register('barcode')}
         />
 
         <Input
-          label="Also findable as"
-          hint="Comma separated. Add Urdu and Roman-Urdu names, e.g. doodh, dodh."
-          placeholder="doodh, milk"
+          label={t('admin.productForm.alsoFindable')}
+          hint={t('admin.productForm.alsoFindableHint')}
+          placeholder={t('admin.productForm.alsoFindablePlaceholder')}
           error={errors.searchTerms?.message}
           {...register('searchTerms')}
         />
@@ -256,11 +265,11 @@ export function ProductForm({
 
       {!product ? (
         <FormSection
-          title="Opening stock"
-          description="Set once at creation. After that, stock is managed on the Inventory screen."
+          title={t('admin.productForm.openingStockTitle')}
+          description={t('admin.productForm.openingStockDesc')}
         >
           <Input
-            label="Quantity on hand"
+            label={t('admin.productForm.quantityOnHand')}
             type="number"
             inputMode="numeric"
             min={0}
@@ -269,8 +278,8 @@ export function ProductForm({
           />
 
           <Input
-            label="Low stock warning at"
-            hint="The product is flagged as running low at or below this number."
+            label={t('admin.productForm.lowStockAt')}
+            hint={t('admin.productForm.lowStockAtHint')}
             type="number"
             inputMode="numeric"
             min={0}
@@ -280,16 +289,16 @@ export function ProductForm({
         </FormSection>
       ) : null}
 
-      <FormSection title="Visibility">
+      <FormSection title={t('admin.productForm.visibilityTitle')}>
         <CheckboxField
-          label="Available in the store"
-          hint="Turning this off removes the product from the customer catalogue immediately."
+          label={t('admin.productForm.available')}
+          hint={t('admin.productForm.availableHint')}
           checked={isActive}
           onChange={(checked) => setValue('isActive', checked, { shouldDirty: true })}
         />
 
         <CheckboxField
-          label="Feature on the home page"
+          label={t('admin.productForm.feature')}
           checked={isFeatured}
           onChange={(checked) => setValue('isFeatured', checked, { shouldDirty: true })}
         />
@@ -297,10 +306,10 @@ export function ProductForm({
 
       <div className="gap-gutter flex flex-wrap">
         <Button type="submit" isLoading={isSubmitting}>
-          {product ? 'Save changes' : 'Create product'}
+          {product ? t('admin.productForm.save') : t('admin.productForm.create')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>

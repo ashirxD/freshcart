@@ -1,8 +1,12 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { ApiError } from '@/lib/api/errors';
 import { useAuthStore } from '@/store/auth.store';
+import { getActiveLocale, ltrNow, tNow, type TranslationKey } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
+import { orderStatusLabel } from '@/lib/order-copy';
 import { useToast } from '@/store/toast.store';
 import type { StoreInventoryQuery, StoreOrderQuery } from '@/types/store-manager';
 import { storeManagerApi } from './store-manager.api';
@@ -123,7 +127,7 @@ function useOperationsMutation<TInput, TResult>(
   mutationFn: (input: TInput) => Promise<TResult>,
   options: {
     successMessage?: string | ((result: TResult) => string);
-    errorTitle: string;
+    errorTitle: TranslationKey;
     onDone?: (result: TResult) => void;
   },
 ) {
@@ -146,7 +150,7 @@ function useOperationsMutation<TInput, TResult>(
     },
     onError: (error: unknown) => {
       toast({
-        title: options.errorTitle,
+        title: tNow(options.errorTitle),
         description: describe(error),
         variant: 'error',
       });
@@ -164,59 +168,71 @@ function useOperationsMutation<TInput, TResult>(
  */
 function describe(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Please check your connection and try again.';
+    return tNow('errors.checkConnection');
   }
 
   if (error.code === 'INVALID_STATUS_TRANSITION') {
-    return 'This order has already been updated by someone else. Reload to see where it is now.';
+    return tNow('store.toast.staleOrder');
   }
 
   if (error.status === 403) {
-    return 'You no longer have access to this store.';
+    return tNow('store.toast.noAccess');
   }
 
   if (error.status === 404) {
-    return 'That order is no longer available in this store.';
+    return tNow('store.toast.orderGone');
   }
 
-  return error.message;
+  // English keeps the server's own sentence; other languages use the code's copy.
+  return describeError(error);
 }
 
 export function useUpdateOrderStatus(onDone?: () => void) {
   return useOperationsMutation(storeManagerApi.updateOrderStatus, {
-    successMessage: (order) => 'Order ' + order.orderNumber + ' is now ' + order.statusLabel,
-    errorTitle: 'Could not update this order',
+    successMessage: (order) =>
+      tNow('store.toast.orderNow', {
+        orderNumber: ltrNow(order.orderNumber),
+        status: orderStatusLabel(
+          order.status,
+          order.fulfillmentMethod,
+          order.statusLabel,
+          tNow,
+          getActiveLocale(),
+        ),
+      }),
+    errorTitle: 'store.toast.orderUpdateFailed',
     onDone,
   });
 }
 
 export function useRejectOrder(onDone?: () => void) {
   return useOperationsMutation(storeManagerApi.rejectOrder, {
-    successMessage: (order) => 'Order ' + order.orderNumber + ' was rejected',
-    errorTitle: 'Could not reject this order',
+    successMessage: (order) =>
+      tNow('store.toast.orderRejected', { orderNumber: ltrNow(order.orderNumber) }),
+    errorTitle: 'store.toast.rejectFailed',
     onDone,
   });
 }
 
 export function useProposeSubstitution(onDone?: () => void) {
   return useOperationsMutation(storeManagerApi.proposeSubstitution, {
-    successMessage: 'Replacement sent to the customer',
-    errorTitle: 'Could not propose that replacement',
+    successMessage: () => tNow('store.toast.replacementSent'),
+    errorTitle: 'store.toast.replacementFailed',
     onDone,
   });
 }
 
 export function useCancelSubstitution() {
   return useOperationsMutation(storeManagerApi.cancelSubstitution, {
-    successMessage: 'Replacement withdrawn',
-    errorTitle: 'Could not withdraw the replacement',
+    successMessage: () => tNow('store.toast.replacementWithdrawn'),
+    errorTitle: 'store.toast.withdrawFailed',
   });
 }
 
 export function useUpdateStock(onDone?: () => void) {
   return useOperationsMutation(storeManagerApi.updateInventory, {
-    successMessage: 'Stock updated',
-    errorTitle: 'Could not update the stock',
+    successMessage: () => tNow('store.toast.stockUpdated'),
+    errorTitle: 'store.toast.stockFailed',
     onDone,
   });
 }
@@ -224,7 +240,9 @@ export function useUpdateStock(onDone?: () => void) {
 export function useSetProductAvailability() {
   return useOperationsMutation(storeManagerApi.setProductAvailability, {
     successMessage: (product) =>
-      product.isActive ? product.name + ' is back on sale' : product.name + ' is off sale',
-    errorTitle: 'Could not change availability',
+      product.isActive
+        ? tNow('store.toast.backOnSale', { name: product.name })
+        : tNow('store.toast.nowOffSale', { name: product.name }),
+    errorTitle: 'store.toast.availabilityFailed',
   });
 }

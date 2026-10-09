@@ -14,6 +14,7 @@ import { ProductGrid, ProductGridSkeleton } from '@/components/product/product-g
 import { ProductRail, ProductRailSkeleton } from '@/components/product/product-rail';
 import { ProductSpotlight } from '@/components/product/product-spotlight';
 import { useCategories, useProducts } from '@/features/catalog/catalog.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useReveal } from '@/lib/use-reveal';
 import type { ProductQuery } from '@/types/catalog';
@@ -39,6 +40,7 @@ import type { ProductQuery } from '@/types/catalog';
  * query comes back empty renders nothing at all rather than an empty heading.
  */
 export function HomeScreen() {
+  const t = useT();
   const categories = useCategories({ withProductCount: true });
   const aisles = useReveal();
 
@@ -50,11 +52,11 @@ export function HomeScreen() {
       <section ref={aisles.ref} className={cn('py-wide md:py-section', aisles.className)}>
         <Container className="gap-loose flex flex-col">
           <SectionHeader
-            eyebrow="Shop by aisle"
-            title="What are you shopping for?"
-            subtitle="Fresh produce, pantry staples and daily essentials"
+            eyebrow={t('home.aisles.eyebrow')}
+            title={t('home.aisles.title')}
+            subtitle={t('home.aisles.subtitle')}
             actionHref="/categories"
-            actionLabel="All aisles"
+            actionLabel={t('home.aisles.action')}
           />
 
           {categories.isPending ? <CategoryGridSkeleton count={8} /> : null}
@@ -63,15 +65,15 @@ export function HomeScreen() {
             <ErrorState
               error={categories.error}
               onRetry={() => void categories.refetch()}
-              title="We could not load the aisles"
+              title={t('home.aisles.errorTitle')}
             />
           ) : null}
 
           {categories.data?.length === 0 ? (
             <EmptyState
               icon={<PackageOpen aria-hidden="true" />}
-              title="The shop is still being set up"
-              description="Aisles will appear here as soon as the store adds them."
+              title={t('home.aisles.emptyTitle')}
+              description={t('home.aisles.emptyBody')}
               className="bg-surface-muted rounded-2xl"
             />
           ) : null}
@@ -86,9 +88,9 @@ export function HomeScreen() {
 
       {/* --- What is reduced, as a swipeable shelf ---------------------- */}
       <ProductSection
-        eyebrow="Reduced today"
-        title="Today's savings"
-        subtitle="Everything here costs less than it did"
+        eyebrow={t('home.reduced.eyebrow')}
+        title={t('home.reduced.title')}
+        subtitle={t('home.reduced.subtitle')}
         accent="offer"
         query={{ discounted: true, sort: 'discount', limit: 12 }}
         seeAllHref="/search?sale=true&sort=discount"
@@ -98,9 +100,9 @@ export function HomeScreen() {
 
       {/* --- What the store picked out, as a spotlight ------------------ */}
       <ProductSection
-        eyebrow="From the shopkeeper"
-        title="Picked out for you"
-        subtitle="What the shop wants you to see this week"
+        eyebrow={t('home.picked.eyebrow')}
+        title={t('home.picked.title')}
+        subtitle={t('home.picked.subtitle')}
         query={{ featured: true, limit: 5 }}
         seeAllHref="/search?sort=relevance"
         layout="spotlight"
@@ -110,9 +112,9 @@ export function HomeScreen() {
 
       {/* --- What is new, as a compact grid ---------------------------- */}
       <ProductSection
-        eyebrow="Just arrived"
-        title="New on the shelves"
-        subtitle="The most recent additions to the shop"
+        eyebrow={t('home.arrivals.eyebrow')}
+        title={t('home.arrivals.title')}
+        subtitle={t('home.arrivals.subtitle')}
         accent="berry"
         query={{ sort: 'newest', limit: 10 }}
         seeAllHref="/search?sort=newest"

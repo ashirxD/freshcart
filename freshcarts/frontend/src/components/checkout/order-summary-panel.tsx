@@ -3,6 +3,8 @@
 import { Bike, Store } from 'lucide-react';
 import { ProductImage } from '@/components/product/product-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Money } from '@/components/common/ltr';
+import { useT, type TFunction } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr, formatPkrLabel, productTint } from '@/lib/format';
 import type { CheckoutPreview } from '@/types/order';
@@ -15,18 +17,30 @@ export interface OrderSummaryPanelProps {
   className?: string;
 }
 
-/** "4.3 km" rather than "4300 m", which is not how anyone thinks about distance. */
-export function formatDistance(metres: number): string {
-  return metres < 1000 ? metres + ' m' : (metres / 1000).toFixed(1) + ' km';
+/**
+ * "4.3 km" rather than "4300 m", which is not how anyone thinks about distance.
+ * Pass `t` for the unit in the active language ("4.3 کلومیٹر").
+ */
+export function formatDistance(metres: number, t?: TFunction): string {
+  if (metres < 1000) return t ? t('checkout.units.metres', { n: metres }) : metres + ' m';
+
+  const km = (metres / 1000).toFixed(1);
+  return t ? t('checkout.units.km', { n: km }) : km + ' km';
 }
 
 /** "About 15 min". Only ever shown when the routing provider actually gave one. */
-export function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number, t?: TFunction): string {
   const minutes = Math.max(1, Math.round(seconds / 60));
-  if (minutes < 60) return 'about ' + minutes + ' min';
+  if (minutes < 60) return t ? t('checkout.units.aboutMin', { n: minutes }) : 'about ' + minutes + ' min';
 
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
+
+  if (t) {
+    return rest
+      ? t('checkout.units.aboutHrMin', { h: hours, m: rest })
+      : t('checkout.units.aboutHr', { n: hours });
+  }
   return 'about ' + hours + ' hr' + (rest ? ' ' + rest + ' min' : '');
 }
 
@@ -43,6 +57,8 @@ export function OrderSummaryPanel({
   compact = false,
   className,
 }: OrderSummaryPanelProps) {
+  const t = useT();
+
   if (isLoading || !preview) {
     return (
       <div
@@ -51,7 +67,7 @@ export function OrderSummaryPanel({
           className,
         )}
       >
-        <Skeleton className="h-5 w-32" label="Calculating your total" />
+        <Skeleton className="h-5 w-32" label={t('checkout.summary.calculating')} />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-6 w-40" />
@@ -68,7 +84,9 @@ export function OrderSummaryPanel({
         className,
       )}
     >
-      <h2 className="text-text text-base font-bold tracking-[-0.015em]">Order summary</h2>
+      <h2 className="text-text text-base font-bold tracking-[-0.015em]">
+        {t('checkout.summary.title')}
+      </h2>
 
       {!compact ? (
         <ul className="gap-gutter flex list-none flex-col">
@@ -93,12 +111,12 @@ export function OrderSummaryPanel({
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="text-text truncate text-sm font-medium">{item.productName}</span>
                 <span className="text-text-muted text-xs">
-                  {item.unitLabel} · {formatPkr(item.unitPrice)} × {item.quantity}
+                  {item.unitLabel} · <Money>{formatPkr(item.unitPrice)} × {item.quantity}</Money>
                 </span>
               </div>
 
               <span className="text-text shrink-0 text-sm font-semibold tabular-nums">
-                {formatPkr(item.lineTotal)}
+                <Money>{formatPkr(item.lineTotal)}</Money>
               </span>
             </li>
           ))}
@@ -108,9 +126,13 @@ export function OrderSummaryPanel({
       <dl className="gap-tight border-outline-variant pt-gutter flex flex-col border-t text-sm">
         <div className="flex items-center justify-between">
           <dt className="text-text-muted">
-            Subtotal ({preview.totalQuantity === 1 ? '1 item' : preview.totalQuantity + ' items'})
+            {t('checkout.summary.subtotalItems', {
+              items: t('common.itemCount', { count: preview.totalQuantity }),
+            })}
           </dt>
-          <dd className="text-text font-medium tabular-nums">{formatPkr(preview.subtotal)}</dd>
+          <dd className="text-text font-medium tabular-nums">
+            <Money>{formatPkr(preview.subtotal)}</Money>
+          </dd>
         </div>
 
         <div className="gap-gutter flex items-start justify-between">
@@ -120,10 +142,10 @@ export function OrderSummaryPanel({
             ) : (
               <Store className="size-4 shrink-0" aria-hidden="true" />
             )}
-            {isDelivery ? 'Delivery' : 'Pickup'}
+            {isDelivery ? t('checkout.summary.delivery') : t('checkout.summary.pickup')}
             {preview.delivery ? (
               <span className="text-text-muted">
-                · {formatDistance(preview.delivery.distanceMeters)}
+                · {formatDistance(preview.delivery.distanceMeters, t)}
               </span>
             ) : null}
           </dt>
@@ -135,15 +157,19 @@ export function OrderSummaryPanel({
               path here that can render "Free" for a fee the server did not
               actually return as zero.
             */}
-            {isDelivery ? formatPkr(preview.deliveryFee) : 'No charge'}
+            {isDelivery ? (
+              <Money>{formatPkr(preview.deliveryFee)}</Money>
+            ) : (
+              t('checkout.summary.noCharge')
+            )}
           </dd>
         </div>
 
         {preview.discount > 0 ? (
           <div className="flex items-center justify-between">
-            <dt className="text-text-muted">Discount</dt>
+            <dt className="text-text-muted">{t('checkout.summary.discount')}</dt>
             <dd className="text-success font-medium tabular-nums">
-              −{formatPkr(preview.discount)}
+              <Money>−{formatPkr(preview.discount)}</Money>
             </dd>
           </div>
         ) : null}
@@ -156,18 +182,20 @@ export function OrderSummaryPanel({
         nothing on the panel had emphasis (§80, §81).
       */}
       <div className="bg-cream ring-sand flex items-baseline justify-between rounded-xl px-3 py-3 ring-1">
-        <span className="text-text text-base font-bold">Total to pay</span>
+        <span className="text-text text-base font-bold">{t('checkout.summary.totalToPay')}</span>
         <span
           className="text-primary text-price-lg tabular-nums"
-          aria-label={'Total ' + formatPkrLabel(preview.total)}
+          aria-label={t('checkout.summary.totalAria', { amount: formatPkrLabel(preview.total, t) })}
         >
-          {formatPkr(preview.total)}
+          <Money>{formatPkr(preview.total)}</Money>
         </span>
       </div>
 
       {preview.delivery?.durationSeconds ? (
         <p className="text-text-muted text-xs">
-          Estimated travel time from the store: {formatDuration(preview.delivery.durationSeconds)}.
+          {t('checkout.summary.travelTime', {
+            duration: formatDuration(preview.delivery.durationSeconds, t),
+          })}
         </p>
       ) : null}
     </div>

@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/common/section-header';
 import { Container } from '@/components/layout/container';
 import { useCategories } from '@/features/catalog/catalog.hooks';
 import { useCatalogFilters } from '@/features/catalog/use-catalog-filters';
+import { useI18n } from '@/i18n';
 import type { Category } from '@/types/catalog';
 
 /**
@@ -30,6 +31,7 @@ const SUGGESTIONS = ['atta', 'doodh', 'cheeni', 'sabzi', 'anday', 'chai', 'tel',
  * bar debounces the term it reports, and this screen commits it on submit.
  */
 export function SearchScreen() {
+  const { t, tx } = useI18n();
   const { filters, setFilters } = useCatalogFilters();
   const { data: categories = [] } = useCategories();
 
@@ -42,13 +44,9 @@ export function SearchScreen() {
       <div className="bg-cream py-wide">
         <Container className="gap-gutter flex max-w-3xl flex-col">
           <h1 className="text-display text-primary">
-            {term ? (
-              <>
-                Results for <span className="text-text">“{term}”</span>
-              </>
-            ) : (
-              'What are you looking for?'
-            )}
+            {term
+              ? tx('search.resultsHeading', { term: <bdi className="text-text">“{term}”</bdi> })
+              : t('search.heading')}
           </h1>
 
           <SearchBar
@@ -59,7 +57,7 @@ export function SearchScreen() {
           />
 
           <div className="gap-tight flex flex-wrap items-center">
-            <span className="text-text-muted text-xs font-semibold">Try:</span>
+            <span className="text-text-muted text-xs font-semibold">{t('search.try')}</span>
             {SUGGESTIONS.map((suggestion) => (
               <button
                 key={suggestion}
@@ -90,20 +88,22 @@ export function SearchScreen() {
  * onward: adjust the search, or browse the aisles instead.
  */
 function NoResults({ term, categories }: { term: string; categories: Category[] }) {
+  const { t } = useI18n();
+
   return (
     <div className="gap-section flex flex-col">
       <EmptyState
         icon={<SearchX aria-hidden="true" />}
-        title={'Nothing found for “' + term + '”'}
-        description="Try a shorter word, check the spelling, or open one of the aisles below."
+        title={t('search.noResultsTitle', { term })}
+        description={t('search.noResultsBody')}
         className="bg-surface-muted rounded-2xl"
       />
 
       {categories.length > 0 ? (
         <section className="gap-loose flex flex-col">
           <SectionHeader
-            eyebrow="Another way in"
-            title="Browse the aisles instead"
+            eyebrow={t('search.anotherWay')}
+            title={t('search.browseInstead')}
             actionHref="/categories"
           />
           <CategoryRail categories={categories} />
@@ -115,14 +115,16 @@ function NoResults({ term, categories }: { term: string; categories: Category[] 
 
 /** Shown before a term is entered — an empty results grid would say nothing. */
 function StartHere({ categories }: { categories: Category[] }) {
+  const { t } = useI18n();
+
   return (
     <div className="gap-section flex flex-col">
       {categories.length > 0 ? (
         <section className="gap-loose flex flex-col">
           <SectionHeader
-            eyebrow="Shop by aisle"
-            title="Or browse instead of typing"
-            subtitle="Search understands the name you use — “doodh”, “atta” and “sabzi” all work."
+            eyebrow={t('search.startEyebrow')}
+            title={t('search.startTitle')}
+            subtitle={t('search.startSubtitle')}
             actionHref="/categories"
           />
           <CategoryRail categories={categories} />
@@ -141,9 +143,9 @@ function StartHere({ categories }: { categories: Category[] }) {
         </span>
 
         <span className="flex flex-col">
-          <span className="text-text text-card">Looking for a deal?</span>
+          <span className="text-text text-card">{t('search.dealTitle')}</span>
           <span className="text-text-muted text-sm">
-            See everything the shop has reduced today.
+            {t('search.dealBody')}
           </span>
         </span>
       </Link>

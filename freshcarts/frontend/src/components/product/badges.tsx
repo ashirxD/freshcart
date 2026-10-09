@@ -1,4 +1,7 @@
+'use client';
+
 import { TagBadge } from '@/components/ui/badge';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { Stock } from '@/types/catalog';
 
@@ -19,9 +22,10 @@ export function DiscountBadge({
   discountPercent: number;
   className?: string;
 }) {
+  const t = useT();
   if (discountPercent <= 0) return null;
 
-  return <TagBadge className={className}>{discountPercent}% off</TagBadge>;
+  return <TagBadge className={className}>{t('product.percentOff', { percent: discountPercent })}</TagBadge>;
 }
 
 /**
@@ -32,18 +36,20 @@ export function DiscountBadge({
  * and the dot gives it a shape to recognise at a glance in a dense grid.
  */
 const AVAILABILITY = {
-  IN_STOCK: { label: 'In stock', ink: 'text-success', dot: 'bg-leaf' },
+  IN_STOCK: { labelKey: 'product.inStock', ink: 'text-success', dot: 'bg-leaf' },
   LOW_STOCK: { ink: 'text-attention', dot: 'bg-apricot' },
-  OUT_OF_STOCK: { label: 'Out of stock', ink: 'text-danger', dot: 'bg-danger' },
-} as const;
+  OUT_OF_STOCK: { labelKey: 'product.outOfStock', ink: 'text-danger', dot: 'bg-danger' },
+} as const satisfies Record<string, { labelKey?: TranslationKey; ink: string; dot: string }>;
 
 /**
  * The exact quantity is operational information; "Only 3 left" is what actually
  * helps a shopper decide, and it avoids exposing inventory levels publicly.
  */
 export function AvailabilityBadge({ stock, className }: { stock: Stock; className?: string }) {
+  const t = useT();
   const style = AVAILABILITY[stock.status];
-  const label = 'label' in style ? style.label : 'Only ' + stock.quantity + ' left';
+  const label =
+    'labelKey' in style ? t(style.labelKey) : t('product.onlyLeft', { count: stock.quantity });
 
   return (
     <span

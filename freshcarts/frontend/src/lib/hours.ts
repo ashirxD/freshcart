@@ -37,8 +37,13 @@ export function hoursForDay(
   return openingHours.find((entry) => entry.day === day) ?? null;
 }
 
-/** "8:00 – 23:00", or "Closed" — never a guess. */
-export function describeHours(entry: OpeningHours | null): string | null {
+/**
+ * "8:00 – 23:00", or the word for "closed" — never a guess.
+ *
+ * The word is a parameter because this helper is not a component and so cannot
+ * choose a language itself; the caller passes `t('common.closed')`.
+ */
+export function describeHours(entry: OpeningHours | null, closedLabel = 'Closed'): string | null {
   if (!entry) return null;
-  return entry.isClosed ? 'Closed' : entry.opensAt + ' – ' + entry.closesAt;
+  return entry.isClosed ? closedLabel : entry.opensAt + ' – ' + entry.closesAt;
 }

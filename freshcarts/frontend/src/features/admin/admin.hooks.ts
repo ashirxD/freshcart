@@ -1,8 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { catalogKeys } from '@/features/catalog/catalog.hooks';
 import { ApiError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-copy';
+import { tNow, type TranslationKey } from '@/i18n';
 import { useToast } from '@/store/toast.store';
 import type {
   AdminOrderQuery,
@@ -91,7 +94,7 @@ export function useAdminInventory(query: {
  */
 function useAdminMutation<TInput, TResult>(
   mutationFn: (input: TInput) => Promise<TResult>,
-  options: { successMessage: string; errorTitle: string; onDone?: (result: TResult) => void },
+  options: { successMessage: TranslationKey; errorTitle: TranslationKey; onDone?: (result: TResult) => void },
 ) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -101,14 +104,14 @@ function useAdminMutation<TInput, TResult>(
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.all });
       void queryClient.invalidateQueries({ queryKey: catalogKeys.all });
-      toast({ title: options.successMessage, variant: 'success' });
+      toast({ title: tNow(options.successMessage), variant: 'success' });
       options.onDone?.(result);
     },
     onError: (error: unknown) => {
       toast({
-        title: options.errorTitle,
+        title: tNow(options.errorTitle),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },
@@ -119,16 +122,16 @@ function useAdminMutation<TInput, TResult>(
 
 export function useCreateCategory(onDone?: () => void) {
   return useAdminMutation((input: CategoryInput) => adminApi.createCategory(input), {
-    successMessage: 'Category created',
-    errorTitle: 'Could not create the category',
+    successMessage: 'admin.toast.categoryCreated',
+    errorTitle: 'admin.toast.createCategoryFailed',
     onDone,
   });
 }
 
 export function useUpdateCategory(id: string, onDone?: () => void) {
   return useAdminMutation((input: Partial<CategoryInput>) => adminApi.updateCategory(id, input), {
-    successMessage: 'Category updated',
-    errorTitle: 'Could not update the category',
+    successMessage: 'admin.toast.categoryUpdated',
+    errorTitle: 'admin.toast.updateCategoryFailed',
     onDone,
   });
 }
@@ -137,7 +140,7 @@ export function useSetCategoryStatus() {
   return useAdminMutation(
     ({ id, isActive }: { id: string; isActive: boolean }) =>
       adminApi.setCategoryStatus(id, isActive),
-    { successMessage: 'Category status updated', errorTitle: 'Could not change the status' },
+    { successMessage: 'admin.toast.categoryStatusUpdated', errorTitle: 'admin.toast.changeStatusFailed' },
   );
 }
 
@@ -145,16 +148,16 @@ export function useReorderCategories() {
   return useAdminMutation(
     (categories: Array<{ id: string; displayOrder: number }>) =>
       adminApi.reorderCategories(categories),
-    { successMessage: 'Order saved', errorTitle: 'Could not save the new order' },
+    { successMessage: 'admin.toast.orderSaved', errorTitle: 'admin.toast.saveOrderFailed' },
   );
 }
 
 export function useDeleteCategory() {
   return useAdminMutation((id: string) => adminApi.deleteCategory(id), {
-    successMessage: 'Category deleted',
+    successMessage: 'admin.toast.categoryDeleted',
     // A category holding products is refused by the API with an explanation,
     // which the toast surfaces verbatim.
-    errorTitle: 'Could not delete the category',
+    errorTitle: 'admin.toast.deleteCategoryFailed',
   });
 }
 
@@ -162,16 +165,16 @@ export function useDeleteCategory() {
 
 export function useCreateProduct(onDone?: () => void) {
   return useAdminMutation((input: ProductInput) => adminApi.createProduct(input), {
-    successMessage: 'Product created',
-    errorTitle: 'Could not create the product',
+    successMessage: 'admin.toast.productCreated',
+    errorTitle: 'admin.toast.createProductFailed',
     onDone,
   });
 }
 
 export function useUpdateProduct(id: string, onDone?: () => void) {
   return useAdminMutation((input: Partial<ProductInput>) => adminApi.updateProduct(id, input), {
-    successMessage: 'Product updated',
-    errorTitle: 'Could not update the product',
+    successMessage: 'admin.toast.productUpdated',
+    errorTitle: 'admin.toast.updateProductFailed',
     onDone,
   });
 }
@@ -180,14 +183,14 @@ export function useSetProductStatus() {
   return useAdminMutation(
     ({ id, isActive }: { id: string; isActive: boolean }) =>
       adminApi.setProductStatus(id, isActive),
-    { successMessage: 'Product status updated', errorTitle: 'Could not change the status' },
+    { successMessage: 'admin.toast.productStatusUpdated', errorTitle: 'admin.toast.changeStatusFailed' },
   );
 }
 
 export function useDeleteProduct() {
   return useAdminMutation((id: string) => adminApi.deleteProduct(id), {
-    successMessage: 'Product deleted',
-    errorTitle: 'Could not delete the product',
+    successMessage: 'admin.toast.productDeleted',
+    errorTitle: 'admin.toast.deleteProductFailed',
   });
 }
 
@@ -204,7 +207,7 @@ export function useUpdateInventory() {
       adjustBy?: number;
       lowStockThreshold?: number;
     }) => adminApi.updateInventory(productId, input),
-    { successMessage: 'Stock updated', errorTitle: 'Could not update the stock' },
+    { successMessage: 'admin.toast.stockUpdated', errorTitle: 'admin.toast.updateStockFailed' },
   );
 }
 
@@ -249,10 +252,10 @@ export function useOverrideOrderStatus(id: string, onDone?: () => void) {
   return useAdminMutation(
     (input: { status: OrderStatus; reason: string }) => adminApi.overrideOrderStatus(id, input),
     {
-      successMessage: 'Order updated',
+      successMessage: 'admin.toast.orderUpdated',
       // An illegal transition comes back as a sentence naming which one it is,
       // and the toast shows that verbatim rather than inventing its own.
-      errorTitle: 'Could not update the order',
+      errorTitle: 'admin.toast.updateOrderFailed',
       onDone,
     },
   );
@@ -279,7 +282,7 @@ export function useSetCustomerStatus() {
   return useAdminMutation(
     ({ id, isActive }: { id: string; isActive: boolean }) =>
       adminApi.setCustomerStatus(id, isActive),
-    { successMessage: 'Customer updated', errorTitle: 'Could not update the customer' },
+    { successMessage: 'admin.toast.customerUpdated', errorTitle: 'admin.toast.updateCustomerFailed' },
   );
 }
 
@@ -298,8 +301,8 @@ export function useAdminStoreManagers(query: {
 
 export function useCreateStoreManager(onDone?: () => void) {
   return useAdminMutation((input: CreateStoreManagerInput) => adminApi.createStoreManager(input), {
-    successMessage: 'Store manager created',
-    errorTitle: 'Could not create the store manager',
+    successMessage: 'admin.toast.managerCreated',
+    errorTitle: 'admin.toast.createManagerFailed',
     onDone,
   });
 }
@@ -309,8 +312,8 @@ export function useUpdateStoreManager(onDone?: () => void) {
     ({ id, ...input }: UpdateStoreManagerInput & { id: string }) =>
       adminApi.updateStoreManager(id, input),
     {
-      successMessage: 'Store manager updated',
-      errorTitle: 'Could not update the store manager',
+      successMessage: 'admin.toast.managerUpdated',
+      errorTitle: 'admin.toast.updateManagerFailed',
       onDone,
     },
   );
@@ -320,7 +323,7 @@ export function useSetStoreManagerStatus() {
   return useAdminMutation(
     ({ id, isActive }: { id: string; isActive: boolean }) =>
       adminApi.setStoreManagerStatus(id, isActive),
-    { successMessage: 'Store manager updated', errorTitle: 'Could not update the store manager' },
+    { successMessage: 'admin.toast.managerUpdated', errorTitle: 'admin.toast.updateManagerFailed' },
   );
 }
 
@@ -340,16 +343,16 @@ export function useAdminStore(id: string | undefined) {
 
 export function useCreateStore(onDone?: () => void) {
   return useAdminMutation((input: StoreInput) => adminApi.createStore(input), {
-    successMessage: 'Store created',
-    errorTitle: 'Could not create the store',
+    successMessage: 'admin.toast.storeCreated',
+    errorTitle: 'admin.toast.createStoreFailed',
     onDone,
   });
 }
 
 export function useUpdateStore(id: string, onDone?: () => void) {
   return useAdminMutation((input: Partial<StoreInput>) => adminApi.updateStore(id, input), {
-    successMessage: 'Store updated',
-    errorTitle: 'Could not update the store',
+    successMessage: 'admin.toast.storeUpdated',
+    errorTitle: 'admin.toast.updateStoreFailed',
     onDone,
   });
 }
@@ -365,9 +368,9 @@ export function useDeliveryRules() {
 
 export function useCreateDeliveryRule(onDone?: () => void) {
   return useAdminMutation((input: DeliveryRuleInput) => adminApi.createDeliveryRule(input), {
-    successMessage: 'Pricing rule added',
+    successMessage: 'admin.toast.ruleAdded',
     // An overlap or an inverted range comes back naming the clashing band.
-    errorTitle: 'Could not add the pricing rule',
+    errorTitle: 'admin.toast.addRuleFailed',
     onDone,
   });
 }
@@ -377,8 +380,8 @@ export function useUpdateDeliveryRule(onDone?: () => void) {
     ({ id, ...input }: Partial<DeliveryRuleInput> & { id: string }) =>
       adminApi.updateDeliveryRule(id, input),
     {
-      successMessage: 'Pricing rule updated',
-      errorTitle: 'Could not update the pricing rule',
+      successMessage: 'admin.toast.ruleUpdated',
+      errorTitle: 'admin.toast.updateRuleFailed',
       onDone,
     },
   );
@@ -386,8 +389,8 @@ export function useUpdateDeliveryRule(onDone?: () => void) {
 
 export function useDeleteDeliveryRule() {
   return useAdminMutation((id: string) => adminApi.deleteDeliveryRule(id), {
-    successMessage: 'Pricing rule deleted',
-    errorTitle: 'Could not delete the pricing rule',
+    successMessage: 'admin.toast.ruleDeleted',
+    errorTitle: 'admin.toast.deleteRuleFailed',
   });
 }
 
@@ -399,8 +402,8 @@ export function useAdminSettings() {
 
 export function useUpdateSettings(onDone?: () => void) {
   return useAdminMutation((input: PlatformSettingsInput) => adminApi.updateSettings(input), {
-    successMessage: 'Settings saved',
-    errorTitle: 'Could not save the settings',
+    successMessage: 'admin.toast.settingsSaved',
+    errorTitle: 'admin.toast.saveSettingsFailed',
     onDone,
   });
 }

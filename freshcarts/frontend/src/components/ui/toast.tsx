@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useToastStore, type ToastVariant } from '@/store/toast.store';
 
@@ -35,6 +36,7 @@ const ACCENTS: Record<ToastVariant, string> = {
 export function Toaster() {
   const toasts = useToastStore((state) => state.toasts);
   const dismiss = useToastStore((state) => state.dismiss);
+  const t = useT();
 
   if (toasts.length === 0) return null;
 
@@ -82,7 +84,7 @@ export function Toaster() {
             <button
               type="button"
               onClick={() => dismiss(toast.id)}
-              aria-label="Dismiss notification"
+              aria-label={t('common.dismissNotification')}
               className="text-outline hover:bg-surface-muted -m-1 shrink-0 rounded-full p-1.5 transition-colors"
             >
               <X className="size-4" aria-hidden="true" />

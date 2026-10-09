@@ -1,8 +1,12 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Clock, ScanLine, Truck } from 'lucide-react';
 import { LogoLink } from '@/components/brand/logo';
+import { LanguageToggle } from '@/components/common/language-toggle';
 import { HeroBasket } from '@/components/home/hero-basket';
+import { useT } from '@/i18n';
 
 export interface AuthPanelProps {
   title: string;
@@ -29,10 +33,17 @@ export interface AuthPanelProps {
  * a decorative half-screen is the last thing wanted above a keyboard.
  */
 export function AuthPanel({ title, subtitle, children, footer }: AuthPanelProps) {
+  const t = useT();
+
   return (
     <main id="main-content" className="grid min-h-dvh lg:grid-cols-2">
       <div className="px-page py-wide flex flex-col md:px-8">
-        <LogoLink size="md" className="mb-wide min-h-11 w-fit items-center" />
+        <div className="mb-wide flex items-center justify-between gap-3">
+          <LogoLink size="md" className="min-h-11 w-fit items-center" />
+          {/* A guest picks their language here, before there is an account to
+              remember it on. */}
+          <LanguageToggle size="sm" />
+        </div>
 
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
           <header className="gap-tight mb-wide flex flex-col">
@@ -62,20 +73,20 @@ export function AuthPanel({ title, subtitle, children, footer }: AuthPanelProps)
           <HeroBasket tone="dark" className="max-w-sm" />
 
           <div className="flex max-w-sm flex-col gap-3 text-center">
-            <p className="text-display text-cream">Your neighbourhood grocery, in your pocket.</p>
+            <p className="text-display text-cream">{t('authPanel.tagline')}</p>
 
             <ul className="text-cream/75 gap-tight mt-2 flex flex-col text-sm">
               <li className="flex items-center justify-center gap-2">
                 <Truck className="text-apricot size-4 shrink-0" aria-hidden="true" />
-                Delivery to your door, or collect in store
+                {t('authPanel.pointDelivery')}
               </li>
               <li className="flex items-center justify-center gap-2">
                 <ScanLine className="text-apricot size-4 shrink-0" aria-hidden="true" />
-                Photograph your list and we will build the basket
+                {t('authPanel.pointScan')}
               </li>
               <li className="flex items-center justify-center gap-2">
                 <Clock className="text-apricot size-4 shrink-0" aria-hidden="true" />
-                The delivery charge is shown before you order
+                {t('authPanel.pointCharge')}
               </li>
             </ul>
           </div>

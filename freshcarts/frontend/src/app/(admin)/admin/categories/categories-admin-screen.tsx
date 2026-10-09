@@ -14,6 +14,7 @@ import {
   useReorderCategories,
   useSetCategoryStatus,
 } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
 import type { Category } from '@/types/catalog';
 
 /**
@@ -24,28 +25,29 @@ import type { Category } from '@/types/catalog';
  * is a short list — two buttons cover it accessibly.
  */
 export function CategoriesAdminScreen() {
+  const { t } = useI18n();
   const { data: categories, isPending, isError, error, refetch } = useAdminCategories();
 
   return (
     <Container className="gap-loose flex flex-col">
       <header className="gap-gutter flex flex-wrap items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-text text-xl font-semibold">Categories</h1>
-          <p className="text-text-muted text-sm">The order here is the order shoppers see.</p>
+          <h1 className="text-text text-xl font-semibold">{t('admin.categories.title')}</h1>
+          <p className="text-text-muted text-sm">{t('admin.categories.subtitle')}</p>
         </div>
 
         <ButtonLink
           href="/admin/categories/new"
           leadingIcon={<Plus className="size-4" aria-hidden="true" />}
         >
-          New category
+          {t('admin.categories.new')}
         </ButtonLink>
       </header>
 
       {isPending ? (
         <div className="gap-gutter flex flex-col">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-20 w-full" label="Loading categories" />
+            <Skeleton key={index} className="h-20 w-full" label={t('admin.categories.loadingRows')} />
           ))}
         </div>
       ) : null}
@@ -54,7 +56,7 @@ export function CategoriesAdminScreen() {
 
       {categories?.length === 0 ? (
         <p className="bg-surface-muted p-loose text-text-muted rounded-lg text-center text-sm">
-          No categories yet. Create the first one to start building the catalogue.
+          {t('admin.categories.none')}
         </p>
       ) : null}
 
@@ -83,6 +85,7 @@ function CategoryRow({
   siblings: Category[];
   index: number;
 }) {
+  const { t, ltr } = useI18n();
   const [isExpanded, setExpanded] = useState(false);
   const reorder = useReorderCategories();
   const setStatus = useSetCategoryStatus();
@@ -110,7 +113,7 @@ function CategoryRow({
             type="button"
             onClick={() => move(-1)}
             disabled={index === 0 || reorder.isPending}
-            aria-label={'Move ' + category.name + ' up'}
+            aria-label={t('admin.categories.moveUp', { name: category.name })}
             className="text-outline hover:bg-surface-muted flex size-9 items-center justify-center rounded-md disabled:opacity-30"
           >
             <ChevronUp className="size-4" aria-hidden="true" />
@@ -120,7 +123,7 @@ function CategoryRow({
             type="button"
             onClick={() => move(1)}
             disabled={index === siblings.length - 1 || reorder.isPending}
-            aria-label={'Move ' + category.name + ' down'}
+            aria-label={t('admin.categories.moveDown', { name: category.name })}
             className="text-outline hover:bg-surface-muted flex size-9 items-center justify-center rounded-md disabled:opacity-30"
           >
             <ChevronDown className="size-4" aria-hidden="true" />
@@ -129,19 +132,24 @@ function CategoryRow({
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-text text-base font-semibold">{category.name}</h2>
+            <h2 className="text-text text-base font-semibold">
+              <bdi>{category.name}</bdi>
+            </h2>
             <StatusPill isActive={category.isActive} />
           </div>
 
           <p className="text-text-muted text-sm">
-            /{category.slug} · {category.productCount ?? 0} products · {category.children.length}{' '}
-            subcategories
+            {t('admin.categories.rowSummary', {
+              slug: ltr('/' + category.slug),
+              products: t('admin.categories.products', { count: category.productCount ?? 0 }),
+              subs: t('admin.categories.subcategories', { count: category.children.length }),
+            })}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <ButtonLink href={'/admin/categories/' + category.id} variant="outline" size="sm">
-            Edit
+            {t('common.edit')}
           </ButtonLink>
 
           <Button
@@ -150,7 +158,7 @@ function CategoryRow({
             isLoading={setStatus.isPending}
             onClick={() => setStatus.mutate({ id: category.id, isActive: !category.isActive })}
           >
-            {category.isActive ? 'Deactivate' : 'Reactivate'}
+            {category.isActive ? t('admin.categories.deactivate') : t('admin.categories.reactivate')}
           </Button>
 
           <Button
@@ -161,7 +169,7 @@ function CategoryRow({
             // subcategories and explains why, which the error toast surfaces.
             onClick={() => remove.mutate(category.id)}
           >
-            Delete
+            {t('admin.products.delete')}
           </Button>
 
           {category.children.length > 0 ? (
@@ -171,7 +179,7 @@ function CategoryRow({
               aria-expanded={isExpanded}
               onClick={() => setExpanded((current) => !current)}
             >
-              {isExpanded ? 'Hide' : 'Show'} subcategories
+              {isExpanded ? t('admin.categories.hideSubs') : t('admin.categories.showSubs')}
             </Button>
           ) : null}
         </div>
@@ -202,6 +210,7 @@ function SubcategoryRow({
   siblings: Category[];
   index: number;
 }) {
+  const { t } = useI18n();
   const reorder = useReorderCategories();
   const setStatus = useSetCategoryStatus();
 
@@ -222,7 +231,7 @@ function SubcategoryRow({
           type="button"
           onClick={() => move(-1)}
           disabled={index === 0 || reorder.isPending}
-          aria-label={'Move ' + category.name + ' up'}
+          aria-label={t('admin.categories.moveUp', { name: category.name })}
           className="text-outline hover:bg-surface-muted flex size-9 items-center justify-center rounded-md disabled:opacity-30"
         >
           <ChevronUp className="size-4" aria-hidden="true" />
@@ -231,18 +240,20 @@ function SubcategoryRow({
           type="button"
           onClick={() => move(1)}
           disabled={index === siblings.length - 1 || reorder.isPending}
-          aria-label={'Move ' + category.name + ' down'}
+          aria-label={t('admin.categories.moveDown', { name: category.name })}
           className="text-outline hover:bg-surface-muted flex size-9 items-center justify-center rounded-md disabled:opacity-30"
         >
           <ChevronDown className="size-4" aria-hidden="true" />
         </button>
       </div>
 
-      <span className="text-text flex-1 text-sm font-medium">{category.name}</span>
+      <span className="text-text flex-1 text-sm font-medium">
+        <bdi>{category.name}</bdi>
+      </span>
       <StatusPill isActive={category.isActive} />
 
       <ButtonLink href={'/admin/categories/' + category.id} variant="ghost" size="sm">
-        Edit
+        {t('common.edit')}
       </ButtonLink>
 
       <Button
@@ -251,7 +262,7 @@ function SubcategoryRow({
         isLoading={setStatus.isPending}
         onClick={() => setStatus.mutate({ id: category.id, isActive: !category.isActive })}
       >
-        {category.isActive ? 'Deactivate' : 'Reactivate'}
+        {category.isActive ? t('admin.categories.deactivate') : t('admin.categories.reactivate')}
       </Button>
     </li>
   );

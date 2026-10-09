@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Compass } from 'lucide-react';
+import type { Metadata } from 'next';
 import { Logo } from '@/components/brand/logo';
 import { buttonClasses } from '@/components/ui/button';
+import { getT } from '@/i18n/server';
 
 /**
  * The root 404.
@@ -15,9 +17,14 @@ import { buttonClasses } from '@/components/ui/button';
  * No database id is echoed back. "We could not find that page" is the whole
  * truth a visitor needs; the id they typed tells them nothing.
  */
-export const metadata = { title: 'Page not found' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t('meta.notFoundTitle') };
+}
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getT();
+
   return (
     <main className="bg-cream px-page flex min-h-dvh flex-col items-center justify-center text-center">
       <Logo className="mb-wide" />
@@ -26,19 +33,17 @@ export default function NotFound() {
         <Compass className="size-7" aria-hidden="true" />
       </span>
 
-      <h1 className="text-display text-primary">We could not find that page</h1>
+      <h1 className="text-display text-primary">{t('notFound.heading')}</h1>
 
-      <p className="text-text-muted mt-tight max-w-sm text-sm">
-        The link may be out of date, or the page may have moved. The shop is still open.
-      </p>
+      <p className="text-text-muted mt-tight max-w-sm text-sm">{t('notFound.body')}</p>
 
       <div className="gap-snug mt-loose flex flex-wrap items-center justify-center">
         <Link href="/" className={buttonClasses({ size: 'lg' })}>
-          Go to FreshCarts
+          {t('notFound.goHome')}
         </Link>
 
         <Link href="/categories" className={buttonClasses({ variant: 'outline', size: 'lg' })}>
-          Browse the aisles
+          {t('common.browseAisles')}
         </Link>
       </div>
     </main>

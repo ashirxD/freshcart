@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, PackageSearch, Store, Truck } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
+import { Ltr } from '@/components/common/ltr';
 import { ErrorState } from '@/components/common/error-state';
 import { SectionHeader } from '@/components/common/section-header';
 import { Container } from '@/components/layout/container';
@@ -16,6 +17,7 @@ import { ProductRail } from '@/components/product/product-rail';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProduct, useRelatedProducts } from '@/features/catalog/catalog.hooks';
+import { useT } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/cn';
 import { productTint } from '@/lib/format';
@@ -36,6 +38,7 @@ import type { ProductDetail } from '@/types/catalog';
  * which on a phone means it is visible almost immediately anyway.
  */
 export function ProductScreen({ slug }: { slug: string }) {
+  const t = useT();
   const { data: product, isPending, isError, error, refetch } = useProduct(slug);
   const related = useRelatedProducts(slug);
   const relatedReveal = useReveal();
@@ -50,11 +53,11 @@ export function ProductScreen({ slug }: { slug: string }) {
         {isMissing ? (
           <EmptyState
             icon={<PackageSearch aria-hidden="true" />}
-            title="We could not find that product"
-            description="It may have been renamed, or the shop may no longer stock it."
+            title={t('productPage.notFoundTitle')}
+            description={t('productPage.notFoundBody')}
             action={
               <ButtonLink href="/categories" variant="primary">
-                Browse the aisles
+                {t('common.browseAisles')}
               </ButtonLink>
             }
             className="bg-surface-muted rounded-2xl"
@@ -110,11 +113,11 @@ export function ProductScreen({ slug }: { slug: string }) {
               <ul className="border-outline-variant gap-tight text-text-muted flex flex-col border-t pt-3 text-xs">
                 <li className="flex items-center gap-2">
                   <Truck className="text-leaf size-4 shrink-0" aria-hidden="true" />
-                  Delivery charge worked out from your address at checkout
+                  {t('productPage.deliveryNote')}
                 </li>
                 <li className="flex items-center gap-2">
                   <Store className="text-leaf size-4 shrink-0" aria-hidden="true" />
-                  Or collect from the shop at no extra charge
+                  {t('productPage.collectNote')}
                 </li>
               </ul>
             </div>
@@ -122,18 +125,20 @@ export function ProductScreen({ slug }: { slug: string }) {
             {product.description ? (
               <section className="gap-tight flex flex-col">
                 <h2 className="text-text text-base font-bold tracking-[-0.015em]">
-                  About this product
+                  {t('productPage.aboutTitle')}
                 </h2>
                 <p className="text-text-muted text-sm leading-relaxed">{product.description}</p>
               </section>
             ) : null}
 
             <dl className="border-outline-variant gap-x-gutter grid grid-cols-2 gap-y-3 border-t pt-4 text-sm">
-              <Detail label="Pack size" value={product.unitLabel} />
-              <Detail label="Item code" value={product.sku} />
-              {product.category ? <Detail label="Aisle" value={product.category.name} /> : null}
+              <Detail label={t('productPage.packSize')} value={product.unitLabel} />
+              <Detail label={t('productPage.itemCode')} value={product.sku} ltr />
+              {product.category ? (
+                <Detail label={t('productPage.aisle')} value={product.category.name} />
+              ) : null}
               {product.subcategory ? (
-                <Detail label="Type" value={product.subcategory.name} />
+                <Detail label={t('productPage.type')} value={product.subcategory.name} />
               ) : null}
             </dl>
           </div>
@@ -147,15 +152,17 @@ export function ProductScreen({ slug }: { slug: string }) {
         >
           <Container className="gap-loose flex flex-col">
             <SectionHeader
-              eyebrow="You might also need"
-              title="Similar products"
+              eyebrow={t('productPage.youMightNeed')}
+              title={t('productPage.similar')}
               subtitle={
                 product.subcategory
-                  ? 'More in ' + product.subcategory.name
-                  : 'More in ' + (product.category?.name ?? 'this aisle')
+                  ? t('productPage.moreIn', { name: product.subcategory.name })
+                  : product.category
+                    ? t('productPage.moreIn', { name: product.category.name })
+                    : t('productPage.moreInThisAisle')
               }
             />
-            <ProductRail products={related.data} label="Similar products" />
+            <ProductRail products={related.data} label={t('productPage.similar')} />
           </Container>
         </section>
       ) : null}
@@ -169,6 +176,7 @@ export function ProductScreen({ slug }: { slug: string }) {
  * photographs the shelf.
  */
 function Gallery({ product }: { product: ProductDetail }) {
+  const t = useT();
   const [selected, setSelected] = useState(0);
   const image = product.images[selected] ?? product.primaryImage;
 
@@ -196,7 +204,10 @@ function Gallery({ product }: { product: ProductDetail }) {
               <button
                 type="button"
                 onClick={() => setSelected(index)}
-                aria-label={'Show image ' + (index + 1) + ' of ' + product.images.length}
+                aria-label={t('productPage.showImage', {
+                  index: index + 1,
+                  total: product.images.length,
+                })}
                 aria-current={index === selected}
                 className={cn(
                   'relative size-16 overflow-hidden rounded-lg ring-2 transition-[box-shadow]',
@@ -219,24 +230,25 @@ function Gallery({ product }: { product: ProductDetail }) {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value, ltr = false }: { label: string; value: string; ltr?: boolean }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-text-muted text-xs font-semibold tracking-[0.03em] uppercase">{label}</dt>
-      <dd className="text-text font-semibold">{value}</dd>
+      <dd className="text-text font-semibold">{ltr ? <Ltr>{value}</Ltr> : value}</dd>
     </div>
   );
 }
 
 function Breadcrumb({ product }: { product: ProductDetail }) {
+  const t = useT();
   if (!product.category) return null;
 
   return (
-    <nav aria-label="Breadcrumb">
+    <nav aria-label={t('categories.breadcrumbLabel')}>
       <ol className="text-text-muted flex flex-wrap items-center gap-1 text-sm">
         <li>
           <Link href="/categories" className="hover:text-primary transition-colors">
-            Aisles
+            {t('categories.breadcrumbRoot')}
           </Link>
         </li>
         <li className="flex items-center gap-1">
@@ -265,10 +277,12 @@ function Breadcrumb({ product }: { product: ProductDetail }) {
 }
 
 function ProductScreenSkeleton() {
+  const t = useT();
+
   return (
     <div className="bg-cream/60 py-loose md:py-wide">
       <Container className="gap-loose flex flex-col lg:flex-row lg:gap-10">
-        <Skeleton className="aspect-square w-full rounded-2xl lg:w-1/2" label="Loading product" />
+        <Skeleton className="aspect-square w-full rounded-2xl lg:w-1/2" label={t('productPage.loading')} />
         <div className="gap-gutter flex flex-col lg:w-1/2 lg:pt-9">
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-9 w-3/4" />

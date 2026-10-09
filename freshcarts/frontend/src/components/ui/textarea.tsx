@@ -1,4 +1,7 @@
+'use client';
+
 import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> {
@@ -20,6 +23,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const generatedId = useId();
   const fieldId = props.name ? props.name + '-' + generatedId : generatedId;
   const messageId = fieldId + '-message';
+  const { tm } = useI18n();
   const hasError = Boolean(error);
 
   return (
@@ -50,11 +54,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 
       {error ? (
         <p id={messageId} role="alert" className="text-danger text-sm font-medium">
-          {error}
+          {tm(error)}
         </p>
       ) : hint ? (
         <p id={messageId} className="text-text-muted text-sm">
-          {hint}
+          {tm(hint)}
         </p>
       ) : null}
     </div>

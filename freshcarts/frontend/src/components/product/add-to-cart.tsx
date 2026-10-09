@@ -10,6 +10,7 @@ import {
   useRemoveCartItem,
   useUpdateCartItem,
 } from '@/features/cart/cart.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
@@ -45,6 +46,7 @@ export function AddToCart({
   variant = 'compact',
   className,
 }: AddToCartProps) {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
 
@@ -62,7 +64,7 @@ export function AddToCart({
   const requireSignIn = (): boolean => {
     if (status === 'authenticated') return false;
 
-    toast({ title: 'Sign in to start shopping', variant: 'info' });
+    toast({ title: t('product.signInToShop'), variant: 'info' });
     router.push('/login?next=' + encodeURIComponent(window.location.pathname));
     return true;
   };
@@ -76,7 +78,7 @@ export function AddToCart({
         fullWidth={variant === 'full'}
         className={className}
       >
-        Out of stock
+        {t('product.outOfStock')}
       </Button>
     );
   }
@@ -89,7 +91,6 @@ export function AddToCart({
         size={size}
         removable
         disabled={isPending}
-        label={'quantity of ' + product.name}
         itemName={product.name}
         // Full width in both variants: the stepper occupies exactly the space
         // the "Add" button did, so the card does not reflow when it swaps.
@@ -116,14 +117,14 @@ export function AddToCart({
       }
       // Named for the product: a screen of identical "Add" buttons is unusable
       // when the labels are read out of context.
-      aria-label={'Add ' + product.name + ' to cart'}
+      aria-label={t('product.addNamedToBasket', { name: product.name })}
       className={className}
       onClick={() => {
         if (requireSignIn()) return;
         addToCart.mutate({ productId: product.id, quantity: 1 });
       }}
     >
-      {variant === 'full' ? 'Add to cart' : 'Add'}
+      {variant === 'full' ? t('product.addToBasket') : t('product.add')}
     </Button>
   );
 }

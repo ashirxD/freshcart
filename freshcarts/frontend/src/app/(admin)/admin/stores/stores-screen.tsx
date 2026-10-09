@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { MapPin, Plus, Store } from 'lucide-react';
 import { AdminListState, AdminPageHeader } from '@/components/admin/admin-page';
 import { StoreDialog } from '@/components/admin/store-dialog';
+import { Ltr } from '@/components/common/ltr';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { useAdminStores } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
+import { weekdayName } from '@/lib/dates';
 import type { AdminStore } from '@/types/admin';
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
  * STORES
@@ -23,21 +24,24 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
  * parallel admin copy of StoreService (section 11).
  */
 export function AdminStoresScreen() {
+  const { t } = useI18n();
   const [editing, setEditing] = useState<AdminStore | 'new' | null>(null);
   const { data, isPending, isError, error, refetch } = useAdminStores();
 
   return (
     <>
       <AdminPageHeader
-        title="Stores"
-        description={data ? data.length + ' stores' : 'Where FreshCarts trades from'}
+        title={t('admin.stores.title')}
+        description={
+          data ? t('admin.stores.count', { count: data.length }) : t('admin.stores.tradesFrom')
+        }
         actions={
           <Button
             variant="primary"
             onClick={() => setEditing('new')}
             leadingIcon={<Plus className="size-4" aria-hidden="true" />}
           >
-            Add store
+            {t('admin.stores.add')}
           </Button>
         }
       />
@@ -50,11 +54,11 @@ export function AdminStoresScreen() {
         isEmpty={data?.length === 0}
         skeletonClassName="h-44 w-full"
         skeletonRows={2}
-        emptyTitle="No stores yet"
-        emptyDescription="A store is the scope everything else hangs off: its catalogue, its stock, its orders."
+        emptyTitle={t('admin.stores.emptyTitle')}
+        emptyDescription={t('admin.stores.emptyBody')}
         emptyAction={
           <Button variant="primary" onClick={() => setEditing('new')}>
-            Add the first store
+            {t('admin.stores.addFirst')}
           </Button>
         }
       >
@@ -68,9 +72,11 @@ export function AdminStoresScreen() {
                 <div className="min-w-0">
                   <h2 className="text-text gap-2 flex items-center text-base font-semibold">
                     <Store className="size-4 shrink-0" aria-hidden="true" />
-                    {store.name}
+                    <bdi>{store.name}</bdi>
                   </h2>
-                  <p className="text-text-muted text-sm">{store.slug}</p>
+                  <p className="text-text-muted text-sm">
+                    <Ltr>{store.slug}</Ltr>
+                  </p>
                 </div>
 
                 <span
@@ -81,24 +87,28 @@ export function AdminStoresScreen() {
                       : 'bg-surface-sunken text-text-muted',
                   )}
                 >
-                  {store.isActive ? 'Trading' : 'Closed'}
+                  {store.isActive ? t('admin.stores.trading') : t('common.closed')}
                 </span>
               </div>
 
               <p className="text-text-muted gap-2 flex items-start text-sm">
                 <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>
-                  {store.address.line1}, {store.address.area}, {store.address.city}
+                  <bdi>
+                    {store.address.line1}, {store.address.area}, {store.address.city}
+                  </bdi>
                 </span>
               </p>
 
-              <p className="text-text-muted text-sm tabular-nums">{store.phone}</p>
+              <p className="text-text-muted text-sm tabular-nums">
+                <Ltr>{store.phone}</Ltr>
+              </p>
 
               <OpeningHoursSummary store={store} />
 
               <div className="mt-auto flex justify-end">
                 <Button variant="outline" size="sm" onClick={() => setEditing(store)}>
-                  Edit store
+                  {t('admin.stores.editStore')}
                 </Button>
               </div>
             </li>
@@ -124,10 +134,11 @@ export function AdminStoresScreen() {
  * not claim otherwise.
  */
 function OpeningHoursSummary({ store }: { store: AdminStore }) {
+  const { t, locale, ltr } = useI18n();
   const hours = store.openingHours ?? [];
 
   if (hours.length === 0) {
-    return <p className="text-text-muted text-sm">Open whenever the store is active</p>;
+    return <p className="text-text-muted text-sm">{t('admin.stores.openWhenActive')}</p>;
   }
 
   const open = hours.filter((window) => !window.isClosed);
@@ -140,7 +151,7 @@ function OpeningHoursSummary({ store }: { store: AdminStore }) {
   if (uniform) {
     return (
       <p className="text-text-muted text-sm tabular-nums">
-        Every day {open[0].opensAt}–{open[0].closesAt}
+        {t('admin.stores.everyDay', { hours: ltr(open[0].opensAt + '–' + open[0].closesAt) })}
       </p>
     );
   }
@@ -151,8 +162,14 @@ function OpeningHoursSummary({ store }: { store: AdminStore }) {
         .sort((a, b) => a.day - b.day)
         .map((window) => (
           <li key={window.day} className="flex justify-between tabular-nums">
-            <span>{DAY_NAMES[window.day]}</span>
-            <span>{window.isClosed ? 'Closed' : window.opensAt + '–' + window.closesAt}</span>
+            <span>{weekdayName(window.day, locale)}</span>
+            <span>
+              {window.isClosed ? (
+                t('common.closed')
+              ) : (
+                <Ltr>{window.opensAt + '–' + window.closesAt}</Ltr>
+              )}
+            </span>
           </li>
         ))}
     </ul>

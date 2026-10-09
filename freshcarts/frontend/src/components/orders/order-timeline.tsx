@@ -1,21 +1,15 @@
 import { Check } from 'lucide-react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
-import type { TimelineStep } from '@/types/order';
+import { formatDate } from '@/lib/dates';
+import { orderNote, orderStatusLabel } from '@/lib/order-copy';
+import type { FulfillmentMethod, TimelineStep } from '@/types/order';
 
 export interface OrderTimelineProps {
   steps: TimelineStep[];
+  /** Needed to word a finished pickup as "collected"; delivery is assumed. */
+  fulfillmentMethod?: FulfillmentMethod;
   className?: string;
-}
-
-/** "2 Feb, 3:40 pm" — enough to be useful, short enough for a phone. */
-function formatMoment(iso: string): string {
-  return new Date(iso).toLocaleString('en-PK', {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 /**
@@ -37,7 +31,9 @@ function formatMoment(iso: string): string {
  * Each state is signalled three ways: shape (filled tick / ring / hollow),
  * weight, and the visible label. Never colour alone.
  */
-export function OrderTimeline({ steps, className }: OrderTimelineProps) {
+export function OrderTimeline({ steps, fulfillmentMethod, className }: OrderTimelineProps) {
+  const { t, locale } = useI18n();
+
   return (
     <ol className={cn('flex list-none flex-col', className)}>
       {steps.map((step, index) => {
@@ -97,7 +93,7 @@ export function OrderTimeline({ steps, className }: OrderTimelineProps) {
                     isPending && 'text-text-muted font-medium',
                   )}
                 >
-                  {step.label}
+                  {orderStatusLabel(step.status, fulfillmentMethod, step.label, t, locale)}
                 </span>
 
                 {/*
@@ -105,18 +101,24 @@ export function OrderTimeline({ steps, className }: OrderTimelineProps) {
                   for anyone who cannot tell the markers apart.
                 */}
                 <span className="sr-only">
-                  {step.isComplete ? 'Completed' : step.isCurrent ? 'In progress' : 'Not yet'}
+                  {step.isComplete
+                    ? t('orders.timeline.completed')
+                    : step.isCurrent
+                      ? t('orders.timeline.inProgress')
+                      : t('orders.timeline.notYet')}
                 </span>
 
                 {step.changedAt ? (
                   <span className="text-text-muted text-xs tabular-nums">
-                    {formatMoment(step.changedAt)}
+                    {formatDate(step.changedAt, locale, 'moment')}
                   </span>
                 ) : null}
               </span>
 
               {step.note && (step.isComplete || step.isCurrent) ? (
-                <span className="text-text-muted text-sm">{step.note}</span>
+                <span className="text-text-muted text-sm">
+                  <bdi>{orderNote(step.note, t, locale)}</bdi>
+                </span>
               ) : null}
             </div>
           </li>

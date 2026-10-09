@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 /** The accent used by the eyebrow. Named for the kind of section, not the hue. */
@@ -39,10 +40,12 @@ export function SectionHeader({
   eyebrow,
   accent = 'leaf',
   actionHref,
-  actionLabel = 'See all',
+  actionLabel,
   as: Heading = 'h2',
   className,
 }: SectionHeaderProps) {
+  const t = useT();
+
   return (
     <div className={cn('gap-gutter flex items-end justify-between', className)}>
       <div className="flex min-w-0 flex-col gap-1">
@@ -63,7 +66,7 @@ export function SectionHeader({
             'hover:bg-primary/8 -me-3 min-h-11 rounded-full px-3 transition-colors',
           )}
         >
-          {actionLabel}
+          {actionLabel ?? t('common.seeAll')}
           {/* The arrow travels on hover — the one bit of motion a "see all"
               needs to feel like a door rather than a label. */}
           <ArrowRight

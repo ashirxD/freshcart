@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/i18n';
 
 export interface ImagePreviewProps {
   file: File;
@@ -23,6 +24,7 @@ export interface ImagePreviewProps {
  * previous photo's blob for the life of the tab.
  */
 export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePreviewProps) {
+  const t = useT();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,10 +38,10 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
     <section aria-labelledby="preview-heading" className="gap-loose flex flex-col">
       <header className="flex flex-col gap-1">
         <h1 id="preview-heading" className="text-text text-xl font-bold">
-          Does this look right?
+          {t('ocr.preview.title')}
         </h1>
         <p className="text-text-muted text-sm">
-          Make sure the whole list is visible and the writing is readable.
+          {t('ocr.preview.body')}
         </p>
       </header>
 
@@ -51,7 +53,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={objectUrl}
-            alt="The grocery list you are about to scan"
+            alt={t('ocr.preview.alt')}
             // Bounded by the viewport height so a tall portrait photo cannot
             // push the buttons off the bottom of a phone screen (§46).
             className="max-h-[55dvh] w-full object-contain"
@@ -61,7 +63,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
 
       <div className="gap-tight flex flex-col">
         <Button size="lg" fullWidth onClick={onContinue}>
-          Read my list
+          {t('ocr.preview.read')}
         </Button>
 
         <div className="gap-tight flex">
@@ -71,7 +73,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
             onClick={onRetake}
             leadingIcon={<Camera className="size-4" />}
           >
-            Retake
+            {t('ocr.preview.retake')}
           </Button>
 
           <Button
@@ -80,7 +82,7 @@ export function ImagePreview({ file, onRetake, onRemove, onContinue }: ImagePrev
             onClick={onRemove}
             leadingIcon={<Trash2 className="size-4" />}
           >
-            Remove
+            {t('ocr.preview.remove')}
           </Button>
         </div>
       </div>

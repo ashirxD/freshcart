@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Plus } from 'lucide-react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 
 export interface CategoryOption {
@@ -64,6 +65,7 @@ export function CategoryCombobox({
   /** Shown when there are no options at all, e.g. before a parent is chosen. */
   emptyHint?: string;
 }) {
+  const { t, tx, tm } = useI18n();
   const id = useId();
   const listId = id + '-list';
   const messageId = id + '-message';
@@ -192,7 +194,9 @@ export function CategoryCombobox({
             })}
 
             {matches.length === 0 && options.length > 0 && !canCreate ? (
-              <li className="text-text-muted px-gutter py-3 text-sm">Nothing matches that name.</li>
+              <li className="text-text-muted px-gutter py-3 text-sm">
+                {t('admin.combobox.nothingMatches')}
+              </li>
             ) : null}
 
             {canCreate ? (
@@ -205,7 +209,7 @@ export function CategoryCombobox({
                   className="min-h-touch px-gutter text-primary hover:bg-surface-muted flex w-full items-center gap-2 text-start text-sm font-semibold"
                 >
                   <Plus className="size-4 shrink-0" aria-hidden="true" />
-                  Create “{query.trim()}”
+                  {t('admin.combobox.create', { name: query.trim() })}
                 </button>
               </li>
             ) : null}
@@ -218,13 +222,13 @@ export function CategoryCombobox({
         // discover after the fact: saving this form will add a category that
         // shoppers can then see.
         <p className="text-secondary text-sm font-medium">
-          “{value.createName}” will be created when you save, and will appear to shoppers.
+          {tx('admin.combobox.willCreate', { name: <bdi>{value.createName}</bdi> })}
         </p>
       ) : null}
 
       {error ? (
         <p id={messageId} role="alert" className="text-danger text-sm">
-          {error}
+          {tm(error)}
         </p>
       ) : hint ? (
         <p id={messageId} className="text-text-muted text-sm">

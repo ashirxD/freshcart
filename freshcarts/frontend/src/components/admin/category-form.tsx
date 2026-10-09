@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CATEGORY_ICON_NAMES } from '@/components/category/category-icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useI18n } from '@/i18n';
 import { categoryFormSchema, type CategoryFormValues } from '@/lib/validation/catalog.schema';
 import type { Category } from '@/types/catalog';
 import { CheckboxField, FormSection, SelectField, TextareaField } from './form-field';
@@ -33,6 +34,7 @@ export function CategoryForm({
   isSubmitting,
   onCancel,
 }: CategoryFormProps) {
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -64,31 +66,33 @@ export function CategoryForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="gap-gutter flex flex-col">
-      <FormSection title="Basics" description="How this category appears to shoppers.">
+      <FormSection
+        title={t('admin.categoryForm.basicsTitle')}
+        description={t('admin.categoryForm.basicsDesc')}
+      >
         <Input
-          label="Name"
-          placeholder="e.g. Dairy & Eggs"
+          label={t('admin.categoryForm.name')}
+          placeholder={t('admin.categoryForm.namePlaceholder')}
           error={errors.name?.message}
           {...register('name')}
         />
 
         <TextareaField
-          label="Description"
-          hint="Optional. One or two lines shown at the top of the category page."
+          label={t('admin.categoryForm.description')}
+          hint={t('admin.categoryForm.descriptionHint')}
           error={errors.description?.message}
           {...register('description')}
         />
 
         {hasChildren ? (
           <p className="bg-surface-muted p-tight text-text-muted rounded-md text-sm">
-            This category has {category?.children.length} subcategories, so it stays at the top
-            level.
+            {t('admin.categoryForm.hasChildren', { count: category?.children.length ?? 0 })}
           </p>
         ) : (
           <SelectField
-            label="Parent category"
-            placeholder="None — this is a top-level category"
-            hint="Categories nest one level deep."
+            label={t('admin.categoryForm.parent')}
+            placeholder={t('admin.categoryForm.parentPlaceholder')}
+            hint={t('admin.categoryForm.parentHint')}
             options={options}
             error={errors.parentId?.message}
             {...register('parentId')}
@@ -96,31 +100,35 @@ export function CategoryForm({
         )}
       </FormSection>
 
-      <FormSection title="Appearance" description="Shown on the category tile.">
+      <FormSection
+        title={t('admin.categoryForm.appearanceTitle')}
+        description={t('admin.categoryForm.appearanceDesc')}
+      >
         <SelectField
-          label="Icon"
-          placeholder="Default basket"
-          hint="Shown on the category tile when there is no image."
+          label={t('admin.categoryForm.icon')}
+          placeholder={t('admin.categoryForm.iconPlaceholder')}
+          hint={t('admin.categoryForm.iconHint')}
           options={CATEGORY_ICON_NAMES.map((name) => ({ value: name, label: name }))}
           error={errors.icon?.message}
           {...register('icon')}
         />
 
         <Input
-          label="Image URL"
-          hint="Optional. Used instead of the icon once image hosting is configured."
+          label={t('admin.categoryForm.imageUrl')}
+          hint={t('admin.categoryForm.imageUrlHint')}
           placeholder="https://…"
+          ltr
           error={errors.imageUrl?.message}
           {...register('imageUrl')}
         />
       </FormSection>
 
       <FormSection
-        title="Placement"
-        description="Lower numbers appear first in the customer catalogue."
+        title={t('admin.categoryForm.placementTitle')}
+        description={t('admin.categoryForm.placementDesc')}
       >
         <Input
-          label="Display order"
+          label={t('admin.categoryForm.displayOrder')}
           type="number"
           inputMode="numeric"
           min={0}
@@ -129,8 +137,8 @@ export function CategoryForm({
         />
 
         <CheckboxField
-          label="Visible to customers"
-          hint="Turning this off hides the category and all of its subcategories."
+          label={t('admin.categoryForm.visible')}
+          hint={t('admin.categoryForm.visibleHint')}
           checked={isActive}
           onChange={(checked) => setValue('isActive', checked, { shouldDirty: true })}
         />
@@ -138,10 +146,10 @@ export function CategoryForm({
 
       <div className="gap-gutter flex flex-wrap">
         <Button type="submit" isLoading={isSubmitting}>
-          {category ? 'Save changes' : 'Create category'}
+          {category ? t('admin.categoryForm.save') : t('admin.categoryForm.create')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>

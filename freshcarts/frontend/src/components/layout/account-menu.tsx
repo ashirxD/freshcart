@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, ClipboardList, LogOut, Settings, User } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/button-link';
+import { LanguageToggle } from '@/components/common/language-toggle';
 import { useLogout } from '@/features/auth/auth.hooks';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
-import { ACCOUNT_NAV } from './navigation.config';
+import { ACCOUNT_NAV, type NavItem } from './navigation.config';
 
 /**
  * THE ACCOUNT MENU
@@ -33,6 +35,7 @@ export function AccountMenu() {
   const user = useAuthStore((state) => state.user);
   const status = useAuthStore((state) => state.status);
   const logout = useLogout();
+  const t = useT();
 
   const [isOpen, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,18 +69,18 @@ export function AccountMenu() {
         size="sm"
         leadingIcon={<User className="size-4" aria-hidden="true" />}
       >
-        Sign in
+        {t('nav.signIn')}
       </ButtonLink>
     );
   }
 
   const firstName = user.fullName.split(' ')[0];
 
-  const backOffice =
+  const backOffice: NavItem | null =
     user.role === 'STORE_MANAGER'
-      ? { href: '/store-manager', label: 'Store console', icon: ClipboardList }
+      ? { href: '/store-manager', labelKey: 'nav.storeConsole', icon: ClipboardList }
       : user.role === 'ADMIN'
-        ? { href: '/admin', label: 'Admin console', icon: Settings }
+        ? { href: '/admin', labelKey: 'nav.adminConsole', icon: Settings }
         : null;
 
   return (
@@ -88,7 +91,7 @@ export function AccountMenu() {
         aria-expanded={isOpen}
         aria-controls="account-menu-panel"
         className={cn(
-          'min-h-touch flex items-center gap-2 rounded-full py-1 ps-1 pe-3',
+          'min-h-touch flex items-center gap-2 rounded-full py-1 ps-1 pe-2 lg:pe-3',
           'ease-standard transition-colors duration-150',
           isOpen ? 'bg-primary/10' : 'hover:bg-primary/8',
         )}
@@ -100,8 +103,11 @@ export function AccountMenu() {
           {firstName.slice(0, 1).toUpperCase()}
         </span>
 
-        <span className="flex flex-col items-start leading-tight">
-          <span className="text-text-muted text-[0.6875rem] font-medium">Account</span>
+        {/* Screen-reader-only (not removed) below `lg`: at tablet width the name
+            is what pushed the header past the edge of the screen, but it is
+            also this button's accessible name, so it must stay in the tree. */}
+        <span className="flex flex-col items-start leading-tight max-lg:sr-only">
+          <span className="text-text-muted text-[0.6875rem] font-medium">{t('nav.account')}</span>
           <span className="text-text max-w-24 truncate text-sm font-semibold">{firstName}</span>
         </span>
 
@@ -127,7 +133,7 @@ export function AccountMenu() {
             <p className="text-text-muted truncate text-xs">{user.phone}</p>
           </div>
 
-          <nav aria-label="Account">
+          <nav aria-label={t('nav.account')}>
             <ul className="p-1.5">
               {ACCOUNT_NAV.map((item) => {
                 const Icon = item.icon;
@@ -139,7 +145,7 @@ export function AccountMenu() {
                       className="text-text hover:bg-surface-muted flex min-h-11 items-center gap-3 rounded-xl px-2.5 text-sm font-medium transition-colors"
                     >
                       <Icon className="text-outline size-4 shrink-0" aria-hidden="true" />
-                      {item.label}
+                      {t(item.labelKey)}
                     </Link>
                   </li>
                 );
@@ -152,10 +158,15 @@ export function AccountMenu() {
                     className="text-primary hover:bg-primary/8 flex min-h-11 items-center gap-3 rounded-xl px-2.5 text-sm font-semibold transition-colors"
                   >
                     <backOffice.icon className="size-4 shrink-0" aria-hidden="true" />
-                    {backOffice.label}
+                    {t(backOffice.labelKey)}
                   </Link>
                 </li>
               ) : null}
+
+              <li className="border-outline-variant mt-1.5 flex items-center justify-between gap-3 border-t px-2.5 pt-2.5 pb-1">
+                <span className="text-text-muted text-sm font-medium">{t('language.label')}</span>
+                <LanguageToggle size="sm" />
+              </li>
 
               <li className="border-outline-variant mt-1.5 border-t pt-1.5">
                 <button
@@ -164,8 +175,8 @@ export function AccountMenu() {
                   disabled={logout.isPending}
                   className="text-text-muted hover:bg-danger/8 hover:text-danger flex min-h-11 w-full items-center gap-3 rounded-xl px-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  <LogOut className="size-4 shrink-0" aria-hidden="true" />
-                  {logout.isPending ? 'Signing out…' : 'Sign out'}
+                  <LogOut className="size-4 shrink-0 rtl:-scale-x-100" aria-hidden="true" />
+                  {logout.isPending ? t('nav.signingOut') : t('nav.signOut')}
                 </button>
               </li>
             </ul>

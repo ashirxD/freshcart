@@ -4,53 +4,28 @@ import { useState } from 'react';
 import { AdminListState, Pagination } from '@/components/admin/admin-page';
 import { SelectField } from '@/components/admin/form-field';
 import { useAuditLogs } from '@/features/admin/admin.hooks';
-import type { AuditAction, AuditEntity, AuditLogEntry } from '@/types/admin';
+import { useI18n, translateIfKnown, type TranslationKey } from '@/i18n';
+import { formatDate } from '@/lib/dates';
+import type { AuditEntity } from '@/types/admin';
 
 /**
- * Plain-language wording for each recorded action.
+ * Plain-language wording for each recorded action — `admin.audit.action.<ENUM>`.
  *
- * The stored value is an enum, so it stays queryable; this is where it becomes
- * a sentence. Section 46 applies to staff screens too — "PRODUCT_STATUS_CHANGED"
- * is a database value, not something to show a person.
+ * The stored value is an enum, so it stays queryable; the dictionary is where it
+ * becomes a sentence. Section 46 applies to staff screens too —
+ * "PRODUCT_STATUS_CHANGED" is a database value, not something to show a person.
+ * An action this build has no wording for reads as "made a change".
  */
-const ACTION_LABEL: Record<AuditAction, string> = {
-  PRODUCT_CREATED: 'added a product',
-  PRODUCT_UPDATED: 'edited a product',
-  PRODUCT_STATUS_CHANGED: 'changed whether a product is on sale',
-  CATEGORY_CREATED: 'added a category',
-  CATEGORY_UPDATED: 'edited a category',
-  CATEGORY_STATUS_CHANGED: 'changed whether a category is visible',
-  INVENTORY_ADJUSTED: 'changed stock',
-  ORDER_STATUS_CHANGED: 'moved an order along',
-  ORDER_STATUS_OVERRIDDEN: 'overrode an order status',
-  USER_STATUS_CHANGED: 'activated or deactivated an account',
-  USER_ROLE_CHANGED: 'changed an account role',
-  STORE_MANAGER_CREATED: 'added a store manager',
-  STORE_MANAGER_UPDATED: 'edited a store manager',
-  STORE_CREATED: 'added a store',
-  STORE_UPDATED: 'edited a store',
-  DELIVERY_RULE_CREATED: 'added a delivery pricing band',
-  DELIVERY_RULE_UPDATED: 'edited a delivery pricing band',
-  DELIVERY_RULE_DELETED: 'deleted a delivery pricing band',
-  SETTINGS_UPDATED: 'changed platform settings',
-};
-
-const ENTITY_FILTERS: Array<{ value: '' | AuditEntity; label: string }> = [
-  { value: '', label: 'Everything' },
-  { value: 'PRODUCT', label: 'Products' },
-  { value: 'CATEGORY', label: 'Categories' },
-  { value: 'INVENTORY', label: 'Stock' },
-  { value: 'ORDER', label: 'Orders' },
-  { value: 'USER', label: 'Accounts' },
-  { value: 'DELIVERY_RULE', label: 'Delivery pricing' },
-  { value: 'SETTINGS', label: 'Settings' },
+const ENTITY_FILTERS: Array<{ value: '' | AuditEntity; labelKey: TranslationKey }> = [
+  { value: '', labelKey: 'admin.audit.everything' },
+  { value: 'PRODUCT', labelKey: 'admin.audit.entityPRODUCT' },
+  { value: 'CATEGORY', labelKey: 'admin.audit.entityCATEGORY' },
+  { value: 'INVENTORY', labelKey: 'admin.audit.entityINVENTORY' },
+  { value: 'ORDER', labelKey: 'admin.audit.entityORDER' },
+  { value: 'USER', labelKey: 'admin.audit.entityUSER' },
+  { value: 'DELIVERY_RULE', labelKey: 'admin.audit.entityDELIVERY_RULE' },
+  { value: 'SETTINGS', labelKey: 'admin.audit.entitySETTINGS' },
 ];
-
-const ROLE_LABEL: Record<AuditLogEntry['actorRole'], string> = {
-  ADMIN: 'Administrator',
-  STORE_MANAGER: 'Store manager',
-  CUSTOMER: 'Customer',
-};
 
 /**
  * THE AUDIT TRAIL
@@ -64,6 +39,7 @@ const ROLE_LABEL: Record<AuditLogEntry['actorRole'], string> = {
  * it is consulted when a question arises, not worked in daily.
  */
 export function AuditLogPanel() {
+  const { t, locale } = useI18n();
   const [entityType, setEntityType] = useState<'' | AuditEntity>('');
   const [page, setPage] = useState(1);
 
@@ -76,14 +52,12 @@ export function AuditLogPanel() {
     <section className="gap-gutter ring-outline-variant bg-surface p-gutter shadow-card flex flex-col rounded-2xl ring-1">
       <div className="gap-gutter flex flex-wrap items-end justify-between">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-text text-base font-semibold">Activity log</h2>
-          <p className="text-text-muted text-sm">
-            Administrative changes across the platform, newest first.
-          </p>
+          <h2 className="text-text text-base font-semibold">{t('admin.audit.title')}</h2>
+          <p className="text-text-muted text-sm">{t('admin.audit.description')}</p>
         </div>
 
         <SelectField
-          label="Show"
+          label={t('admin.audit.show')}
           className="max-w-48"
           value={entityType}
           onChange={(event) => {
@@ -92,7 +66,7 @@ export function AuditLogPanel() {
           }}
           options={ENTITY_FILTERS.map((filter) => ({
             value: filter.value,
-            label: filter.label,
+            label: t(filter.labelKey),
           }))}
         />
       </div>
@@ -105,8 +79,8 @@ export function AuditLogPanel() {
         isEmpty={data?.items.length === 0}
         skeletonRows={4}
         skeletonClassName="h-12 w-full"
-        emptyTitle="Nothing recorded yet"
-        emptyDescription="Changes to products, stock, orders, accounts and settings appear here as they happen."
+        emptyTitle={t('admin.audit.emptyTitle')}
+        emptyDescription={t('admin.audit.emptyBody')}
       >
         <ul className="flex flex-col">
           {data?.items.map((entry) => (
@@ -116,9 +90,17 @@ export function AuditLogPanel() {
             >
               <div className="min-w-0">
                 <p className="text-text text-sm">
-                  <span className="font-medium">{entry.actorName ?? 'A removed account'}</span>{' '}
-                  <span className="text-text-muted">({ROLE_LABEL[entry.actorRole]})</span>{' '}
-                  {ACTION_LABEL[entry.action] ?? 'made a change'}
+                  <span className="font-medium">
+                    {entry.actorName ? <bdi>{entry.actorName}</bdi> : t('admin.audit.removedAccount')}
+                  </span>{' '}
+                  <span className="text-text-muted">
+                    (
+                    {translateIfKnown(locale, 'admin.audit.rolePanel' + entry.actorRole) ??
+                      entry.actorRole}
+                    )
+                  </span>{' '}
+                  {translateIfKnown(locale, 'admin.audit.action.' + entry.action) ??
+                    t('admin.audit.madeChange')}
                 </p>
 
                 {Object.keys(entry.metadata).length > 0 ? (
@@ -130,19 +112,14 @@ export function AuditLogPanel() {
                 dateTime={entry.occurredAt}
                 className="text-text-muted text-xs whitespace-nowrap tabular-nums"
               >
-                {new Date(entry.occurredAt).toLocaleString('en-PK', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
+                <bdi>{formatDate(entry.occurredAt, locale, 'moment')}</bdi>
               </time>
             </li>
           ))}
         </ul>
 
         <Pagination
-          label="Activity log pages"
+          label={t('admin.audit.pagesLabel')}
           page={data?.pagination.page ?? 1}
           totalPages={data?.pagination.totalPages ?? 1}
           onPageChange={setPage}

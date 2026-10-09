@@ -2,6 +2,8 @@
 
 import { Info, ShieldCheck } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/button-link';
+import { Money } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr, formatPkrLabel } from '@/lib/format';
 import type { Cart } from '@/types/cart';
@@ -30,6 +32,7 @@ export interface CartSummaryProps {
  * broken for assistive technology.
  */
 export function CartSummary({ cart, className }: CartSummaryProps) {
+  const t = useT();
   const canCheckout = !cart.hasIssues && cart.itemCount > 0;
 
   return (
@@ -39,30 +42,34 @@ export function CartSummary({ cart, className }: CartSummaryProps) {
         className,
       )}
     >
-      <h2 className="text-text text-base font-bold tracking-[-0.015em]">Basket summary</h2>
+      <h2 className="text-text text-base font-bold tracking-[-0.015em]">
+        {t('cart.summaryTitle')}
+      </h2>
 
       <dl className="gap-tight flex flex-col text-sm">
         <div className="flex items-center justify-between">
           <dt className="text-text-muted">
-            {cart.totalQuantity === 1 ? '1 item' : cart.totalQuantity + ' items'}
+            {t('common.itemCount', { count: cart.totalQuantity })}
           </dt>
-          <dd className="text-text font-semibold tabular-nums">{formatPkr(cart.subtotal)}</dd>
+          <dd className="text-text font-semibold tabular-nums">
+            <Money>{formatPkr(cart.subtotal)}</Money>
+          </dd>
         </div>
 
         <div className="flex items-center justify-between">
-          <dt className="text-text-muted">Delivery</dt>
-          <dd className="text-text-muted text-xs">Worked out at checkout</dd>
+          <dt className="text-text-muted">{t('cart.delivery')}</dt>
+          <dd className="text-text-muted text-xs">{t('cart.workedOutAtCheckout')}</dd>
         </div>
       </dl>
 
       {/* The number the shopper came here for, on its own ground. */}
       <div className="bg-cream ring-sand flex items-baseline justify-between rounded-xl px-3 py-2.5 ring-1">
-        <span className="text-text text-sm font-bold">Subtotal</span>
+        <span className="text-text text-sm font-bold">{t('common.subtotal')}</span>
         <span
           className="text-primary text-price-lg tabular-nums"
-          aria-label={'Subtotal ' + formatPkrLabel(cart.subtotal)}
+          aria-label={t('cart.subtotalAria', { amount: formatPkrLabel(cart.subtotal, t) })}
         >
-          {formatPkr(cart.subtotal)}
+          <Money>{formatPkr(cart.subtotal)}</Money>
         </span>
       </div>
 
@@ -72,13 +79,13 @@ export function CartSummary({ cart, className }: CartSummaryProps) {
           className="text-danger bg-danger/8 p-tight flex items-start gap-1.5 rounded-lg text-xs font-medium"
         >
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          Some items need your attention before you can check out.
+          {t('cart.needsAttention')}
         </p>
       ) : null}
 
       {canCheckout ? (
         <ButtonLink href="/checkout" fullWidth size="lg">
-          Continue to checkout
+          {t('cart.checkout')}
         </ButtonLink>
       ) : (
         <>
@@ -94,20 +101,18 @@ export function CartSummary({ cart, className }: CartSummaryProps) {
             aria-describedby="checkout-blocked-reason"
             className="bg-primary text-on-primary min-h-touch px-wide flex h-14 w-full cursor-not-allowed items-center justify-center rounded-lg text-base font-semibold opacity-45"
           >
-            Continue to checkout
+            {t('cart.checkout')}
           </button>
 
           <p id="checkout-blocked-reason" className="text-text-muted text-center text-xs">
-            {cart.itemCount === 0
-              ? 'Add something to your basket to continue.'
-              : 'Fix the items above to continue.'}
+            {cart.itemCount === 0 ? t('cart.addSomething') : t('cart.fixItems')}
           </p>
         </>
       )}
 
       <p className="text-text-muted flex items-start gap-1.5 text-xs">
         <ShieldCheck className="text-leaf mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        You will see the delivery charge and your total before the order is placed.
+        {t('cart.seeCharge')}
       </p>
     </div>
   );

@@ -13,13 +13,16 @@ import type { AddressInput } from '@/types/address';
  * A convenience layer. The API validates every field again and remains the
  * authority; rules that need server state are deliberately absent rather than
  * half-reimplemented here.
+ *
+ * Messages are translation KEYS (`validation.*`), translated where they are
+ * shown — see `auth.schema.ts`.
  */
 const phoneField = z
   .string()
-  .min(1, 'Mobile number is required')
+  .min(1, 'validation.phoneRequired')
   .transform(normalisePkPhone)
   .refine((value) => PK_MOBILE_E164.test(value), {
-    message: 'Enter a valid mobile number, e.g. 0300 1234567',
+    message: 'validation.phoneInvalid',
   });
 
 /**
@@ -27,41 +30,41 @@ const phoneField = z
  * yields, and because "not set" must be expressible — an empty field, not zero.
  * Zero is a real coordinate in the Gulf of Guinea.
  */
-const coordinateField = (min: number, max: number, label: string) =>
+const coordinateField = (min: number, max: number, message: string) =>
   z
     .string()
     .trim()
     .refine(
       (value) => value === '' || (Number.isFinite(Number(value)) && Number(value) >= min && Number(value) <= max),
-      { message: 'Enter a valid ' + label + ' between ' + min + ' and ' + max },
+      { message },
     );
 
 export const addressFormSchema = z
   .object({
     label: z.enum(['HOME', 'WORK', 'OTHER']),
-    nickname: z.string().trim().max(60, 'That nickname is too long'),
+    nickname: z.string().trim().max(60, 'validation.nicknameTooLong'),
     recipientName: z
       .string()
       .trim()
-      .min(2, 'Please enter who should receive the order')
-      .max(80, 'That name is too long'),
+      .min(2, 'validation.recipientRequired')
+      .max(80, 'validation.recipientTooLong'),
     phone: phoneField,
     houseNumber: z
       .string()
       .trim()
-      .min(1, 'House, flat or shop number is required')
-      .max(60, 'That is too long'),
-    street: z.string().trim().min(1, 'Street is required').max(120, 'That is too long'),
-    area: z.string().trim().min(1, 'Area is required').max(100, 'That is too long'),
-    city: z.string().trim().min(1, 'City is required').max(80, 'That is too long'),
-    landmark: z.string().trim().max(160, 'That is too long'),
-    deliveryInstructions: z.string().trim().max(300, 'That is too long'),
-    latitude: coordinateField(-90, 90, 'latitude'),
-    longitude: coordinateField(-180, 180, 'longitude'),
+      .min(1, 'validation.houseRequired')
+      .max(60, 'validation.tooLong'),
+    street: z.string().trim().min(1, 'validation.streetRequired').max(120, 'validation.tooLong'),
+    area: z.string().trim().min(1, 'validation.areaRequired').max(100, 'validation.tooLong'),
+    city: z.string().trim().min(1, 'validation.cityRequired').max(80, 'validation.tooLong'),
+    landmark: z.string().trim().max(160, 'validation.tooLong'),
+    deliveryInstructions: z.string().trim().max(300, 'validation.tooLong'),
+    latitude: coordinateField(-90, 90, 'validation.latitudeRange'),
+    longitude: coordinateField(-180, 180, 'validation.longitudeRange'),
     isDefault: z.boolean(),
   })
   .refine((values) => (values.latitude === '') === (values.longitude === ''), {
-    message: 'Set the map location, or leave both coordinates empty',
+    message: 'validation.mapOrNone',
     path: ['latitude'],
   });
 

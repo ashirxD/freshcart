@@ -1,8 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { apiFetch } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
+import { tNow, type TranslationKey } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import type { Cart } from '@/types/cart';
@@ -64,8 +67,8 @@ export function useCartCount(): number {
  */
 function useCartMutation<TInput>(
   mutationFn: (input: TInput) => Promise<Cart>,
-  options: { successMessage?: (input: TInput) => string; errorTitle: string } = {
-    errorTitle: 'Could not update your cart',
+  options: { successMessage?: (input: TInput) => TranslationKey; errorTitle: TranslationKey } = {
+    errorTitle: 'toast.basketUpdateFailed',
   },
 ) {
   const queryClient = useQueryClient();
@@ -77,13 +80,13 @@ function useCartMutation<TInput>(
       queryClient.setQueryData(cartKeys.detail(), cart);
 
       const message = options.successMessage?.(input);
-      if (message) toast({ title: message, variant: 'success' });
+      if (message) toast({ title: tNow(message), variant: 'success' });
     },
     onError: (error: unknown) => {
       toast({
-        title: options.errorTitle,
+        title: tNow(options.errorTitle),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },
@@ -92,25 +95,25 @@ function useCartMutation<TInput>(
 
 export function useAddToCart() {
   return useCartMutation(cartApi.addItem, {
-    successMessage: () => 'Added to your cart',
-    errorTitle: 'Could not add this item',
+    successMessage: () => 'toast.addedToBasket',
+    errorTitle: 'toast.addItemFailed',
   });
 }
 
 export function useUpdateCartItem() {
-  return useCartMutation(cartApi.updateItem, { errorTitle: 'Could not change the quantity' });
+  return useCartMutation(cartApi.updateItem, { errorTitle: 'toast.changeQuantityFailed' });
 }
 
 export function useRemoveCartItem() {
   return useCartMutation(cartApi.removeItem, {
-    successMessage: () => 'Removed from your cart',
-    errorTitle: 'Could not remove this item',
+    successMessage: () => 'toast.removedFromBasket',
+    errorTitle: 'toast.removeItemFailed',
   });
 }
 
 export function useClearCart() {
   return useCartMutation(cartApi.clear, {
-    successMessage: () => 'Your cart is empty',
-    errorTitle: 'Could not empty your cart',
+    successMessage: () => 'toast.basketEmptied',
+    errorTitle: 'toast.clearFailed',
   });
 }

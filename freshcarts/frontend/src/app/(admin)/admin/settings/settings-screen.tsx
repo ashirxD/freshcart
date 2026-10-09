@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminSettings, useUpdateSettings } from '@/features/admin/admin.hooks';
+import { useI18n, type TranslationKey } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { isValidPkMobile, normalisePkPhone } from '@/lib/phone';
 import type { PlatformSettings } from '@/types/admin';
 
@@ -34,14 +36,15 @@ interface FormState {
  * toggle nobody consults is a lie about how the system behaves.
  */
 export function AdminSettingsScreen() {
+  const { t } = useI18n();
   const { data, isPending, isError, error, refetch } = useAdminSettings();
 
   if (isPending) {
     return (
       <>
-        <AdminPageHeader title="Settings" description="Loading…" />
+        <AdminPageHeader title={t('admin.settings.title')} description={t('common.loading')} />
         <div className="gap-gutter flex flex-col">
-          <Skeleton className="h-48 w-full" label="Loading settings" />
+          <Skeleton className="h-48 w-full" label={t('admin.settings.loadingLabel')} />
           <Skeleton className="h-40 w-full" />
         </div>
       </>
@@ -51,7 +54,7 @@ export function AdminSettingsScreen() {
   if (isError) {
     return (
       <>
-        <AdminPageHeader title="Settings" />
+        <AdminPageHeader title={t('admin.settings.title')} />
         <ErrorState error={error} onRetry={() => void refetch()} />
       </>
     );
@@ -61,6 +64,7 @@ export function AdminSettingsScreen() {
 }
 
 function SettingsForm({ settings }: { settings: PlatformSettings }) {
+  const { t, locale } = useI18n();
   const [form, setForm] = useState<FormState>(() => toForm(settings));
   const [showErrors, setShowErrors] = useState(false);
 
@@ -82,17 +86,17 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
     maxDeliveryKm:
       Number.isFinite(maxKm) && maxKm >= 0.5 && maxKm <= 100
         ? undefined
-        : 'Enter a radius between 0.5 km and 100 km',
+        : t('admin.settings.errMaxKm'),
     defaultLowStockThreshold:
       Number.isInteger(threshold) && threshold >= 0 && threshold <= 10_000
         ? undefined
-        : 'Enter a whole number of units',
+        : t('admin.settings.errThreshold'),
     supportPhone: isValidPkMobile(form.supportPhone)
       ? undefined
-      : 'Enter a valid Pakistani mobile number',
+      : t('admin.settings.errPhone'),
     supportEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.supportEmail.trim())
       ? undefined
-      : 'Enter a valid email address',
+      : t('admin.settings.errEmail'),
   };
 
   const hasErrors = Object.values(errors).some(Boolean);
@@ -115,28 +119,23 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
   return (
     <>
       <AdminPageHeader
-        title="Settings"
+        title={t('admin.settings.title')}
         description={
           settings.updatedAt
-            ? 'Last changed ' +
-              new Date(settings.updatedAt).toLocaleDateString('en-PK', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })
-            : 'How FreshCarts trades'
+            ? t('admin.settings.lastChanged', { date: formatDate(settings.updatedAt, locale, 'date') })
+            : t('admin.settings.howTrades')
         }
         actions={
           <Button variant="primary" onClick={submit} isLoading={save.isPending}>
-            Save changes
+            {t('admin.settings.save')}
           </Button>
         }
       />
 
       <div className="gap-loose flex flex-col">
         <FormSection
-          title="Trading"
-          description="Whether FreshCarts is taking orders at all, and how far it will deliver."
+          title={t('admin.settings.tradingTitle')}
+          description={t('admin.settings.tradingDesc')}
         >
           <div
             className={
@@ -153,15 +152,15 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
             )}
 
             <CheckboxField
-              label="Accepting orders"
-              hint="Turning this off stops every new order across the platform, whatever a store's opening hours say. Orders already placed are unaffected."
+              label={t('admin.settings.accepting')}
+              hint={t('admin.settings.acceptingHint')}
               checked={form.orderingEnabled}
               onChange={(checked) => set('orderingEnabled', checked)}
             />
           </div>
 
           <Input
-            label="Maximum delivery distance (km)"
+            label={t('admin.settings.maxDistance')}
             type="number"
             inputMode="decimal"
             min={0.5}
@@ -170,16 +169,16 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
             value={form.maxDeliveryKm}
             onChange={(event) => set('maxDeliveryKm', event.target.value)}
             error={showErrors ? errors.maxDeliveryKm : undefined}
-            hint="Beyond this, delivery is refused and the shopper is offered pickup. Orders already placed keep the distance and fee they were charged."
+            hint={t('admin.settings.maxDistanceHint')}
           />
         </FormSection>
 
         <FormSection
-          title="Stock and support"
-          description="Defaults for new products, and how shoppers reach you when something goes wrong."
+          title={t('admin.settings.stockSupportTitle')}
+          description={t('admin.settings.stockSupportDesc')}
         >
           <Input
-            label="Default low-stock threshold"
+            label={t('admin.settings.threshold')}
             type="number"
             inputMode="numeric"
             min={0}
@@ -187,21 +186,21 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
             value={form.defaultLowStockThreshold}
             onChange={(event) => set('defaultLowStockThreshold', event.target.value)}
             error={showErrors ? errors.defaultLowStockThreshold : undefined}
-            hint="Applied to new products only. Products already in the catalogue keep the threshold they have."
+            hint={t('admin.settings.thresholdHint')}
           />
 
           <Input
-            label="Support phone"
+            label={t('admin.settings.supportPhone')}
             type="tel"
             inputMode="tel"
             value={form.supportPhone}
             onChange={(event) => set('supportPhone', event.target.value)}
             error={showErrors ? errors.supportPhone : undefined}
-            hint="Shown to shoppers on error and order screens. Never a personal number."
+            hint={t('admin.settings.supportPhoneHint')}
           />
 
           <Input
-            label="Support email"
+            label={t('admin.settings.supportEmail')}
             type="email"
             value={form.supportEmail}
             onChange={(event) => set('supportEmail', event.target.value)}
@@ -210,37 +209,40 @@ function SettingsForm({ settings }: { settings: PlatformSettings }) {
         </FormSection>
 
         <FormSection
-          title="Deployment"
-          description="Set by the environment this API runs in. Changing any of these needs a redeploy, not a form."
+          title={t('admin.settings.deploymentTitle')}
+          description={t('admin.settings.deploymentDesc')}
         >
           <dl className="gap-gutter grid sm:grid-cols-3">
             <ReadOnlyFact
-              label="Payment methods"
+              label={t('admin.settings.paymentMethods')}
               value={settings.environment.paymentMethods
-                .map((method) => (method === 'CASH_ON_DELIVERY' ? 'Cash on delivery' : method))
-                .join(', ')}
+                .map((method) => t(('checkout.payment.method.' + method) as TranslationKey))
+                .join(locale === 'en' ? ', ' : '، ')}
             />
 
             <ReadOnlyFact
-              label="Distance provider"
+              label={t('admin.settings.distanceProvider')}
               value={
                 settings.environment.routingProvider === 'osrm'
-                  ? 'OSRM (measured roads)'
-                  : 'Estimate (approximate)'
+                  ? t('admin.settings.providerOsrm')
+                  : t('admin.settings.providerEstimate')
               }
             />
 
             <ReadOnlyFact
-              label="Grocery list scanning"
-              value={settings.environment.aiServiceEnabled ? 'Enabled' : 'Disabled'}
+              label={t('admin.settings.scanning')}
+              value={
+                settings.environment.aiServiceEnabled
+                  ? t('admin.settings.enabled')
+                  : t('admin.settings.disabled')
+              }
             />
           </dl>
 
           {settings.environment.routingProvider !== 'osrm' ? (
             <p className="text-text-muted flex items-start gap-2 text-sm">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              Distances are approximated from a straight line. The API refuses to start in
-              production with this provider, because an approximate distance becomes a real charge.
+              {t('admin.settings.estimateNote')}
             </p>
           ) : null}
         </FormSection>

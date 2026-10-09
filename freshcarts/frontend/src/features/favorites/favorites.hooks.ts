@@ -1,9 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@/lib/api/query-hooks';
 import { apiFetch } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
+import { tNow } from '@/i18n';
+import { describeError } from '@/lib/api/error-copy';
 import { useAuthStore } from '@/store/auth.store';
 import { useToast } from '@/store/toast.store';
 import type { Favorite } from '@/types/cart';
@@ -105,9 +108,9 @@ export function useToggleFavorite() {
       }
 
       toast({
-        title: 'Could not update your favourites',
+        title: tNow('toast.favouritesFailed'),
         description:
-          error instanceof ApiError ? error.message : 'Please check your connection and try again.',
+          error instanceof ApiError ? describeError(error) : tNow('errors.checkConnection'),
         variant: 'error',
       });
     },

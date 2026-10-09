@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { useOverrideOrderStatus } from '@/features/admin/admin.hooks';
+import { useI18n } from '@/i18n';
+import { actionLabel } from '@/lib/store-copy';
 import type { AdminOrderDetail } from '@/types/admin';
 import type { OrderStatus } from '@/types/order';
 
@@ -35,6 +37,7 @@ export function OverrideStatusDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t, locale, ltr } = useI18n();
   const [status, setStatus] = useState<OrderStatus | ''>('');
   const [reason, setReason] = useState('');
   const [showErrors, setShowErrors] = useState(false);
@@ -54,8 +57,8 @@ export function OverrideStatusDialog({
 
   const trimmedReason = reason.trim();
   const reasonError =
-    trimmedReason.length < MIN_REASON_LENGTH ? 'Say why you are doing this' : undefined;
-  const statusError = status ? undefined : 'Choose the status to move this order to';
+    trimmedReason.length < MIN_REASON_LENGTH ? t('admin.override.errReason') : undefined;
+  const statusError = status ? undefined : t('admin.override.errStatus');
 
   const submit = () => {
     if (statusError || reasonError) {
@@ -70,13 +73,13 @@ export function OverrideStatusDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title={'Override ' + order.orderNumber}
-      description="Use this only when the store cannot act themselves. The customer sees your reason in their order timeline."
+      title={t('admin.override.title', { order: ltr(order.orderNumber) })}
+      description={t('admin.override.description')}
       variant="centered"
       footer={
         <div className="gap-gutter flex justify-end">
           <Button variant="outline" onClick={onClose} disabled={override.isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -84,34 +87,34 @@ export function OverrideStatusDialog({
             isLoading={override.isPending}
             leadingIcon={<ShieldAlert className="size-4" aria-hidden="true" />}
           >
-            Apply override
+            {t('admin.override.apply')}
           </Button>
         </div>
       }
     >
       <div className="gap-gutter flex flex-col">
         <SelectField
-          label="Move to"
-          placeholder="Choose a status"
+          label={t('admin.override.moveTo')}
+          placeholder={t('admin.override.chooseStatus')}
           value={status}
           error={showErrors ? statusError : undefined}
           onChange={(event) => setStatus(event.target.value as OrderStatus)}
           // Exactly the transitions the server would accept right now.
           options={order.availableActions.map((action) => ({
             value: action.status,
-            label: action.label,
+            label: actionLabel(action, t, locale),
           }))}
-          hint="Only the steps this order can legally move to are listed."
+          hint={t('admin.override.statusHint')}
         />
 
         <Textarea
-          label="Reason"
+          label={t('admin.override.reason')}
           value={reason}
           maxLength={300}
           onChange={(event) => setReason(event.target.value)}
           error={showErrors ? reasonError : undefined}
-          hint="Recorded against your account and shown to the customer."
-          placeholder="For example: store phone is down, confirming on their behalf"
+          hint={t('admin.override.reasonHint')}
+          placeholder={t('admin.override.reasonPlaceholder')}
         />
       </div>
     </Modal>

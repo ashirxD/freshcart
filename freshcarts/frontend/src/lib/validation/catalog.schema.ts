@@ -22,13 +22,17 @@ const MAX_PRICE_PKR = 10_000_000;
 
 /** Whole rupees. Prices are integers end to end, so a decimal is a mistake. */
 const priceField = z
-  .number({ invalid_type_error: 'Enter a price in rupees' })
-  .int('Enter whole rupees, with no paisa')
-  .min(1, 'Price must be at least Rs. 1')
-  .max(MAX_PRICE_PKR, 'That price looks too high');
+  .number({ invalid_type_error: 'validation.catalog.priceInvalid' })
+  .int('validation.catalog.priceWhole')
+  .min(1, 'validation.catalog.priceMin')
+  .max(MAX_PRICE_PKR, 'validation.catalog.priceMax');
 
 const countField = (max: number) =>
-  z.number({ invalid_type_error: 'Enter a number' }).int('Enter a whole number').min(0).max(max);
+  z
+    .number({ invalid_type_error: 'validation.catalog.numberInvalid' })
+    .int('validation.catalog.wholeNumber')
+    .min(0, 'validation.catalog.negative')
+    .max(max, 'validation.catalog.tooLarge');
 
 export const UNIT_TYPES = [
   { value: 'PIECE', label: 'Piece' },
@@ -47,10 +51,10 @@ const unitTypeField = z.enum(['PIECE', 'PACK', 'KG', 'G', 'LITER', 'ML', 'DOZEN'
 // --- Category ------------------------------------------------------------
 
 export const categoryFormSchema = z.object({
-  name: z.string().trim().min(2, 'Give the category a name').max(80, 'That name is too long'),
-  description: z.string().max(400, 'That description is too long'),
-  icon: z.string().max(40),
-  imageUrl: z.string().max(500),
+  name: z.string().trim().min(2, 'validation.catalog.categoryName').max(80, 'validation.catalog.nameTooLong'),
+  description: z.string().max(400, 'validation.catalog.descriptionTooLong'),
+  icon: z.string().max(40, 'validation.tooLong'),
+  imageUrl: z.string().max(500, 'validation.tooLong'),
   /** Empty string means "top level"; the mapper turns it into null. */
   parentId: z.string(),
   displayOrder: countField(9999),
@@ -81,10 +85,10 @@ export function toCategoryInput(values: CategoryFormValues): CategoryInput {
 
 export const productFormSchema = z
   .object({
-    name: z.string().trim().min(2, 'Give the product a name').max(160, 'That name is too long'),
-    brand: z.string().max(80),
-    shortDescription: z.string().max(200),
-    description: z.string().max(4000),
+    name: z.string().trim().min(2, 'validation.catalog.productName').max(160, 'validation.catalog.nameTooLong'),
+    brand: z.string().max(80, 'validation.tooLong'),
+    shortDescription: z.string().max(200, 'validation.tooLong'),
+    description: z.string().max(4000, 'validation.tooLong'),
 
     /**
      * Either an existing category id, or a name to create.
@@ -112,12 +116,12 @@ export const productFormSchema = z
           alt: z
             .string()
             .trim()
-            .min(1, 'Describe each photo')
-            .max(160, 'That description is too long'),
+            .min(1, 'validation.catalog.altRequired')
+            .max(160, 'validation.catalog.descriptionTooLong'),
           sortOrder: z.number().int().min(0).max(99),
         }),
       )
-      .max(8, 'A product can have at most 8 photos'),
+      .max(8, 'validation.catalog.maxImages'),
 
     sellingPrice: priceField,
     /**
@@ -128,31 +132,31 @@ export const productFormSchema = z
       .string()
       .refine(
         (value) => value.trim() === '' || /^[0-9]+$/.test(value.trim()),
-        'Enter whole rupees, or leave blank for no discount',
+        'validation.catalog.compareWhole',
       ),
 
     unitType: unitTypeField,
     unitValue: z
-      .number({ invalid_type_error: 'Enter a pack size' })
-      .positive('Pack size must be more than zero')
-      .max(100_000),
+      .number({ invalid_type_error: 'validation.catalog.packSizeInvalid' })
+      .positive('validation.catalog.packSizePositive')
+      .max(100_000, 'validation.catalog.tooLarge'),
 
     sku: z
       .string()
       .trim()
-      .min(1, 'An item code is required')
-      .max(40)
-      .regex(/^[A-Za-z0-9][A-Za-z0-9-]*$/, 'Use letters, digits and hyphens only'),
+      .min(1, 'validation.catalog.skuRequired')
+      .max(40, 'validation.tooLong')
+      .regex(/^[A-Za-z0-9][A-Za-z0-9-]*$/, 'validation.catalog.skuFormat'),
 
     barcode: z
       .string()
       .refine(
         (value) => value.trim() === '' || /^[0-9]{6,32}$/.test(value.trim()),
-        'A barcode is 6 to 32 digits, or leave it blank',
+        'validation.catalog.barcodeFormat',
       ),
 
     /** Comma-separated aliases; the mapper splits them. */
-    searchTerms: z.string().max(600),
+    searchTerms: z.string().max(600, 'validation.tooLong'),
 
     isActive: z.boolean(),
     isFeatured: z.boolean(),
@@ -161,7 +165,7 @@ export const productFormSchema = z
     lowStockThreshold: countField(100_000),
   })
   .refine((values) => Boolean(values.categoryId || values.categoryCreateName.trim()), {
-    message: 'Choose a category, or create a new one',
+    message: 'validation.catalog.categoryRequired',
     path: ['categoryId'],
   })
   .refine(
@@ -170,7 +174,7 @@ export const productFormSchema = z
     {
       // Mirrors the schema-level rule on the server: a struck-through price that
       // is not higher would advertise a discount that does not exist.
-      message: 'The “was” price must be higher than the selling price',
+      message: 'validation.catalog.wasPriceHigher',
       path: ['compareAtPrice'],
     },
   );

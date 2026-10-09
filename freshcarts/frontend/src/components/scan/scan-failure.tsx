@@ -4,6 +4,7 @@ import { CameraOff, RefreshCw, Search, WifiOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
+import { useI18n, useT, type Locale, type TFunction } from '@/i18n';
 import { ApiError } from '@/lib/api/errors';
 
 export interface ScanFailureProps {
@@ -31,16 +32,16 @@ interface FailureCopy {
  * What is never shown: a status code, a stack trace, a service name, a
  * timeout class (§36, §45).
  */
-function copyFor(error: unknown): FailureCopy {
+function copyFor(error: unknown, t: TFunction, locale: Locale): FailureCopy {
   const code = error instanceof ApiError ? error.code : undefined;
 
   if (error instanceof ApiError && error.isNetworkError) {
     return {
       icon: <WifiOff className="size-7" aria-hidden="true" />,
-      title: 'You appear to be offline',
-      message: 'We could not reach FreshCarts to read your list.',
-      suggestions: ['Check your mobile data or Wi-Fi', 'Try again in a moment'],
-      retryLabel: 'Try again',
+      title: t('ocr.failure.offlineTitle'),
+      message: t('ocr.failure.offlineMessage'),
+      suggestions: [t('ocr.failure.offlineS1'), t('ocr.failure.offlineS2')],
+      retryLabel: t('ocr.failure.tryAgain'),
     };
   }
 
@@ -50,33 +51,35 @@ function copyFor(error: unknown): FailureCopy {
       // than pretending OCR succeeded and returning nothing.
       return {
         icon: <CameraOff className="size-7" aria-hidden="true" />,
-        title: 'The image is difficult to read',
-        message: 'We could not make out the writing on that photo.',
+        title: t('ocr.failure.unreadableTitle'),
+        message: t('ocr.failure.unreadableMessage'),
         suggestions: [
-          'Try taking a clearer photo in good light',
-          'Hold the camera steady and fill the frame with the list',
-          'Flatten the paper so the whole list is in focus',
+          t('ocr.failure.unreadableS1'),
+          t('ocr.failure.unreadableS2'),
+          t('ocr.failure.unreadableS3'),
         ],
-        retryLabel: 'Try another photo',
+        retryLabel: t('ocr.failure.tryAnotherPhoto'),
       };
 
     case 'IMAGE_TOO_LARGE':
       return {
         icon: <CameraOff className="size-7" aria-hidden="true" />,
-        title: 'That photo is too large',
+        title: t('ocr.failure.tooLargeTitle'),
         message:
-          error instanceof ApiError ? error.message : 'Please use a smaller photo of your list.',
-        suggestions: ['Take the photo again at a lower resolution', 'Crop it to just the list'],
-        retryLabel: 'Choose another photo',
+          locale === 'en' && error instanceof ApiError
+            ? error.message
+            : t('ocr.failure.tooLargeMessage'),
+        suggestions: [t('ocr.failure.tooLargeS1'), t('ocr.failure.tooLargeS2')],
+        retryLabel: t('ocr.failure.chooseAnotherPhoto'),
       };
 
     case 'IMAGE_INVALID':
       return {
         icon: <CameraOff className="size-7" aria-hidden="true" />,
-        title: 'That file is not a photo',
-        message: 'We can read JPG, PNG and WEBP images.',
-        suggestions: ['Choose a photo from your gallery', 'Take a new photo of your list'],
-        retryLabel: 'Choose another photo',
+        title: t('ocr.failure.invalidTitle'),
+        message: t('ocr.failure.invalidMessage'),
+        suggestions: [t('ocr.failure.invalidS1'), t('ocr.failure.invalidS2')],
+        retryLabel: t('ocr.failure.chooseAnotherPhoto'),
       };
 
     case 'SCAN_UNAVAILABLE':
@@ -85,28 +88,29 @@ function copyFor(error: unknown): FailureCopy {
       // hint of what actually broke.
       return {
         icon: <RefreshCw className="size-7" aria-hidden="true" />,
-        title: 'We could not read your list right now',
-        message: 'Scanning is temporarily unavailable. Everything else still works.',
-        suggestions: ['Try again in a few minutes', 'Add your items by searching instead'],
-        retryLabel: 'Try again',
+        title: t('ocr.failure.unavailableTitle'),
+        message: t('ocr.failure.unavailableMessage'),
+        suggestions: [t('ocr.failure.unavailableS1'), t('ocr.failure.searchSuggestion')],
+        retryLabel: t('ocr.failure.tryAgain'),
       };
 
     default:
       return {
         icon: <RefreshCw className="size-7" aria-hidden="true" />,
-        title: 'Something went wrong',
+        title: t('ocr.failure.genericTitle'),
         message:
-          error instanceof ApiError
+          locale === 'en' && error instanceof ApiError
             ? error.message
-            : 'We could not process that photo. Please try again.',
-        suggestions: ['Try again with another photo', 'Add your items by searching instead'],
-        retryLabel: 'Try again',
+            : t('ocr.failure.genericMessage'),
+        suggestions: [t('ocr.failure.genericS1'), t('ocr.failure.searchSuggestion')],
+        retryLabel: t('ocr.failure.tryAgain'),
       };
   }
 }
 
 export function ScanFailure({ error, onRetry }: ScanFailureProps) {
-  const copy = copyFor(error);
+  const { t, locale } = useI18n();
+  const copy = copyFor(error, t, locale);
 
   return (
     <section
@@ -138,7 +142,7 @@ export function ScanFailure({ error, onRetry }: ScanFailureProps) {
         {/* Never a dead end: there is always a way to keep shopping. */}
         <ButtonLink href="/search" variant="outline" fullWidth>
           <Search className="size-4" aria-hidden="true" />
-          Search for items instead
+          {t('ocr.failure.searchInstead')}
         </ButtonLink>
       </div>
     </section>
@@ -153,6 +157,8 @@ export function ScanFailure({ error, onRetry }: ScanFailureProps) {
  * about the photo's quality.
  */
 export function ScanEmptyResult({ onRetry }: { onRetry: () => void }) {
+  const t = useT();
+
   return (
     <section role="status" className="gap-loose py-loose flex flex-col items-center text-center">
       <span className="bg-surface-sunken text-text-muted flex size-16 items-center justify-center rounded-full">
@@ -161,26 +167,26 @@ export function ScanEmptyResult({ onRetry }: { onRetry: () => void }) {
 
       <div className="gap-tight flex flex-col">
         <h2 className="text-text text-lg font-semibold">
-          We couldn&rsquo;t find any grocery items in this image
+          {t('ocr.failure.emptyTitle')}
         </h2>
         <p className="text-text-muted text-sm">
-          The photo was readable, but nothing on it looked like a shopping list.
+          {t('ocr.failure.emptyMessage')}
         </p>
       </div>
 
       <ul className="text-text-muted flex flex-col gap-1 text-sm">
-        <li>Make sure the list itself is in the photo</li>
-        <li>Try a clearer photo with the writing facing up</li>
-        <li>One item per line reads best</li>
+        <li>{t('ocr.failure.emptyS1')}</li>
+        <li>{t('ocr.failure.emptyS2')}</li>
+        <li>{t('ocr.failure.emptyS3')}</li>
       </ul>
 
       <div className="gap-tight flex w-full max-w-xs flex-col">
         <Button fullWidth onClick={onRetry}>
-          Try another photo
+          {t('ocr.failure.tryAnotherPhoto')}
         </Button>
 
         <ButtonLink href="/categories" variant="outline" fullWidth>
-          Browse products
+          {t('ocr.failure.browseProducts')}
         </ButtonLink>
       </div>
     </section>

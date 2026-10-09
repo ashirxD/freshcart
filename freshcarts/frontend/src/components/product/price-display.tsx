@@ -1,3 +1,7 @@
+'use client';
+
+import { Money } from '@/components/common/ltr';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr, formatPkrLabel } from '@/lib/format';
 
@@ -42,6 +46,7 @@ export function PriceDisplay({
   size = 'md',
   className,
 }: PriceDisplayProps) {
+  const t = useT();
   const hasDiscount = Boolean(compareAtPrice && compareAtPrice > sellingPrice);
 
   return (
@@ -51,17 +56,21 @@ export function PriceDisplay({
           'text-text font-extrabold tracking-[-0.02em] tabular-nums',
           PRICE_SIZES[size],
         )}
-        aria-label={(hasDiscount ? 'Now ' : '') + formatPkrLabel(sellingPrice)}
+        aria-label={
+          hasDiscount
+            ? t('product.priceNow', { amount: formatPkrLabel(sellingPrice, t) })
+            : formatPkrLabel(sellingPrice, t)
+        }
       >
-        {formatPkr(sellingPrice)}
+        <Money>{formatPkr(sellingPrice)}</Money>
       </span>
 
       {hasDiscount && compareAtPrice ? (
         <s
           className={cn('text-text-muted font-medium tabular-nums', WAS_SIZES[size])}
-          aria-label={'Was ' + formatPkrLabel(compareAtPrice)}
+          aria-label={t('product.priceWas', { amount: formatPkrLabel(compareAtPrice, t) })}
         >
-          {formatPkr(compareAtPrice)}
+          <Money>{formatPkr(compareAtPrice)}</Money>
         </s>
       ) : null}
     </p>

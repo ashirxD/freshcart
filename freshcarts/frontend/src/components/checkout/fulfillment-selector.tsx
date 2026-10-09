@@ -3,6 +3,7 @@
 import { Store, Truck } from 'lucide-react';
 import { RadioCard, RadioCardGroup } from '@/components/ui/radio-card';
 import { Badge } from '@/components/ui/badge';
+import { useT } from '@/i18n';
 import type { FulfillmentMethod } from '@/types/order';
 
 export interface FulfillmentSelectorProps {
@@ -26,35 +27,36 @@ export interface FulfillmentSelectorProps {
  * actual figure needs an address, which is the very next step.
  */
 export function FulfillmentSelector({ value, onChange }: FulfillmentSelectorProps) {
+  const t = useT();
+
   return (
     <RadioCardGroup
-      label="How would you like to get your order?"
+      label={t('checkout.fulfillment.question')}
       value={value}
       onChange={(next) => onChange(next as FulfillmentMethod)}
     >
       <div className="gap-snug grid sm:grid-cols-2">
         <RadioCard
           value="DELIVERY"
-          title="Delivered to you"
-          description="A rider brings it to your address."
+          title={t('checkout.fulfillment.deliveryTitle')}
+          description={t('checkout.fulfillment.deliveryDesc')}
           icon={<Truck className="size-5" />}
-          trailing={<Badge tone="attention">Charge by distance</Badge>}
+          trailing={<Badge tone="attention">{t('checkout.fulfillment.deliveryBadge')}</Badge>}
         >
           <span className="text-text-muted mt-1.5 block text-xs">
-            Worked out from the road distance to your address, and shown to you before you place the
-            order.
+            {t('checkout.fulfillment.deliveryNote')}
           </span>
         </RadioCard>
 
         <RadioCard
           value="PICKUP"
-          title="Collect in store"
-          description="We pack it and hold it for you."
+          title={t('checkout.fulfillment.pickupTitle')}
+          description={t('checkout.fulfillment.pickupDesc')}
           icon={<Store className="size-5" />}
-          trailing={<Badge tone="fresh">No charge</Badge>}
+          trailing={<Badge tone="fresh">{t('checkout.fulfillment.pickupBadge')}</Badge>}
         >
           <span className="text-text-muted mt-1.5 block text-xs">
-            Bring your order number to the counter. Nothing extra to pay for delivery.
+            {t('checkout.fulfillment.pickupNote')}
           </span>
         </RadioCard>
       </div>

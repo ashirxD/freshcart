@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { IconButton } from '@/components/ui/icon-button';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 import type { Product } from '@/types/catalog';
 import { ProductCard } from './product-card';
@@ -29,6 +30,7 @@ export interface ProductRailProps {
  * keyboard scrolling, real snap points, no JavaScript in the scroll path.
  */
 export function ProductRail({ products, label, className }: ProductRailProps) {
+  const { t, isRtl } = useI18n();
   const trackRef = useRef<HTMLUListElement>(null);
   const [canScrollBack, setCanScrollBack] = useState(false);
   const [canScrollOn, setCanScrollOn] = useState(false);
@@ -66,7 +68,12 @@ export function ProductRail({ products, label, className }: ProductRailProps) {
 
     // Roughly one screen of cards, so a click feels like turning a page rather
     // than stepping one item at a time.
-    track.scrollBy({ left: direction * track.clientWidth * 0.85, behavior: 'smooth' });
+    //
+    // In a right-to-left container the shelf starts at the RIGHT and `scrollLeft`
+    // counts down from zero, so "onwards" is a negative offset. Without this
+    // flip the arrow that points toward more groceries scrolled away from them.
+    const sign = isRtl ? -1 : 1;
+    track.scrollBy({ left: direction * sign * track.clientWidth * 0.85, behavior: 'smooth' });
   };
 
   return (
@@ -102,13 +109,13 @@ export function ProductRail({ products, label, className }: ProductRailProps) {
         <RailControl
           direction="back"
           disabled={!canScrollBack}
-          label={'Scroll ' + label + ' backwards'}
+          label={t('product.scrollBackwards', { label })}
           onClick={() => nudge(-1)}
         />
         <RailControl
           direction="on"
           disabled={!canScrollOn}
-          label={'Scroll ' + label + ' forwards'}
+          label={t('product.scrollForwards', { label })}
           onClick={() => nudge(1)}
         />
       </div>

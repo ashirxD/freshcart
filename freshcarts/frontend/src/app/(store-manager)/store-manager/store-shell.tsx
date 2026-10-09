@@ -12,21 +12,24 @@ import {
   ShieldAlert,
   Store,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
+import { LanguageToggle } from '@/components/common/language-toggle';
 import { Container } from '@/components/layout/container';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStoreDashboard } from '@/features/store-manager/store-manager.hooks';
+import { useT, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/store/auth.store';
 
-const NAV = [
-  { href: '/store-manager', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/store-manager/orders', label: 'Orders', icon: ClipboardList },
-  { href: '/store-manager/inventory', label: 'Inventory', icon: Boxes },
-  { href: '/store-manager/products', label: 'Products', icon: PackageSearch },
+const NAV: Array<{ href: string; labelKey: TranslationKey; icon: LucideIcon; exact?: boolean }> = [
+  { href: '/store-manager', labelKey: 'store.shell.dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/store-manager/orders', labelKey: 'store.shell.orders', icon: ClipboardList },
+  { href: '/store-manager/inventory', labelKey: 'store.shell.inventory', icon: Boxes },
+  { href: '/store-manager/products', labelKey: 'store.shell.products', icon: PackageSearch },
 ];
 
 /**
@@ -42,6 +45,7 @@ const NAV = [
  * this shell can still do nothing with it (§55).
  */
 export function StoreShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -52,7 +56,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
   if (status === 'loading') {
     return (
       <Container className="gap-gutter py-loose flex flex-col">
-        <Skeleton className="h-8 w-56" label="Checking your access" />
+        <Skeleton className="h-8 w-56" label={t('store.shell.checkingAccess')} />
         <Skeleton className="h-64 w-full" />
       </Container>
     );
@@ -63,14 +67,14 @@ export function StoreShell({ children }: { children: ReactNode }) {
       <Container className="py-loose">
         <EmptyState
           icon={<ShieldAlert aria-hidden="true" />}
-          title="Store staff only"
-          description="This is the store operations console. Sign in with a store manager account to continue."
+          title={t('store.shell.staffOnlyTitle')}
+          description={t('store.shell.staffOnlyBody')}
           action={
             user ? (
-              <ButtonLink href="/">Back to the store</ButtonLink>
+              <ButtonLink href="/">{t('store.shell.backToStore')}</ButtonLink>
             ) : (
               <Button onClick={() => router.push('/login?next=' + encodeURIComponent(pathname))}>
-                Sign in
+                {t('nav.signIn')}
               </Button>
             )
           }
@@ -87,7 +91,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          aria-label="Open navigation"
+          aria-label={t('store.shell.openNav')}
           aria-expanded={isDrawerOpen}
           className="hover:bg-primary/8 text-text size-touch flex items-center justify-center rounded-full transition-colors"
         >
@@ -114,7 +118,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
             aria-hidden="true"
           />
           <nav
-            aria-label="Store navigation"
+            aria-label={t('store.shell.drawerLabel')}
             className="bg-surface shadow-overlay relative z-10 flex w-64 flex-col"
           >
             <div className="border-outline-variant flex items-center justify-between gap-2 border-b p-4">
@@ -122,7 +126,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                aria-label="Close navigation"
+                aria-label={t('store.shell.closeNav')}
                 className="hover:bg-surface-muted text-outline size-touch flex shrink-0 items-center justify-center rounded-full"
               >
                 <X className="size-5" aria-hidden="true" />
@@ -141,8 +145,10 @@ export function StoreShell({ children }: { children: ReactNode }) {
 }
 
 function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const t = useT();
+
   return (
-    <nav aria-label="Store operations" className="flex flex-1 flex-col gap-1 p-3">
+    <nav aria-label={t('store.shell.navLabel')} className="flex flex-1 flex-col gap-1 p-3">
       {NAV.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         const Icon = item.icon;
@@ -168,19 +174,23 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
               />
             ) : null}
             <Icon className="size-5 shrink-0" aria-hidden="true" />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}
 
-      <Link
-        href="/"
-        onClick={onNavigate}
-        className="text-text-muted hover:text-text min-h-touch mt-auto flex items-center gap-3 rounded-md px-3 text-sm"
-      >
-        <Store className="size-5 shrink-0" aria-hidden="true" />
-        View storefront
-      </Link>
+      <div className="mt-auto flex flex-col gap-2">
+        <LanguageToggle size="sm" className="mx-3 w-fit" />
+
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="text-text-muted hover:text-text min-h-touch flex items-center gap-3 rounded-md px-3 text-sm"
+        >
+          <Store className="size-5 shrink-0" aria-hidden="true" />
+          {t('store.shell.viewStorefront')}
+        </Link>
+      </div>
     </nav>
   );
 }
@@ -193,12 +203,13 @@ function SidebarNav({ pathname, onNavigate }: { pathname: string; onNavigate?: (
  * arriving. It is information only — nothing in the console acts on it.
  */
 function StoreBadge({ className }: { className?: string }) {
+  const t = useT();
   const { data } = useStoreDashboard();
 
   return (
     <div className={cn('flex flex-col gap-0.5', className)}>
       <span className="text-primary truncate text-sm font-extrabold tracking-[-0.02em]">
-        {data?.store.name ?? 'FreshCarts'}
+        {data ? <bdi>{data.store.name}</bdi> : 'FreshCarts'}
       </span>
 
       {data ? (
@@ -213,12 +224,14 @@ function StoreBadge({ className }: { className?: string }) {
             aria-hidden="true"
           />
           <span className={data.store.isOpen ? 'text-success' : 'text-text-muted'}>
-            {data.store.isOpen ? 'Open' : 'Closed'}
+            {data.store.isOpen ? t('store.shell.open') : t('common.closed')}
           </span>
-          <span className="text-text-muted truncate">· {data.store.area}</span>
+          <span className="text-text-muted truncate">
+            · <bdi>{data.store.area}</bdi>
+          </span>
         </span>
       ) : (
-        <span className="text-text-muted text-xs">Store operations</span>
+        <span className="text-text-muted text-xs">{t('store.shell.operations')}</span>
       )}
     </div>
   );

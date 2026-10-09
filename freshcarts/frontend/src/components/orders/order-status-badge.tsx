@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
-import type { OrderStatus, PaymentStatus } from '@/types/order';
+import { useI18n } from '@/i18n';
+import { orderStatusLabel, paymentStatusLabel } from '@/lib/order-copy';
+import type { FulfillmentMethod, OrderStatus, PaymentStatus } from '@/types/order';
 
 /**
  * THE SEMANTIC STATUS SYSTEM (§73, §74)
@@ -45,13 +47,25 @@ const STATUS_STYLE: Record<OrderStatus, { icon: LucideIcon; tone: BadgeTone }> =
 
 export interface OrderStatusBadgeProps {
   status: OrderStatus;
-  /** The server's wording — "Collected" for a pickup, "Delivered" for a delivery. */
+  /**
+   * The server's wording — "Collected" for a pickup, "Delivered" for a delivery.
+   * Shown as-is in English; other languages are built from `status` instead.
+   */
   label: string;
+  /** Lets a finished pickup read "collected" rather than "delivered". */
+  fulfillmentMethod?: FulfillmentMethod;
   size?: 'sm' | 'md';
   className?: string;
 }
 
-export function OrderStatusBadge({ status, label, size = 'md', className }: OrderStatusBadgeProps) {
+export function OrderStatusBadge({
+  status,
+  label,
+  fulfillmentMethod,
+  size = 'md',
+  className,
+}: OrderStatusBadgeProps) {
+  const { t, locale } = useI18n();
   const style = STATUS_STYLE[status];
   const Icon = style.icon;
 
@@ -62,16 +76,16 @@ export function OrderStatusBadge({ status, label, size = 'md', className }: Orde
       className={className}
       icon={<Icon className={size === 'sm' ? 'size-3.5' : 'size-4'} aria-hidden="true" />}
     >
-      {label}
+      {orderStatusLabel(status, fulfillmentMethod, label, t, locale)}
     </Badge>
   );
 }
 
-const PAYMENT_STYLE: Record<PaymentStatus, { label: string; tone: BadgeTone }> = {
-  PENDING: { label: 'Payment due', tone: 'attention' },
-  PAID: { label: 'Paid', tone: 'fresh' },
-  FAILED: { label: 'Not collected', tone: 'neutral' },
-  REFUNDED: { label: 'Refunded', tone: 'neutral' },
+const PAYMENT_STYLE: Record<PaymentStatus, { tone: BadgeTone }> = {
+  PENDING: { tone: 'attention' },
+  PAID: { tone: 'fresh' },
+  FAILED: { tone: 'neutral' },
+  REFUNDED: { tone: 'neutral' },
 };
 
 export function PaymentStatusBadge({
@@ -81,10 +95,11 @@ export function PaymentStatusBadge({
   status: PaymentStatus;
   className?: string;
 }) {
+  const { t } = useI18n();
   const style = PAYMENT_STYLE[status];
   return (
     <Badge tone={style.tone} className={className}>
-      {style.label}
+      {paymentStatusLabel(status, t)}
     </Badge>
   );
 }

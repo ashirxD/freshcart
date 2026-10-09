@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { Replace } from 'lucide-react';
+import { Ltr, Money } from '@/components/common/ltr';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/cn';
 import { formatPkr } from '@/lib/format';
 import type { StoreOrderDetail, StoreOrderItem, Substitution } from '@/types/store-manager';
@@ -27,6 +29,7 @@ export interface PickingListProps {
  * on them.
  */
 export function PickingList({ order, onSubstitute }: PickingListProps) {
+  const { t } = useI18n();
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
   const isPicking = order.status === 'PREPARING';
@@ -50,10 +53,10 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
     <section className="gap-gutter flex flex-col" aria-labelledby="items-heading">
       <div className="gap-gutter flex flex-wrap items-center justify-between">
         <h2 id="items-heading" className="text-text text-base font-semibold">
-          Items
+          {t('store.picking.items')}
           <span className="text-text-muted ms-2 text-sm font-normal">
-            {order.items.length === 1 ? '1 line' : order.items.length + ' lines'} ·{' '}
-            {order.totalQuantity} units
+            {t('store.picking.lines', { count: order.items.length })} ·{' '}
+            {t('store.picking.units', { count: order.totalQuantity })}
           </span>
         </h2>
 
@@ -62,7 +65,7 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
             aria-live="polite"
             className={cn('text-sm', allPicked ? 'text-success' : 'text-text-muted')}
           >
-            {picked.size} of {order.items.length} picked
+            {t('store.picking.pickedOf', { picked: picked.size, total: order.items.length })}
           </p>
         ) : null}
       </div>
@@ -81,7 +84,9 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
                     onChange={() => toggle(item.productId)}
                     className="size-5 accent-[var(--color-primary)]"
                   />
-                  <span className="sr-only">Mark {item.productName} as picked</span>
+                  <span className="sr-only">
+                    {t('store.picking.markPicked', { name: item.productName })}
+                  </span>
                 </label>
               ) : null}
 
@@ -92,21 +97,28 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
                     isPicking && picked.has(item.productId) && 'text-text-muted line-through',
                   )}
                 >
-                  {item.productName}
+                  <bdi>{item.productName}</bdi>
                 </p>
 
                 <p className="text-text-muted text-sm">
-                  {item.sku} · {item.unitLabel}
-                  {item.brand ? ' · ' + item.brand : ''}
+                  <Ltr>{item.sku}</Ltr> · {item.unitLabel}
+                  {item.brand ? (
+                    <>
+                      {' · '}
+                      <bdi>{item.brand}</bdi>
+                    </>
+                  ) : null}
                 </p>
 
                 {substitution ? <SubstitutionNotice substitution={substitution} /> : null}
               </div>
 
               <div className="gap-tight flex shrink-0 flex-col items-end">
-                <span className="text-text text-lg font-bold tabular-nums">× {item.quantity}</span>
+                <span className="text-text text-lg font-bold tabular-nums">
+                  <Ltr>× {item.quantity}</Ltr>
+                </span>
                 <span className="text-text-muted text-sm tabular-nums">
-                  {formatPkr(item.lineTotal)}
+                  <Money>{formatPkr(item.lineTotal)}</Money>
                 </span>
 
                 {onSubstitute && !substitution ? (
@@ -115,9 +127,9 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
                     size="sm"
                     onClick={() => onSubstitute(item)}
                     leadingIcon={<Replace className="size-4" aria-hidden="true" />}
-                    aria-label={'Propose a replacement for ' + item.productName}
+                    aria-label={t('store.picking.replaceAria', { name: item.productName })}
                   >
-                    Replace
+                    {t('store.picking.replace')}
                   </Button>
                 ) : null}
               </div>
@@ -128,8 +140,8 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
 
       {order.customerNote ? (
         <p className="bg-apricot/15 text-text p-gutter rounded-xl text-sm">
-          <span className="font-semibold">Customer note: </span>
-          {order.customerNote}
+          <span className="font-semibold">{t('store.picking.customerNote')} </span>
+          <bdi>{order.customerNote}</bdi>
         </p>
       ) : null}
     </section>
@@ -138,10 +150,14 @@ export function PickingList({ order, onSubstitute }: PickingListProps) {
 
 /** A pending replacement, shown against the line it applies to. */
 function SubstitutionNotice({ substitution }: { substitution: Substitution }) {
+  const { tx } = useI18n();
+
   return (
     <p className="bg-secondary-container/25 text-secondary mt-1 rounded-md px-2 py-1 text-xs font-medium">
-      Replacement offered: {substitution.replacement.productName} (×
-      {substitution.replacement.quantity}) — waiting for the customer
+      {tx('store.picking.offered', {
+        name: <bdi>{substitution.replacement.productName}</bdi>,
+        quantity: substitution.replacement.quantity,
+      })}
     </p>
   );
 }
